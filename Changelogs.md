@@ -8,6 +8,10 @@ Last updated: October 7, 2026
 
 - feat: automate dated changelog updates (5cbba18)
 
+### Bug Fixes
+
+- fix: validate backend port and frontend setup (25e5647)
+
 ### Chores
 
 - chore: show date only in changelog (fa81fde)
