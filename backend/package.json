@@ -1,0 +1,14 @@
+{
+  "name": "backend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "node --watch index.ts",
+    "start": "node index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "typescript": "^7"
+  }
+}
