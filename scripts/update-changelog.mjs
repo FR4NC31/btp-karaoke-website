@@ -2,45 +2,42 @@ import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 
 const timeZone = 'Asia/Manila'
-const formatter = new Intl.DateTimeFormat('en-CA', {
+const formatter = new Intl.DateTimeFormat('en-US', {
   timeZone,
   year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
+  month: 'long',
+  day: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
   hourCycle: 'h23',
 })
-const categories = ['Added', 'Fixed', 'Changed']
-const days = new Map()
-const history = execFileSync('git', ['log', '--format=%s%x1f%cI%x1e'], { encoding: 'utf8' })
+const categories = ['Features', 'Bug Fixes', 'Chores', 'Other Changes']
+const groups = new Map(categories.map((category) => [category, []]))
+const history = execFileSync('git', ['log', '--format=%h%x1f%s%x1f%cI%x1f%ae%x1e'], { encoding: 'utf8' })
 const commits = history.split('\x1e').map((record) => record.trim().split('\x1f'))
-commits.sort((a, b) => new Date(b[1]) - new Date(a[1]))
+commits.sort((a, b) => new Date(b[2]) - new Date(a[2]))
 
-for (const [subject, timestamp] of commits) {
-  if (!subject || !timestamp || subject === 'chore: update changelog') continue
-
-  const match = /^([a-z]+)(?:\(([^)]+)\))?!?: (.+)$/.exec(subject)
-  const [, type, scope, description] = match ?? [null, 'chore', null, subject]
-  const category = type === 'feat' ? 'Added' : type === 'fix' ? 'Fixed' : 'Changed'
+function formatTimestamp(timestamp) {
   const parts = Object.fromEntries(formatter.formatToParts(new Date(timestamp)).map(({ type, value }) => [type, value]))
-  const date = `${parts.year}-${parts.month}-${parts.day}`
-  const time = `${parts.hour}:${parts.minute}`
-  const entry = `- ${time} — ${scope ? `**${scope}:** ` : ''}${description}`
-
-  if (!days.has(date)) days.set(date, new Map())
-  const groups = days.get(date)
-  if (!groups.has(category)) groups.set(category, [])
-  groups.get(category).push(entry)
+  return `${parts.month} ${parts.day}, ${parts.year} at ${parts.hour}:${parts.minute}`
 }
 
-const lines = ['# Changelogs', '']
-for (const [date, groups] of days) {
-  lines.push(`## ${date} (Asia/Manila)`, '')
-  for (const category of categories) {
-    if (!groups.has(category)) continue
-    lines.push(`### ${category}`, '', ...groups.get(category), '')
-  }
+let latestTimestamp
+for (const [hash, subject, timestamp, authorEmail] of commits) {
+  if (!hash || !subject || !timestamp ||
+    (authorEmail === '41898282+github-actions[bot]@users.noreply.github.com' && subject === 'chore: update changelog')) continue
+
+  const type = /^([a-z]+)(?:\([^)]+\))?!?: /.exec(subject)?.[1]
+  const category = type === 'feat' ? 'Features' : type === 'fix' ? 'Bug Fixes' : type === 'chore' ? 'Chores' : 'Other Changes'
+  latestTimestamp ??= timestamp
+  groups.get(category).push(`- ${subject} (${hash})`)
+}
+
+const lines = ['# Development Changelog', '', '## Unreleased', '']
+if (latestTimestamp) lines.push(`Last updated: ${formatTimestamp(latestTimestamp)} (${timeZone})`, '')
+for (const category of categories) {
+  const entries = groups.get(category)
+  if (entries.length) lines.push(`### ${category}`, '', ...entries, '')
 }
 
 writeFileSync('Changelogs.md', `${lines.join('\n').trimEnd()}\n`)
