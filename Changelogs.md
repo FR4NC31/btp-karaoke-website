@@ -19,6 +19,7 @@ Last updated: October 7, 2026
 
 ### Other Changes
 
+- Merge pull request #2 from FR4NC31/develop (afc1666)
 - Setup frontend and backend dependencies (c2599df)
 - Add initial test description for Discord (1112f7d)
 - Initial commit (3246887)
