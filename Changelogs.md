@@ -10,6 +10,7 @@ Last updated: October 7, 2026
 
 ### Chores
 
+- chore: show date only in changelog (fa81fde)
 - chore: format development changelog (d79c6c6)
 
 ### Other Changes
