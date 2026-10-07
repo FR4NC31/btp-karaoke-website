@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 7, 2026 at 13:04 (Asia/Manila)
+Last updated: October 7, 2026
 
 ### Features
 
