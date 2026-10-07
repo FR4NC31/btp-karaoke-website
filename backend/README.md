@@ -9,13 +9,13 @@ bun install
 To run with Node.js (v22.18+):
 
 ```bash
-node index.ts
+node serve.ts
 ```
 
 For development with automatic restarts:
 
 ```bash
-node --watch index.ts
+node --watch serve.ts
 ```
 
 Bun is used only to install dependencies.
