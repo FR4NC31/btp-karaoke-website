@@ -6,6 +6,8 @@ Last updated: October 8, 2026
 
 ### Features
 
+- feat: mount Better Auth handler, session middleware, and dash plugin (f01b98c)
+- feat: set up Better Auth with Aiven PostgreSQL user table (46a598b)
 - feat: Implement Login/Sign up form with dashboard (9afb6f2)
 - feat: automate dated changelog updates (5cbba18)
 
