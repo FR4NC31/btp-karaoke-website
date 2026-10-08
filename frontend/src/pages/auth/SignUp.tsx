@@ -25,7 +25,7 @@ export default function SignUp() {
       return
     }
     setError('')
-    console.log('register', { firstName, lastName, email, contact, password })
+    console.log('register', { firstName, lastName, email, contact })
     navigate('/studio')
   }
 
@@ -102,7 +102,11 @@ export default function SignUp() {
             required
           />
 
-          {error && <p className="text-sm text-error">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-error">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"

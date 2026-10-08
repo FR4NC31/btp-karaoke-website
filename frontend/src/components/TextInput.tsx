@@ -2,6 +2,7 @@ import type { InputHTMLAttributes } from 'react'
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
+  id: string
 }
 
 export default function TextInput({ label, id, className = '', ...props }: TextInputProps) {

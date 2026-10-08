@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -62,11 +62,12 @@ const filterGenre = [
 ]
 
 const collections = [
-  { title: 'Afternoon Drive', desc: 'Mastered by Frankie Dev', bpm: '118 BPM', key: 'Fmaj', tag: 'Mix' },
-  { title: 'Strict Minus-One Kit', desc: 'BTP Production Originals', bpm: '124 BPM', key: 'Amin', tag: 'Vault' },
-  { title: 'Pivot Rhythm Anthems Vol.', desc: 'Glass Avenue FH Archive', bpm: '132 BPM', key: 'Gmaj', tag: 'Live' },
-  { title: 'Opn Classics & Golden Eras', desc: 'BTP Production Master Tape', bpm: '96 BPM', key: 'Cmaj', tag: 'Tape' },
-  { title: 'Soft Acoustic & Chill', desc: 'Acoustic Room Sessions', bpm: '72 BPM', key: 'Dmin', tag: 'Mix' },
+  { title: 'Afternoon Drive', desc: 'Mastered by Frankie Dev', bpm: '118 BPM', key: 'Fmaj', tag: 'Mix', genre: 'Pop' },
+  { title: 'Strict Minus-One Kit', desc: 'BTP Production Originals', bpm: '124 BPM', key: 'Amin', tag: 'Vault', genre: 'Hip-Hop' },
+  { title: 'Pivot Rhythm Anthems Vol.', desc: 'Glass Avenue FH Archive', bpm: '132 BPM', key: 'Gmaj', tag: 'Live', genre: 'Rock' },
+  { title: 'Opn Classics & Golden Eras', desc: 'BTP Production Master Tape', bpm: '96 BPM', key: 'Cmaj', tag: 'Tape', genre: 'R&B' },
+  { title: 'Soft Acoustic & Chill', desc: 'Acoustic Room Sessions', bpm: '72 BPM', key: 'Dmin', tag: 'Mix', genre: 'Acoustic' },
+  { title: 'Midnight Serenade', desc: 'BTP Ballad Selections', bpm: '68 BPM', key: 'Bmin', tag: 'Mix', genre: 'Ballad' },
 ]
 
 const telemetry = [
@@ -85,21 +86,33 @@ export default function Studio() {
   const [profileOpen, setProfileOpen] = useState(false)
   const navigate = useNavigate()
 
+  const filteredCollections =
+    activeTab === 'All Genres' ? collections : collections.filter((item) => item.genre === activeTab)
+
+  useEffect(() => {
+    if (!profileOpen) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setProfileOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [profileOpen])
+
   return (
     <div className="flex h-dvh flex-col bg-background text-text-primary">
       {/* Top bar */}
-      <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-4">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
         <div className="flex shrink-0 items-center gap-3">
           <span className="grid size-8 place-items-center rounded-md bg-primary text-text-primary">
             <HugeiconsIcon icon={MusicNote01Icon} size={18} />
           </span>
-          <div className="leading-tight">
+          <div className="hidden leading-tight sm:block">
             <p className="font-heading text-lg font-bold tracking-wide">BTP MUSIC PRODUCTION</p>
             <p className="text-[10px] uppercase tracking-widest text-text-muted">Flagship Studio</p>
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-md">
+        <div className="relative mx-auto w-full min-w-0 max-w-md">
           <HugeiconsIcon
             icon={Search01Icon}
             size={16}
@@ -119,10 +132,10 @@ export default function Studio() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-3">
-          <span className="hidden rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary xl:block">
+          <span className="hidden rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary 2xl:block">
             Unfinished Demo
           </span>
-          <span className="hidden rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary xl:block">
+          <span className="hidden rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary 2xl:block">
             Kurante Rotational
           </span>
           <div className="relative">
@@ -333,11 +346,18 @@ export default function Studio() {
               <span className="text-primary">◆</span>
               <h2 className="font-heading text-xl font-bold tracking-wide uppercase">Master Vault Collections</h2>
               <span className="text-[10px] tracking-widest text-text-muted uppercase">Active Stem Systems</span>
-              <span className="ml-auto text-xs text-text-muted">Viewing 1 of 18 sets</span>
+              <span className="ml-auto text-xs text-text-muted">
+                Viewing {filteredCollections.length} of {collections.length} sets
+              </span>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {collections.map((item) => (
+            {filteredCollections.length === 0 ? (
+              <p className="rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-text-muted">
+                No collections in this genre yet.
+              </p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {filteredCollections.map((item) => (
                 <article
                   key={item.title}
                   className="group overflow-hidden rounded-lg border border-border bg-surface transition hover:border-primary/50"
@@ -369,8 +389,9 @@ export default function Studio() {
                     </div>
                   </div>
                 </article>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Telemetry table */}
@@ -433,9 +454,9 @@ export default function Studio() {
       </div>
 
       {/* Player bar */}
-      <footer className="grid h-20 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-6 border-t border-border bg-surface px-4">
+      <footer className="flex h-20 shrink-0 items-center gap-3 border-t border-border bg-surface px-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:px-4">
         {/* Track info */}
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
           <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
           <div className="min-w-0 leading-tight">
             <p className="truncate text-sm font-semibold">Die With A Smile (Cover)</p>
@@ -452,9 +473,13 @@ export default function Studio() {
         </div>
 
         {/* Controls + progress */}
-        <div className="flex w-[min(36rem,40vw)] flex-col items-center gap-2">
-          <div className="flex items-center gap-5">
-            <button type="button" aria-label="Shuffle" className="text-text-muted transition hover:text-text-primary">
+        <div className="flex min-w-0 flex-1 flex-col items-center gap-2 sm:w-[min(36rem,40vw)] sm:flex-none">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <button
+              type="button"
+              aria-label="Shuffle"
+              className="hidden text-text-muted transition hover:text-text-primary sm:block"
+            >
               <HugeiconsIcon icon={ShuffleIcon} size={16} />
             </button>
             <button type="button" aria-label="Previous" className="text-text-secondary transition hover:text-text-primary">
@@ -471,7 +496,11 @@ export default function Studio() {
             <button type="button" aria-label="Next" className="text-text-secondary transition hover:text-text-primary">
               <HugeiconsIcon icon={SkipForwardIcon} size={18} />
             </button>
-            <button type="button" aria-label="Repeat" className="text-text-muted transition hover:text-text-primary">
+            <button
+              type="button"
+              aria-label="Repeat"
+              className="hidden text-text-muted transition hover:text-text-primary sm:block"
+            >
               <HugeiconsIcon icon={RepeatIcon} size={16} />
             </button>
           </div>
@@ -485,7 +514,7 @@ export default function Studio() {
         </div>
 
         {/* Genre tags */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="hidden shrink-0 items-center justify-end gap-2 sm:flex">
           <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-text-secondary">Pop</span>
           <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-text-secondary">Ballad</span>
           <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-text-secondary">Duet</span>
