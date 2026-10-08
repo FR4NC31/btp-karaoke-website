@@ -11,6 +11,7 @@ Last updated: October 8, 2026
 
 ### Bug Fixes
 
+- fix: resolve audit issues in UI components and pages (c0acb49)
 - fix: validate backend port and frontend setup (25e5647)
 
 ### Chores
