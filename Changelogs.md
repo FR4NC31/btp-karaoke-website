@@ -19,6 +19,7 @@ Last updated: October 8, 2026
 
 ### Chores
 
+- chore: exclude protected branches from changelog bot pushes (6fe9e6a)
 - chore: show date only in changelog (fa81fde)
 - chore: format development changelog (d79c6c6)
 
