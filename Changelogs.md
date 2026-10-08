@@ -13,6 +13,7 @@ Last updated: October 8, 2026
 
 ### Bug Fixes
 
+- fix: add mobile nav, exact 11-digit contact check, and Google sign-in prototype state (c8c4de9)
 - fix: resolve audit issues in UI components and pages (c0acb49)
 - fix: validate backend port and frontend setup (25e5647)
 
@@ -23,6 +24,7 @@ Last updated: October 8, 2026
 
 ### Other Changes
 
+- test: add Playwright QA suite, CI workflow, and testing docs (8284443)
 - Merge pull request #3 from FR4NC31/feat/setup-login-method (11aff5c)
 - Setup frontend and backend dependencies (c2599df)
 - Add initial test description for Discord (1112f7d)
