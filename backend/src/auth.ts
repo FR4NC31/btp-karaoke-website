@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
 import { Pool } from 'pg'
 
@@ -51,5 +52,16 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173'],
+  trustedOrigins: [
+    process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+    // ngrok and any other hosts you want to verify from
+    ...(process.env.EXTRA_TRUSTED_ORIGINS?.split(',').map((o) => o.trim()) ?? []),
+    // Better Auth Dash verifies server ownership from its dashboard
+    'https://dash.better-auth.com',
+  ],
+  plugins: [
+    dash({
+      apiKey: process.env.BETTER_AUTH_API_KEY,
+    }),
+  ],
 })
