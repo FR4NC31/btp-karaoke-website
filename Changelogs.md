@@ -13,6 +13,7 @@ Last updated: October 8, 2026
 
 ### Bug Fixes
 
+- fix: drop mobile nav placeholder comment (b2d95b8)
 - fix: scope evidence attachment to recorded activity (eb8885b)
 - fix: address PR review issues in tests, UI and docs (4b7030b)
 - fix: add mobile nav, exact 11-digit contact check, and Google sign-in prototype state (c8c4de9)
