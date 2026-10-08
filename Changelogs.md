@@ -21,6 +21,7 @@ Last updated: October 8, 2026
 
 ### Other Changes
 
+- Merge pull request #3 from FR4NC31/feat/setup-login-method (11aff5c)
 - Setup frontend and backend dependencies (c2599df)
 - Add initial test description for Discord (1112f7d)
 - Initial commit (3246887)
