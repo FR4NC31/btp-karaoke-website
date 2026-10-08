@@ -1,7 +1,11 @@
 name: Update changelog
 
+# main and develop require pull requests (repository rulesets), so the bot
+# cannot push its commit there. Changelog updates ride feature-branch pushes
+# and reach the protected branches through merges.
 on:
   push:
+    branches-ignore: [main, develop]
 
 permissions:
   contents: write
