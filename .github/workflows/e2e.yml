@@ -1,0 +1,111 @@
+name: E2E tests
+
+# PR flow: lint + typecheck + build + Playwright smoke (fast feedback).
+# Push to main/develop (or manual): full Playwright regression suite.
+# The existing changelog workflow is untouched.
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast checks + smoke suite on every pull request.
+  pr-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint (frontend)
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Typecheck (frontend)
+        working-directory: frontend
+        run: npx tsc -b
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Typecheck (backend)
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Build (frontend)
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright smoke suite
+        working-directory: frontend
+        run: npm run test:e2e:smoke
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14
+
+  # Full regression suite after merge / on demand (release confidence).
+  full-e2e:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright full suite
+        working-directory: frontend
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-full-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14
