@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 7, 2026
+Last updated: October 8, 2026
 
 ### Features
 
+- feat: Implement Login/Sign up form with dashboard (9afb6f2)
 - feat: automate dated changelog updates (5cbba18)
 
 ### Bug Fixes
