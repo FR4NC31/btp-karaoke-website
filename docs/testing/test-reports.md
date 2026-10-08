@@ -95,8 +95,9 @@ Classification:
 Environment issue (not a product bug)
 
 Action:
-Free the port / restart the environment, then re-run
-`npx playwright test --last-failed`.
+Free the port / restart the environment, then re-run the suite with
+`npx playwright test` (`--last-failed` cannot rerun tests that were
+blocked before execution).
 ```
 
 ## Latest automated runs

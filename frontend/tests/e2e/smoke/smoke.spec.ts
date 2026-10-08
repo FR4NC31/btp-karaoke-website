@@ -50,6 +50,6 @@ test.describe('smoke', () => {
   test('SMOKE-006: backend health endpoint responds', { tag: '@p0' }, async ({ request }) => {
     const health = await request.get(`${BACKEND_URL}/health`)
     expect(health.ok()).toBeTruthy()
-    expect(await health.json()).toMatchObject({ status: 200 })
+    expect(await health.json()).toEqual({ message: 'This is healthy', status: 200 })
   })
 })

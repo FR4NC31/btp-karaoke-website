@@ -42,6 +42,9 @@ test.describe('karaoke discovery', () => {
     await expect(firstTrack).toContainText('Lady Gaga & Bruno Mars')
     await expect(firstTrack).toContainText('WAV 24-bit')
     await expect(firstTrack.getByRole('button', { name: 'Play' })).toBeVisible()
+
+    // Every track row exposes its own Play action (header row has none).
+    await expect(table.getByRole('button', { name: 'Play' })).toHaveCount(5)
   })
 
   test('KARAOKE-004: sidebar session browsing highlights selection', { tag: '@p2' }, async ({ page }) => {

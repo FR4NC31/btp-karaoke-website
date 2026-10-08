@@ -105,7 +105,7 @@ frontend/tests/e2e/
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…003    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…004 collections, genre filter, telemetry
-├── player/player.spec.ts        PLAYER-001…008  player bar controls
+├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
 

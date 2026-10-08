@@ -21,7 +21,10 @@ Application bug?
 
 A failure becomes a ticket only when **all** of these hold:
 
-1. It reproduces locally (`npx playwright test -g "<CASE-ID>"`).
+1. It reproduces locally (run from `frontend/`:
+   `npx playwright test -g "<CASE-ID>"`), **or** the CI run's attached
+   trace/report conclusively shows the application behaving incorrectly
+   (a CI-only defect is still a valid bug).
 2. The trace shows the application behaving incorrectly (not the test
    mis-locating, waiting wrongly, or assuming unimplemented behavior).
 3. It is not an environment problem (server down, port busy, missing deps)

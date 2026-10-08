@@ -11,7 +11,9 @@ Companion docs: [playwright.md](playwright.md) (how to run) ·
 ## QA role & scope
 
 Playwright is the **browser E2E / QA layer**: real user journeys through the
-real frontend, hitting the real backend. It is not a unit, component, backend
+real frontend. The frontend currently makes no API calls, so backend checks
+are **separate direct HTTP probes** (SMOKE-006, ERROR-004) — not
+frontend-to-API integration coverage. It is not a unit, component, backend
 or API-integration test suite. The repository is the source of truth — only
 features that actually exist are tested; everything else is explicitly listed
 as N/A in [test-cases.md](test-cases.md).
@@ -40,6 +42,7 @@ Important functionality; degraded experience but a workaround exists:
 | Area                          | Test IDs                              |
 | ----------------------------- | ------------------------------------- |
 | Form/validation rules         | AUTH-005, AUTH-006, AUTH-011…013      |
+| Known limitation: mock auth   | AUTH-002                              |
 | Track listing (telemetry)     | KARAOKE-003                           |
 | Player controls               | PLAYER-001, PLAYER-003, PLAYER-004    |
 | Mobile navigation             | NAV-003                               |
@@ -53,7 +56,7 @@ Secondary behavior, styling states and edge cases:
 | Area                              | Test IDs                        |
 | --------------------------------- | ------------------------------- |
 | Prototype disclosures (Google)    | AUTH-008                        |
-| Known-limitation pinning          | AUTH-002, AUTH-004              |
+| Known-limitation pinning          | AUTH-004              |
 | Auth cross-links, error recovery  | NAV-002, AUTH-014               |
 | Sidebar/like styling states       | KARAOKE-004, PLAYER-008         |
 | Progress display, backend 404     | PLAYER-006, ERROR-004           |
@@ -159,7 +162,8 @@ Only mark what actually exists in the application.
 
 ### UX
 
-- [x] Loading/empty states reachable via genre filter (KARAOKE-002)
+- [x] Genre filter narrows and restores collections (KARAOKE-002)
+- [ ] Loading/empty filter states — not reachable with the shipped dataset (N/A)
 - [x] Error states: 404 page (ERROR-001)
 - [x] No console errors / failed requests on key pages (ERROR-002/003)
 - [ ] Accessibility beyond basics — not audited (P3 gap)

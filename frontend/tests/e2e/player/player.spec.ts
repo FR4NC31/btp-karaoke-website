@@ -54,5 +54,7 @@ test.describe('player', () => {
     await expect(likeButton).toHaveClass(/text-text-muted/)
     await likeButton.click()
     await expect(likeButton).toHaveClass(/text-primary/)
+    await likeButton.click() // unlike must work too
+    await expect(likeButton).toHaveClass(/text-text-muted/)
   })
 })

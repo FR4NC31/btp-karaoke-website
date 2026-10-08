@@ -54,6 +54,7 @@ export default function RootLayout() {
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
             className="ml-auto text-text-secondary hover:text-text-primary sm:hidden"
           >
             <HugeiconsIcon icon={menuOpen ? Cancel01Icon : Menu01Icon} size={24} />
@@ -62,7 +63,7 @@ export default function RootLayout() {
 
         {/* Mobile nav dropdown */}
         {menuOpen && (
-          <nav className="mt-4 space-y-4 sm:hidden" aria-label="Mobile navigation">
+          <nav id="mobile-nav" className="mt-4 space-y-4 sm:hidden" aria-label="Mobile navigation">
             <ul className="space-y-3">
               <li>
                 <NavLink
@@ -75,15 +76,8 @@ export default function RootLayout() {
                   Home
                 </NavLink>
               </li>
-              <li>
-                <span className="cursor-pointer text-text-secondary hover:text-text-primary">Songs</span>
-              </li>
-              <li>
-                <span className="cursor-pointer text-text-secondary hover:text-text-primary">About</span>
-              </li>
-              <li>
-                <span className="cursor-pointer text-text-secondary hover:text-text-primary">Contacts</span>
-              </li>
+              {/* Songs / About / Contacts are omitted here until real
+                  destinations exist — dead items are worse than absent ones. */}
             </ul>
             <div className="flex gap-5 border-t border-border pt-4">
               <Link to="/signin" onClick={() => setMenuOpen(false)} className="text-text-secondary hover:text-text-primary">

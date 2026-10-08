@@ -32,6 +32,11 @@ const reporters: ReporterDescription[] = process.env.CI
   ? [['list'], ['html', { open: 'never' }], ['github']]
   : [['list'], ['html', { open: 'never' }]]
 
+// Vite must listen on the port we are about to poll, otherwise the webServer
+// waits for a server that will never appear there. --strictPort turns a port
+// clash into a fast, clear error instead of a silent move + 60 s timeout.
+const frontendPort = new URL(baseURL).port || '5173'
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -68,7 +73,7 @@ export default defineConfig({
     ...(isLocalTarget
       ? [
           {
-            command: 'npm run dev',
+            command: `npm run dev -- --port ${frontendPort} --strictPort`,
             url: baseURL,
             reuseExistingServer: !process.env.CI,
             timeout: 60_000,

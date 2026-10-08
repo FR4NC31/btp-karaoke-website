@@ -29,37 +29,42 @@ function formatEvidence(e: AppEvidence): string {
   ].join('\n')
 }
 
+// `{ auto: true }` so every test is instrumented — evidence must not depend
+// on a test opting in by requesting the fixture.
 export const test = base.extend<{ appEvidence: AppEvidence }>({
-  appEvidence: async ({ page }, use, testInfo) => {
-    const evidence: AppEvidence = {
-      consoleErrors: [],
-      pageErrors: [],
-      failedRequests: [],
-      badResponses: [],
-    }
-
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') evidence.consoleErrors.push(msg.text())
-    })
-    page.on('pageerror', (err) => evidence.pageErrors.push(String(err)))
-    page.on('requestfailed', (req) => {
-      evidence.failedRequests.push(`${req.method()} ${req.url()} :: ${req.failure()?.errorText ?? 'unknown'}`)
-    })
-    page.on('response', (res) => {
-      if (res.status() >= 400) {
-        evidence.badResponses.push(`${res.status()} ${res.request().method()} ${res.url()}`)
+  appEvidence: [
+    async ({ page }, use, testInfo) => {
+      const evidence: AppEvidence = {
+        consoleErrors: [],
+        pageErrors: [],
+        failedRequests: [],
+        badResponses: [],
       }
-    })
 
-    await use(evidence)
-
-    if (testInfo.status !== testInfo.expectedStatus) {
-      await testInfo.attach('console-and-network.txt', {
-        body: formatEvidence(evidence),
-        contentType: 'text/plain',
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') evidence.consoleErrors.push(msg.text())
       })
-    }
-  },
+      page.on('pageerror', (err) => evidence.pageErrors.push(String(err)))
+      page.on('requestfailed', (req) => {
+        evidence.failedRequests.push(`${req.method()} ${req.url()} :: ${req.failure()?.errorText ?? 'unknown'}`)
+      })
+      page.on('response', (res) => {
+        if (res.status() >= 400) {
+          evidence.badResponses.push(`${res.status()} ${res.request().method()} ${res.url()}`)
+        }
+      })
+
+      await use(evidence)
+
+      if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('console-and-network.txt', {
+          body: formatEvidence(evidence),
+          contentType: 'text/plain',
+        })
+      }
+    },
+    { auto: true },
+  ],
 })
 
 export { expect }

@@ -31,12 +31,13 @@ test.describe('navigation', () => {
 
       const hamburger = page.getByRole('button', { name: 'Open menu' })
       await expect(hamburger).toBeVisible()
+      await expect(hamburger).toHaveAttribute('aria-expanded', 'false')
       await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeHidden()
 
       await hamburger.click()
       const mobileNav = page.getByRole('navigation', { name: 'Mobile navigation' })
       await expect(mobileNav).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Close menu' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Close menu' })).toHaveAttribute('aria-expanded', 'true')
 
       await mobileNav.getByRole('link', { name: 'Sign In' }).click()
       await expect(page).toHaveURL('/signin')
@@ -46,6 +47,7 @@ test.describe('navigation', () => {
       await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Home' }).click()
       await expect(page).toHaveURL('/')
       await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeHidden()
+      await expect(page.getByRole('button', { name: 'Open menu' })).toHaveAttribute('aria-expanded', 'false')
     })
   })
 })

@@ -62,9 +62,7 @@ export default function SignIn() {
 
         <button
           type="button"
-          onClick={() => navigate('/studio')}
           disabled
-          title="Google sign-in is not implemented yet (prototype)"
           className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-muted opacity-70 transition"
         >
           <HugeiconsIcon icon={GoogleIcon} size={18} />

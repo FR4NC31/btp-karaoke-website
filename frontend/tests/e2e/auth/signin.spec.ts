@@ -67,7 +67,6 @@ test.describe('authentication', () => {
     await page.goto('/signin')
     const googleButton = page.getByRole('button', { name: 'Continue with Google' })
     await expect(googleButton).toBeDisabled()
-    await expect(googleButton).toHaveAttribute('title', /not implemented/i)
     await expect(googleButton).toContainText('Soon')
     await expect(page.getByText('Google sign-in is not available yet')).toBeVisible()
   })
