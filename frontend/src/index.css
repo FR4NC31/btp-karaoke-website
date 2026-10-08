@@ -1,1 +1,100 @@
-@import 'tailwindcss'
+@import 'tailwindcss';
+
+/* Barlow Condensed — Headings */
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/Fonts/barlow_condensed/BarlowCondensed-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/Fonts/barlow_condensed/BarlowCondensed-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/Fonts/barlow_condensed/BarlowCondensed-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Plus Jakarta Sans — Body / UI */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('./assets/Fonts/plus_jakartan_sans/PlusJakartaSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('./assets/Fonts/plus_jakartan_sans/PlusJakartaSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('./assets/Fonts/plus_jakartan_sans/PlusJakartaSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('./assets/Fonts/plus_jakartan_sans/PlusJakartaSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Barlow Condensed', ui-sans-serif, sans-serif;
+
+  /* Colors */
+  --color-background: #0f1011;
+  --color-surface: #17191b;
+  --color-surface-elevated: #202326;
+  --color-border: #2c2f33;
+  --color-primary: #d32f2f;
+  --color-primary-hover: #b92323;
+  --color-primary-soft: #3a1719;
+  --color-text-primary: #f4f4f2;
+  --color-text-secondary: #a7a9ac;
+  --color-text-muted: #70747a;
+  --color-success: #45b96b;
+  --color-warning: #d99a2b;
+  --color-error: #d94a4a;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+}
