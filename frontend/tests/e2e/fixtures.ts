@@ -3,10 +3,15 @@ import { test as base, expect } from '@playwright/test'
 /**
  * Shared evidence fixture for BTP Karaoke QA.
  *
- * Silently records console errors, uncaught page errors and failed/bad
- * network activity for every test. When a test FAILS the recorded evidence
- * is attached to the Playwright report as `console-and-network.txt`, so a
- * failure always comes with console + network context (see docs/testing/bug-reporting.md).
+ * Silently records page-scope console errors, uncaught page errors and
+ * failed/bad network activity for every test. When a test FAILS and any
+ * evidence was recorded, it is attached to the Playwright report as
+ * `console-and-network.txt`, so a failure comes with console + network
+ * context (see docs/testing/bug-reporting.md).
+ *
+ * Scope: API-fixture (`request`) calls made by API-only tests
+ * (SMOKE-006, ERROR-004) do not emit page events — those tests attach
+ * nothing; their expect diff and trace carry the failure context.
  *
  * Passing tests keep no extra artifacts.
  */
@@ -56,7 +61,13 @@ export const test = base.extend<{ appEvidence: AppEvidence }>({
 
       await use(evidence)
 
-      if (testInfo.status !== testInfo.expectedStatus) {
+      const hasEvidence =
+        evidence.consoleErrors.length > 0 ||
+        evidence.pageErrors.length > 0 ||
+        evidence.failedRequests.length > 0 ||
+        evidence.badResponses.length > 0
+
+      if (testInfo.status !== testInfo.expectedStatus && hasEvidence) {
         await testInfo.attach('console-and-network.txt', {
           body: formatEvidence(evidence),
           contentType: 'text/plain',

@@ -76,8 +76,9 @@ export default function RootLayout() {
                   Home
                 </NavLink>
               </li>
-              {/* Songs / About / Contacts are omitted here until real
-                  destinations exist — dead items are worse than absent ones. */}
+              {/* The mobile menu omits Songs / About / Contacts until real
+                  destinations exist; the desktop header still shows them
+                  as placeholders. */}
             </ul>
             <div className="flex gap-5 border-t border-border pt-4">
               <Link to="/signin" onClick={() => setMenuOpen(false)} className="text-text-secondary hover:text-text-primary">
