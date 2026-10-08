@@ -20,6 +20,10 @@ export default function SignUp() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (contact.length !== 11) {
+      setError('Contact number must be exactly 11 digits')
+      return
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
@@ -75,6 +79,7 @@ export default function SignUp() {
             label="Contact number"
             type="tel"
             inputMode="numeric"
+            maxLength={11}
             placeholder="09XXXXXXXXX"
             value={contact}
             onChange={handleContactChange}

@@ -62,12 +62,18 @@ export default function SignIn() {
 
         <button
           type="button"
-          onClick={() => navigate('/studio')}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-primary transition hover:bg-border"
+          disabled
+          className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-muted opacity-70 transition"
         >
           <HugeiconsIcon icon={GoogleIcon} size={18} />
           Continue with Google
+          <span className="ml-1 rounded border border-border px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-text-muted uppercase">
+            Soon
+          </span>
         </button>
+        <p className="mt-2 text-center text-[11px] text-text-muted">
+          Google sign-in is not available yet — this is a prototype.
+        </p>
 
         <p className="mt-6 text-center text-sm text-text-secondary">
           Don&apos;t have an account?{' '}
