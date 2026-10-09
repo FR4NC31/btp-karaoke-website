@@ -14,6 +14,13 @@ import { useSession } from '../lib/auth-client'
  *               NOT the same as "signed out", so we must not redirect as if
  *               the user were anonymous — show it instead.
  *   no data  -> genuinely no session: redirect.
+ *
+ * Note that `data: null, isPending: false` is *not* a reliable "signed out"
+ * signal on its own: Better Auth's session atom keeps the value the last
+ * check produced, so straight after a sign-out it reads as "no session" even
+ * though a sign-in may have just happened. The sign-in forms therefore
+ * `await refetch()` before navigating here, so this component always sees a
+ * settled value rather than one stale by a few milliseconds.
  */
 export default function RequireAuth() {
   const { data, error, isPending } = useSession()

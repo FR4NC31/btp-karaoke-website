@@ -119,4 +119,37 @@ test.describe('authentication', () => {
     // ...and the form must be usable again, not stuck on "Signing in…".
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeEnabled()
   })
+
+  test('AUTH-016: sign-in works straight after logging out, without a reload', { tag: '@p1' }, async ({ page }) => {
+    // Regression guard for the "first sign-in does nothing" bug.
+    //
+    // Better Auth's session atom keeps whatever the last check produced, so
+    // after a sign-out it reads `data: null, isPending: false`. The sign-in
+    // form then navigated to /studio while that value was still current, the
+    // guard read it as "no session" and redirected straight back to /signin.
+    // It alternated — the failed attempt let the atom revalidate in the
+    // background, so only every other one got through.
+    //
+    // Two details make this test catch it:
+    //   * it never calls page.goto() after the first load, because a reload
+    //     wipes the in-memory cache and hides the stale value;
+    //   * it loops, because a single attempt can land on the working side.
+    await page.goto('/signin')
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.getByLabel('Email').fill(TEST_USER.email)
+      await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
+      await page.getByRole('button', { name: 'Sign In' }).click()
+
+      // The bounce showed up as an immediate return to /signin.
+      await expect(page).toHaveURL('/studio')
+      await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+
+      // Sign out through the UI so the atom is left holding the post-logout
+      // null that the next attempt has to contend with.
+      await page.getByRole('button', { name: 'Open profile menu' }).click()
+      await page.getByRole('button', { name: 'Log out' }).click()
+      await expect(page).toHaveURL('/signin')
+    }
+  })
 })

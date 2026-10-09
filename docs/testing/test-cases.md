@@ -208,6 +208,23 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   with no message.
 - **Automation:** Playwright — **Status: Automated**
 
+### AUTH-016
+
+- **Title:** Sign-in works straight after logging out, without a reload
+- **Priority:** P1
+- **Steps:** 1. Sign in. 2. Log out. 3. Sign in again with correct
+  credentials. 4. Repeat without reloading the page.
+- **Expected:** Every attempt reaches `/studio`. None may bounce back to
+  `/signin`.
+- **Regression guard:** Better Auth's session atom keeps the value its last
+  check produced, so after a sign-out it reads `data: null, isPending: false`.
+  Navigating to `/studio` immediately after a successful sign-in let the guard
+  read that stale value, decide "no session" and redirect back — the first
+  attempt silently did nothing and only the second one got through, so the
+  failure alternated. Must not use `page.goto()` after the first load, since a
+  reload wipes the in-memory cache and hides it.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Navigation — `frontend/tests/e2e/navigation/navigation.spec.ts`

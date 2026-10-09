@@ -5,7 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { GoogleIcon } from '@hugeicons/core-free-icons'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
-import { signIn } from '../../lib/auth-client'
+import { signIn, useSession } from '../../lib/auth-client'
 import { readableError, unexpectedError } from '../../lib/auth-errors'
 
 export default function SignIn() {
@@ -14,6 +14,7 @@ export default function SignIn() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+  const { refetch } = useSession()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -27,6 +28,14 @@ export default function SignIn() {
         setError(readableError(signInError))
         return
       }
+
+      // signIn.email() sets the cookie but does not update the session atom
+      // this app's guard reads, so it still holds the pre-login value — which
+      // after a previous sign-out is `null`. Navigating straight away lets
+      // RequireAuth see that stale null, decide "no session" and bounce us
+      // back to /signin, so the first attempt appears to do nothing. Settle
+      // it first; fetchSession never rejects, failures land in the atom.
+      await refetch()
 
       navigate('/studio')
     } catch (err) {
