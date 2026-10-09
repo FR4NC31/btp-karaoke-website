@@ -23,6 +23,7 @@ import {
   Logout01Icon,
 } from '@hugeicons/core-free-icons'
 import Placeholder from '../components/Placeholder'
+import { signOut } from '../lib/auth-client'
 
 const sidebarSections = [
   {
@@ -178,8 +179,11 @@ export default function Studio() {
                   <div className="my-1 border-t border-border" />
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setProfileOpen(false)
+                      // Clear the backend session before leaving; navigating
+                      // alone would leave the cookie valid.
+                      await signOut()
                       navigate('/signin')
                     }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition hover:bg-primary-soft hover:text-error"

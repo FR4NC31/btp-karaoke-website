@@ -8,16 +8,25 @@ test.describe('authentication', () => {
     await expect(page.getByRole('button', { name: 'Open profile menu' })).toBeVisible()
   })
 
-  test('AUTH-002: any credentials are accepted (prototype mock auth)', { tag: '@p1' }, async ({ page }) => {
-    // Known limitation: auth is client-side only — there is no backend
-    // credential check yet. This pins the current prototype behavior and
-    // will intentionally FAIL when real backend auth lands, forcing a QA
-    // review (see docs/testing/test-cases.md).
+  test('AUTH-002: wrong password is rejected by the backend', { tag: '@p1' }, async ({ page }) => {
+    // Real backend auth landed. The prototype accepted any credentials;
+    // now an unknown password must fail with a visible error and stay put.
     await page.goto('/signin')
-    await page.getByLabel('Email').fill('definitely-not-a-real-user@example.com')
+    await page.getByLabel('Email').fill('qa@example.com')
     await page.getByLabel('Password', { exact: true }).fill('wrong-password-on-purpose')
     await page.getByRole('button', { name: 'Sign In' }).click()
-    await expect(page).toHaveURL('/studio')
+    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(page).toHaveURL('/signin')
+    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+  })
+
+  test('AUTH-002b: unknown account is rejected by the backend', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/signin')
+    await page.getByLabel('Email').fill('definitely-not-a-real-user@example.com')
+    await page.getByLabel('Password', { exact: true }).fill('whatever-it-is')
+    await page.getByRole('button', { name: 'Sign In' }).click()
+    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(page).toHaveURL('/signin')
   })
 
   test('AUTH-003: logout returns to sign in', { tag: '@p0' }, async ({ page }) => {

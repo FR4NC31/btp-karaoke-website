@@ -5,15 +5,30 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { GoogleIcon } from '@hugeicons/core-free-icons'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
+import { signIn } from '../../lib/auth-client'
+import { readableError } from '../../lib/auth-errors'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    console.log('sign in', { email })
+    setSubmitting(true)
+    setError('')
+
+    const { error: signInError } = await signIn.email({ email, password })
+
+    setSubmitting(false)
+
+    if (signInError) {
+      setError(readableError(signInError))
+      return
+    }
+
     navigate('/studio')
   }
 
@@ -46,11 +61,18 @@ export default function SignIn() {
             required
           />
 
+          {error && (
+            <p role="alert" className="text-sm text-error">
+              {error}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-text-primary transition hover:bg-primary-hover"
+            disabled={submitting}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Sign In
+            {submitting ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 

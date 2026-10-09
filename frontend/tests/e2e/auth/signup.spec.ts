@@ -1,11 +1,22 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
 
+/**
+ * Registration writes a real row to the database, and `user.email` is unique.
+ * A fixed email would make the second run fail with "already exists", so
+ * every call gets a fresh one unless the test overrides it.
+ */
+let emailCounter = 0
+function uniqueEmail() {
+  emailCounter += 1
+  return `qa-signup-${Date.now()}-${emailCounter}@example.com`
+}
+
 async function fillSignUpForm(page: Page, overrides: Partial<Record<string, string>> = {}) {
   const fields = {
     firstName: 'Juan',
     lastName: 'Dela Cruz',
-    email: 'juan@example.com',
+    email: uniqueEmail(),
     contact: '09171234567',
     password: 'Secret123!',
     confirmPassword: 'Secret123!',
