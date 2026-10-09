@@ -50,8 +50,8 @@ Related docs: [qa-strategy.md](qa-strategy.md) ·
 | Frontend command | `npm run dev`                                            |
 | Backend command  | `npm run dev` (`node --env-file=.env --watch serve.ts`)  |
 | API              | `GET /health`, Better Auth under `/api/auth/*`, protected `GET /api/me` |
-| Auth             | Frontend: client-side prototype mock (not wired to API). Backend: Better Auth (email/password + Google) with sessions |
-| Database         | Aiven PostgreSQL (used by Better Auth; E2E never touches it) |
+| Auth             | Frontend calls Better Auth through `better-auth/react` (email/password; Google disabled pending OAuth credentials). Sessions are cookies |
+| Database         | Aiven PostgreSQL (used by Better Auth; E2E sign-in/sign-up write real rows, so test accounts accumulate) |
 | Browser          | Chromium (only browser installed)                        |
 
 `playwright.config.ts` starts **both** dev servers automatically before the
@@ -120,18 +120,24 @@ Conventions:
 
 ## Authentication in tests
 
-Sign-in/sign-up are a **client-side prototype mock**: submitting the form
-navigates to `/studio`. There is no session, cookie or token, so
-`storageState` (auth-state reuse) provides no benefit today.
+Sign-in/sign-up call the **real backend** through Better Auth. The form sets
+a session cookie, and `/studio` is guarded by `RequireAuth`.
 
-- `helpers/auth.ts` → `signIn(page)` is used **only** by tests that must
-  exercise the real login form (AUTH-001/003, SMOKE-003/005).
-- Other suites open `/studio` directly because there is **no auth guard**
-  (documented as AUTH-004) — logging in before every test would add time
-  without covering anything new.
-- When backend auth + sessions land: add a `setup` project that logs in once
-  and saves state to `frontend/.auth/` (already git-ignored), then use
-  `storageState` for feature suites while keeping the real-form tests.
+- `setup/auth.setup.ts` is a Playwright **setup project**. It signs in once
+  and writes the cookie to `playwright/.auth/user.json` (git-ignored).
+- The `chromium` project declares `dependencies: ['setup']` and reads that
+  file as its `storageState`, so feature suites inherit a live session and
+  can open `/studio` directly.
+- `helpers/auth.ts` → `signIn(page)` still drives the real login form. It is
+  used by the setup project and by the auth suites that must exercise the
+  form itself (AUTH-001/003/009, SMOKE-003/005).
+- Suites that must start signed out — everything in `auth/` — opt out with
+  `test.use({ storageState: ANONYMOUS })`. Without this they would inherit a
+  session and pass for the wrong reason.
+
+If the whole feature suite suddenly redirects to `/signin`, the saved state
+is stale: re-run once (the setup project recreates it) or check that
+`qa@example.com` still exists in the database.
 
 No production OAuth/accounts are used. The Google button is disabled in the
 product and asserted as such (AUTH-008).
@@ -166,14 +172,16 @@ What the product actually implements today (test coverage is limited to this):
 
 - Backend probes: `SMOKE-006` (`GET BACKEND_URL/health`) and `ERROR-004`
   (unknown route → 404).
-- The backend now exposes **Better Auth** endpoints (`/api/auth/*` —
+- The backend exposes **Better Auth** endpoints (`/api/auth/*` —
   sign-up, sign-in, session, sign-out — plus protected `GET /api/me`).
-- The frontend still issues **zero API requests** (verified: no
-  `fetch`/`axios`/env usage in `frontend/src`): sign-in/sign-up remain
-  client-side mocks. Therefore login, search, favorites and profile flows
-  cannot yet be tested across frontend → API → database, and the auth API
-  has **no automated QA coverage yet** — API-level tests are the top
-  recommended next suite (see [qa-strategy.md](qa-strategy.md)).
+- The frontend calls them through **`better-auth/react`**: sign-up and
+  sign-in run against the real database, the session is a cookie, and
+  `RequireAuth` gates `/studio`. Covered end-to-end by the auth suite
+  (AUTH-001…014) plus SMOKE-003/005.
+- **Not yet covered**: direct API-level tests of `/api/auth/*` and `/api/me`
+  (wrong-password 401, protected-route 401) — still the top recommended next
+  suite (see [qa-strategy.md](qa-strategy.md)). Search, favorites and
+  profile flows remain client-side only.
 
 ## Evidence & reports
 
@@ -239,10 +247,6 @@ High-risk PRs: run the full suite locally (`npm run test:e2e`) before merge.
   **BLOCKED** at startup (environment issue, not a product bug).
 - **Search**: the Studio search input is decorative (no handler/results) —
   no search tests exist because the feature does not work yet.
-- **Auth API not wired**: Better Auth endpoints exist on the backend but
-  the frontend does not call them; UI auth tests still cover the mock flow.
-- **Protected routes / sessions in the UI**: none implemented (AUTH-004
-  pins the current behavior and must be inverted when guards land).
 - **Real playback / media errors**: no audio element or media files yet.
 - **Cross-browser**: Chromium only; Firefox/WebKit projects are commented in
   the config until installed.

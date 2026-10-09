@@ -2,6 +2,22 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 /**
+ * Where the shared authenticated session is written by setup/auth.setup.ts
+ * and read back by the `chromium` project (see playwright.config.ts).
+ *
+ * Gitignored — it is a per-run artifact holding a live session cookie.
+ */
+export const STORAGE_STATE = 'playwright/.auth/user.json'
+
+/**
+ * `test.use({ storageState: ANONYMOUS })` opts a suite out of the shared
+ * session above. Required for anything that drives the sign-in or sign-up
+ * form itself: starting those tests already authenticated would make them
+ * pass for the wrong reason.
+ */
+export const ANONYMOUS = { cookies: [], origins: [] }
+
+/**
  * Controlled test credentials backed by a real account in Aiven.
  *
  * This user is seeded once into the database and reused across runs, so
@@ -19,10 +35,10 @@ export const TEST_USER = {
 /**
  * Signs in through the real UI form and waits for the studio.
  *
- * This now goes through the backend: the form posts to Better Auth, which
- * sets a session cookie. Used by tests that must exercise the sign-in flow
- * itself (AUTH-001, AUTH-003). Other suites still navigate to /studio
- * directly because there is no route guard yet — see docs/testing/qa-strategy.md.
+ * Used by the auth suites and by `setup/auth.setup.ts`, which snapshots the
+ * resulting cookie into STORAGE_STATE. Other suites never call this — they
+ * inherit the shared session from the `chromium` project, so they can open
+ * /studio directly even though the route is now guarded.
  */
 export async function signIn(page: Page, credentials: { email: string; password: string } = TEST_USER) {
   await page.goto('/signin')

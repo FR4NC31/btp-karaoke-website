@@ -5,9 +5,10 @@ import { test, expect } from '../fixtures'
  * telemetry listing). The prototype has no working search input and no
  * song-detail/lyrics page — see docs/testing/test-cases.md (N/A section).
  *
- * /studio is opened directly: the prototype has no auth guard or session
- * to reuse (AUTH-004), so a UI sign-in would only add time here.
- * The full sign-in → discovery journey is covered by SMOKE-005.
+ * /studio is opened directly: it is guarded by RequireAuth, but the
+ * `chromium` project injects the shared session saved by setup/auth.setup.ts,
+ * so a UI sign-in here would only add time. The full sign-in → discovery
+ * journey is covered by SMOKE-005.
  */
 test.describe('karaoke discovery', () => {
   test('KARAOKE-001: studio opens with master vault collections', { tag: '@p0' }, async ({ page }) => {

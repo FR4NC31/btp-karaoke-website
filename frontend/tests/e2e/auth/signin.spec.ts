@@ -1,7 +1,12 @@
 import { test, expect } from '../fixtures'
-import { signIn, TEST_USER } from '../helpers/auth'
+import { ANONYMOUS, signIn, TEST_USER } from '../helpers/auth'
 
 test.describe('authentication', () => {
+  // These tests exercise the sign-in form itself. Inheriting the shared
+  // session would let them pass while proving nothing, so each one starts
+  // signed out (AUTH-004 in particular asserts the redirect).
+  test.use({ storageState: ANONYMOUS })
+
   test('AUTH-001: valid login reaches the studio', { tag: '@p0' }, async ({ page }) => {
     await signIn(page)
     await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
@@ -37,12 +42,17 @@ test.describe('authentication', () => {
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
   })
 
-  test('AUTH-004: /studio loads without a session (no auth guard — known limitation)', { tag: '@p2' }, async ({ page }) => {
-    // Known limitation: the prototype has no route guard. This documents
-    // current behavior; when protected routes are implemented this test
-    // must be inverted to assert a redirect to /signin.
+  test('AUTH-004: /studio redirects to sign in without a session', { tag: '@p1' }, async ({ page }) => {
+    // Route guard landed (RequireAuth). Unauthenticated access must bounce
+    // to /signin rather than rendering the studio, and `replace` means Back
+    // must not return to the guarded URL.
     await page.goto('/studio')
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page).toHaveURL('/signin')
+    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+
+    // Signed out must not leave a usable session behind.
+    await page.reload()
+    await expect(page).toHaveURL('/signin')
   })
 
   test('AUTH-005: empty required fields block submission', { tag: '@p1' }, async ({ page }) => {
@@ -78,5 +88,14 @@ test.describe('authentication', () => {
     await expect(googleButton).toBeDisabled()
     await expect(googleButton).toContainText('Soon')
     await expect(page.getByText('Google sign-in is not available yet')).toBeVisible()
+  })
+
+  test('AUTH-009: session survives a page reload', { tag: '@p1' }, async ({ page }) => {
+    // The session cookie is the whole point of the guard — if a refresh
+    // bounced the user back to /signin, signing in would be pointless.
+    await signIn(page)
+    await page.reload()
+    await expect(page).toHaveURL('/studio')
+    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
   })
 })

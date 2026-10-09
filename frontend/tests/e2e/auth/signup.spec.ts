@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
+import { ANONYMOUS } from '../helpers/auth'
 
 /**
  * Registration writes a real row to the database, and `user.email` is unique.
@@ -32,6 +33,10 @@ async function fillSignUpForm(page: Page, overrides: Partial<Record<string, stri
 }
 
 test.describe('registration', () => {
+  // Registering while already signed in would hide whether sign-up actually
+  // issues the session that the /studio guard depends on.
+  test.use({ storageState: ANONYMOUS })
+
   test('AUTH-010: valid registration reaches the studio', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/signup')
     await fillSignUpForm(page)
