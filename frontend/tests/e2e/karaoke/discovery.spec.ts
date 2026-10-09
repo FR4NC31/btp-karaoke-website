@@ -50,10 +50,10 @@ test.describe('karaoke discovery', () => {
 
   test('KARAOKE-004: sidebar session browsing highlights selection', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio')
-    await expect(page.getByRole('heading', { name: 'Mixing Studio' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Catalog Stacks' })).toBeVisible()
 
     const defaultItem = page.getByRole('button', { name: /Master Collections Vault/ })
-    const otherItem = page.getByRole('button', { name: /Recording Studio Vault/ })
+    const otherItem = page.getByRole('button', { name: /Stem Multitracks/ })
 
     // Active state is currently styling-only (no aria-pressed yet).
     await expect(defaultItem).toHaveClass(/bg-primary-soft/)

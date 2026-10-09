@@ -10,7 +10,7 @@ test.describe('navigation', () => {
   test('NAV-001: header links reach sign in and sign up', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/')
 
-    await page.getByRole('link', { name: 'Sign In' }).first().click()
+    await page.getByRole('link', { name: 'Login' }).first().click()
     await expect(page).toHaveURL('/signin')
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
 
@@ -29,6 +29,14 @@ test.describe('navigation', () => {
     await expect(page).toHaveURL('/signup')
   })
 
+  test('NAV-004: header contact link reaches the contact page', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/')
+
+    await page.getByRole('link', { name: 'Contact' }).click()
+    await expect(page).toHaveURL('/contact')
+    await expect(page.getByRole('heading', { level: 1, name: 'Direct Lines' })).toBeVisible()
+  })
+
   test.describe('mobile', () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
@@ -45,7 +53,7 @@ test.describe('navigation', () => {
       await expect(mobileNav).toBeVisible()
       await expect(page.getByRole('button', { name: 'Close menu' })).toHaveAttribute('aria-expanded', 'true')
 
-      await mobileNav.getByRole('link', { name: 'Sign In' }).click()
+      await mobileNav.getByRole('link', { name: 'Login' }).click()
       await expect(page).toHaveURL('/signin')
 
       await page.goto('/')
