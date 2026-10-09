@@ -6,6 +6,8 @@ Last updated: October 9, 2026
 
 ### Features
 
+- feat(frontend): split studio into shell with routed profile page (dcebca4)
+- feat(frontend): add About and Contact pages with shared site chrome (2e75735)
 - feat(frontend): guard the auth routes in both directions (a783831)
 - feat(frontend): guard /studio behind a session (a21478f)
 - feat(frontend): wire sign-up and sign-in to Better Auth (b5be774)
@@ -34,6 +36,8 @@ Last updated: October 9, 2026
 
 ### Other Changes
 
+- ci: build backend/.env from repo secrets in e2e workflow (859d182)
+- Merge pull request #5 from FR4NC31/feature/auth-and-route-guards (bc8dede)
 - Merge pull request #4 from FR4NC31/feat/setup-playright-with-documentation (7ffa23a)
 - test: add Playwright QA suite, CI workflow, and testing docs (8284443)
 - Merge pull request #3 from FR4NC31/feat/setup-login-method (11aff5c)

@@ -103,9 +103,10 @@ frontend/tests/e2e/
 ├── smoke/smoke.spec.ts          SMOKE-001…006   P0 "can a user use the site?"
 ├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
-├── navigation/navigation.spec.ts NAV-001…003    header, cross-links, mobile menu
+├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…004 collections, genre filter, telemetry
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
+├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
 

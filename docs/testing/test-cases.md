@@ -268,6 +268,14 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   navigates, closes after navigation.
 - **Automation:** Playwright — **Status: Automated**
 
+### NAV-004
+
+- **Title:** Header contact link reaches the contact page
+- **Priority:** P2
+- **Steps:** 1. Open `/`. 2. Click header **Contact**.
+- **Expected:** `/contact` loads with h1 "Direct Lines".
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Karaoke discovery — `frontend/tests/e2e/karaoke/discovery.spec.ts`
@@ -304,7 +312,7 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 - **Title:** Sidebar session browsing highlights selection
 - **Priority:** P2
-- **Steps:** 1. Open `/studio`. 2. Click **Recording Studio Vault**.
+- **Steps:** 1. Open `/studio`. 2. Click **Stem Multitracks (Vocals/Beds)**.
 - **Expected:** Active styling moves to the clicked item (styling-only
   state; no `aria-pressed` yet).
 - **Automation:** Playwright — **Status: Automated**
@@ -352,6 +360,30 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P2
 - **Steps:** 1. Click the **Like** heart in the player bar.
 - **Expected:** Active (primary-colored) styling toggles on/off.
+- **Automation:** Playwright — **Status: Automated**
+
+---
+
+## Profile — `frontend/tests/e2e/profile/profile.spec.ts`
+
+### PROFILE-001
+
+- **Title:** Profile menu opens the account page
+- **Priority:** P2
+- **Steps:** 1. Open `/studio`. 2. Open the profile menu. 3. Click
+  **Profile**.
+- **Expected:** `/studio/profile` loads; h1 shows the session user's name,
+  "Personal Details" section visible, email rendered from the session,
+  Location/City shows the mockup placeholder.
+- **Automation:** Playwright — **Status: Automated**
+
+### PROFILE-002
+
+- **Title:** Account and user profile tabs switch panels
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/profile`. 2. Click **User Profile**.
+  3. Click **My Account**.
+- **Expected:** Panels swap (Personal Details ↔ Public Profile).
 - **Automation:** Playwright — **Status: Automated**
 
 ---

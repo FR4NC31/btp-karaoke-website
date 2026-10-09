@@ -121,6 +121,11 @@ test.describe('authentication', () => {
   })
 
   test('AUTH-016: sign-in works straight after logging out, without a reload', { tag: '@p1' }, async ({ page }) => {
+    // Three full sign-in/out round-trips against the remote database. Under
+    // parallel load each cycle can take several seconds, so the suite-wide
+    // 30 s budget flakes; double it.
+    test.setTimeout(60_000)
+
     // Regression guard for the "first sign-in does nothing" bug.
     //
     // Better Auth's session atom keeps whatever the last check produced, so

@@ -44,6 +44,29 @@ jobs:
         working-directory: backend
         run: npm install
 
+      # backend/.env is gitignored; CI rebuilds it from repo secrets.
+      # Set them with `gh secret set <NAME>` (values never appear in chat,
+      # logs, or the repo). Source: backend/.env.example.
+      - name: Write backend/.env
+        working-directory: backend
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          BETTER_AUTH_API_KEY: ${{ secrets.BETTER_AUTH_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          {
+            echo "PORT=3000"
+            echo "FRONTEND_ORIGIN=http://localhost:5173"
+            echo "EXTRA_TRUSTED_ORIGINS="
+            echo "BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}"
+            echo "BETTER_AUTH_URL=http://localhost:3000"
+            echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
+            echo "DATABASE_URL=${DATABASE_URL}"
+            echo "DB_CA_FILE=./ca.pem"
+            echo "GOOGLE_CLIENT_ID="
+            echo "GOOGLE_CLIENT_SECRET="
+          } > .env
+
       - name: Typecheck (backend)
         working-directory: backend
         run: npm run typecheck
@@ -91,6 +114,27 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: npm install
+
+      # Same secrets-built .env as pr-checks (see above).
+      - name: Write backend/.env
+        working-directory: backend
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          BETTER_AUTH_API_KEY: ${{ secrets.BETTER_AUTH_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          {
+            echo "PORT=3000"
+            echo "FRONTEND_ORIGIN=http://localhost:5173"
+            echo "EXTRA_TRUSTED_ORIGINS="
+            echo "BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}"
+            echo "BETTER_AUTH_URL=http://localhost:3000"
+            echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
+            echo "DATABASE_URL=${DATABASE_URL}"
+            echo "DB_CA_FILE=./ca.pem"
+            echo "GOOGLE_CLIENT_ID="
+            echo "GOOGLE_CLIENT_SECRET="
+          } > .env
 
       - name: Install Playwright browsers
         working-directory: frontend
