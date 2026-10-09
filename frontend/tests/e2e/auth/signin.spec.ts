@@ -153,3 +153,19 @@ test.describe('authentication', () => {
     }
   })
 })
+
+// The other direction of the guard. AUTH-004 keeps anonymous users out of
+// /studio; this keeps signed-in users off the pages meant for anonymous
+// visitors. It keeps the shared authenticated session on purpose — that
+// session is the whole subject of the test.
+test.describe('guest-only routes', () => {
+  test('AUTH-017: signed-in users are sent from the auth pages to the studio', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/signin')
+    await expect(page).toHaveURL('/studio')
+    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+
+    await page.goto('/signup')
+    await expect(page).toHaveURL('/studio')
+    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+  })
+})

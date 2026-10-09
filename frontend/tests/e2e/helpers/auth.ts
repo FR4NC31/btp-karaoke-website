@@ -35,12 +35,19 @@ export const TEST_USER = {
 /**
  * Signs in through the real UI form and waits for the studio.
  *
+ * Clears the context's cookies first. `/signin` is a guest-only route now, so
+ * an inherited session would bounce the page straight to /studio and the form
+ * would never appear — starting from a signed-out state is part of this
+ * helper's contract, which also means suites can call it without first having
+ * to reason about their own `storageState`.
+ *
  * Used by the auth suites and by `setup/auth.setup.ts`, which snapshots the
  * resulting cookie into STORAGE_STATE. Other suites never call this — they
  * inherit the shared session from the `chromium` project, so they can open
  * /studio directly even though the route is now guarded.
  */
 export async function signIn(page: Page, credentials: { email: string; password: string } = TEST_USER) {
+  await page.context().clearCookies()
   await page.goto('/signin')
   await page.getByLabel('Email').fill(credentials.email)
   await page.getByLabel('Password', { exact: true }).fill(credentials.password)

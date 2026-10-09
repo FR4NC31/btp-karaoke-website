@@ -216,13 +216,25 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   credentials. 4. Repeat without reloading the page.
 - **Expected:** Every attempt reaches `/studio`. None may bounce back to
   `/signin`.
-- **Regression guard:** Better Auth's session atom keeps the value its last
-  check produced, so after a sign-out it reads `data: null, isPending: false`.
-  Navigating to `/studio` immediately after a successful sign-in let the guard
-  read that stale value, decide "no session" and redirect back — the first
+- **Regression guard:** the sign-in form used to navigate immediately while
+  Better Auth's session atom still held the post-logout `null`, and the guard
+  read that stale value as "no session" and redirected back — the first
   attempt silently did nothing and only the second one got through, so the
   failure alternated. Must not use `page.goto()` after the first load, since a
   reload wipes the in-memory cache and hides it.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-017
+
+- **Title:** Signed-in users are sent from the auth pages to the studio
+- **Priority:** P1
+- **Steps:** 1. Sign in. 2. Visit `/signin` directly. 3. Visit `/signup`
+  directly.
+- **Expected:** Both land on `/studio`; a login form is never shown to
+  someone who already has a session.
+- **Notes:** The mirror of AUTH-004, which keeps anonymous users out of
+  `/studio`. Implemented by `RequireGuest`, a layout route wrapping both auth
+  pages in `router.tsx`.
 - **Automation:** Playwright — **Status: Automated**
 
 ---

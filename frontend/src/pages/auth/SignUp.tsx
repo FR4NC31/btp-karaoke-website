@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
-import { signUp, useSession } from '../../lib/auth-client'
+import { signUp } from '../../lib/auth-client'
 import { readableError, unexpectedError } from '../../lib/auth-errors'
 
 export default function SignUp() {
@@ -16,7 +16,6 @@ export default function SignUp() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
-  const { refetch } = useSession()
 
   function handleContactChange(e: ChangeEvent<HTMLInputElement>) {
     setContact(e.target.value.replace(/\D/g, '').slice(0, 11))
@@ -51,13 +50,6 @@ export default function SignUp() {
         setError(readableError(signUpError))
         return
       }
-
-      // Same settle step as the sign-in form: signUp.email() issues the
-      // cookie but leaves the session atom holding whatever the last check
-      // produced, and RequireAuth redirects on that value. Refreshing it
-      // here means the guard evaluates the session we just created instead
-      // of one stale by a few milliseconds.
-      await refetch()
 
       navigate('/studio')
     } catch (err) {
