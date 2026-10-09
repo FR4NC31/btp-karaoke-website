@@ -98,4 +98,25 @@ test.describe('authentication', () => {
     await expect(page).toHaveURL('/studio')
     await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
   })
+
+  test('AUTH-015: unreachable server shows an error instead of hanging', { tag: '@p1' }, async ({ page }) => {
+    // Regression guard. handleSubmit used to await signIn.email() without a
+    // try/catch, so when the request failed the rejection escaped the async
+    // handler: setSubmitting(false) never ran, no message was set, and the
+    // form just sat on /signin with the button spinning forever.
+    await page.route('**/api/auth/sign-in/email', (route) => route.abort('failed'))
+
+    await page.goto('/signin')
+    await page.getByLabel('Email').fill(TEST_USER.email)
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
+    await page.getByRole('button', { name: 'Sign In' }).click()
+
+    // Something must be reported — and specifically our fallback, which is
+    // only reachable through the catch branch.
+    await expect(page.getByRole('alert')).toContainText('Could not reach the server')
+    await expect(page).toHaveURL('/signin')
+
+    // ...and the form must be usable again, not stuck on "Signing in…".
+    await expect(page.getByRole('button', { name: 'Sign In' })).toBeEnabled()
+  })
 })

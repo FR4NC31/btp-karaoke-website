@@ -196,6 +196,18 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Expected:** Registration succeeds → `/studio`.
 - **Automation:** Playwright — **Status: Automated**
 
+### AUTH-015
+
+- **Title:** Unreachable server shows an error instead of hanging
+- **Priority:** P1
+- **Steps:** 1. Block or stop the backend. 2. Submit the sign-in form.
+- **Expected:** An inline error appears, the URL stays `/signin`, and the
+  submit button returns to its ready state so the user can retry.
+- **Regression guard:** the handler once awaited the request without a
+  `try/catch`, so a rejection escaped and left the button spinning forever
+  with no message.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Navigation — `frontend/tests/e2e/navigation/navigation.spec.ts`

@@ -1,21 +1,52 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet } from 'react-router'
 import { useSession } from '../lib/auth-client'
 
 /**
  * Guards every route nested underneath it — no session, no access.
  *
- * The pending state must resolve before we decide anything. Redirecting
- * while the session request is still in flight would bounce a logged-in
- * user to /signin on every hard refresh of /studio, which looks like a
- * bug even though it isn't one.
+ * Three distinct states must be told apart, because collapsing them makes
+ * failures invisible:
+ *
+ *   pending  -> still checking; deciding now would bounce a signed-in user
+ *               to /signin on every hard refresh of /studio.
+ *   error    -> the check itself failed (backend down, proxy error). That is
+ *               NOT the same as "signed out", so we must not redirect as if
+ *               the user were anonymous — show it instead.
+ *   no data  -> genuinely no session: redirect.
  */
 export default function RequireAuth() {
-  const { data, isPending } = useSession()
+  const { data, error, isPending } = useSession()
+
+  useEffect(() => {
+    // Logged rather than thrown: this is a render path, and the visible
+    // message below is what the user acts on.
+    if (error) console.error('[auth] session check failed:', error)
+  }, [error])
 
   if (isPending) {
     return (
       <div className="grid min-h-dvh place-items-center bg-background text-text-primary">
         <p className="text-text-muted">Checking your session…</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-background px-4 text-text-primary">
+        <div className="max-w-md text-center">
+          <p role="alert" className="text-sm text-error">
+            Could not reach the server to check your session.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-lg border border-border px-4 py-2 text-sm transition hover:bg-surface"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     )
   }

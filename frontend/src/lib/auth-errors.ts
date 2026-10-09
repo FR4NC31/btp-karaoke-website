@@ -19,3 +19,21 @@ export function readableError(error: { code?: string; message?: string }): strin
   }
   return error.message ?? 'Something went wrong. Please try again.'
 }
+
+/**
+ * Better Auth reports *expected* failures (wrong password, duplicate email)
+ * as `{ error }`, handled by `readableError` above.
+ *
+ * It can also **reject** — when the request itself fails: backend down, dev
+ * proxy error, timeout, malformed response. Awaiting it outside a try/catch
+ * lets that rejection escape the async handler, so `setSubmitting(false)`
+ * never runs, no message is set, and the form just sits on the page with the
+ * button spinning. That is a silent failure.
+ *
+ * Call this from the `catch` block: it logs the raw cause so the failure is
+ * never invisible, and returns text that is safe to show a user.
+ */
+export function unexpectedError(scope: string, err: unknown): string {
+  console.error(`[auth] ${scope} failed:`, err)
+  return 'Could not reach the server. Please check your connection and try again.'
+}

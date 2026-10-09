@@ -181,10 +181,18 @@ export default function Studio() {
                     type="button"
                     onClick={async () => {
                       setProfileOpen(false)
-                      // Clear the backend session before leaving; navigating
-                      // alone would leave the cookie valid.
-                      await signOut()
-                      navigate('/signin')
+                      try {
+                        // Clear the backend session before leaving; navigating
+                        // alone would leave the cookie valid.
+                        await signOut()
+                      } catch (err) {
+                        console.error('[auth] sign-out failed:', err)
+                      } finally {
+                        // Leave regardless. If the server is unreachable the
+                        // cookie cannot be cleared either way, and stranding
+                        // the user here would be worse than going to /signin.
+                        navigate('/signin')
+                      }
                     }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition hover:bg-primary-soft hover:text-error"
                   >

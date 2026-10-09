@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
 import { signUp } from '../../lib/auth-client'
-import { readableError } from '../../lib/auth-errors'
+import { readableError, unexpectedError } from '../../lib/auth-errors'
 
 export default function SignUp() {
   const [firstName, setFirstName] = useState('')
@@ -35,24 +35,30 @@ export default function SignUp() {
     setSubmitting(true)
     setError('')
 
-    const { error: signUpError } = await signUp.email({
-      // Better Auth stores a single `name`; we keep the split fields too.
-      name: `${firstName} ${lastName}`.trim(),
-      email,
-      password,
-      first_name: firstName,
-      last_name: lastName,
-      contact_num: contact,
-    })
+    try {
+      const { error: signUpError } = await signUp.email({
+        // Better Auth stores a single `name`; we keep the split fields too.
+        name: `${firstName} ${lastName}`.trim(),
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        contact_num: contact,
+      })
 
-    setSubmitting(false)
+      if (signUpError) {
+        setError(readableError(signUpError))
+        return
+      }
 
-    if (signUpError) {
-      setError(readableError(signUpError))
-      return
+      navigate('/studio')
+    } catch (err) {
+      setError(unexpectedError('sign-up', err))
+    } finally {
+      // Runs on every path, including an unexpected rejection — otherwise the
+      // button stays stuck on "Creating account…" with no way to retry.
+      setSubmitting(false)
     }
-
-    navigate('/studio')
   }
 
   return (

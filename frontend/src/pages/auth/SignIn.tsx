@@ -6,7 +6,7 @@ import { GoogleIcon } from '@hugeicons/core-free-icons'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
 import { signIn } from '../../lib/auth-client'
-import { readableError } from '../../lib/auth-errors'
+import { readableError, unexpectedError } from '../../lib/auth-errors'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -20,16 +20,22 @@ export default function SignIn() {
     setSubmitting(true)
     setError('')
 
-    const { error: signInError } = await signIn.email({ email, password })
+    try {
+      const { error: signInError } = await signIn.email({ email, password })
 
-    setSubmitting(false)
+      if (signInError) {
+        setError(readableError(signInError))
+        return
+      }
 
-    if (signInError) {
-      setError(readableError(signInError))
-      return
+      navigate('/studio')
+    } catch (err) {
+      setError(unexpectedError('sign-in', err))
+    } finally {
+      // Runs on every path, including an unexpected rejection — otherwise the
+      // button stays stuck on "Signing in…" with no way to retry.
+      setSubmitting(false)
     }
-
-    navigate('/studio')
   }
 
   return (
