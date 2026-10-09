@@ -42,7 +42,8 @@ Important functionality; degraded experience but a workaround exists:
 | Area                          | Test IDs                              |
 | ----------------------------- | ------------------------------------- |
 | Form/validation rules         | AUTH-005, AUTH-006, AUTH-011…013      |
-| Known limitation: mock auth   | AUTH-002                              |
+| Invalid credentials rejected  | AUTH-002, AUTH-002b                   |
+| Session persistence           | AUTH-009                              |
 | Track listing (telemetry)     | KARAOKE-003                           |
 | Player controls               | PLAYER-001, PLAYER-003, PLAYER-004    |
 | Mobile navigation             | NAV-003                               |
@@ -56,7 +57,7 @@ Secondary behavior, styling states and edge cases:
 | Area                              | Test IDs                        |
 | --------------------------------- | ------------------------------- |
 | Prototype disclosures (Google)    | AUTH-008                        |
-| Known-limitation pinning          | AUTH-004              |
+| Protected route redirects         | AUTH-004                        |
 | Auth cross-links, error recovery  | NAV-002, AUTH-014               |
 | Sidebar/like styling states       | KARAOKE-004, PLAYER-008         |
 | Progress display, backend 404     | PLAYER-006, ERROR-004           |
@@ -98,16 +99,20 @@ Rules:
   contact, `Secret123!`) — defined in `frontend/tests/e2e/helpers/`.
 - Never: real users, production accounts, production database rows,
   production credentials, or anything committed to the repo that is a secret.
-- The prototype has no persistence, so the suite is fully re-runnable.
-- If backend persistence lands: create data through the UI/API in
-  setup/teardown with unique per-run identifiers (e.g. `qa-<runid>@example.com`).
+- **Persistence exists** (Better Auth users/sessions in Aiven), so the suite
+  stays re-runnable only because registration uses **unique per-run
+  identifiers** — `qa-signup-<timestamp>-<n>@example.com`. A fixed email
+  would make the second run fail with "already exists".
+- `qa@example.com` is the one fixed account: seeded once, reused by every
+  run as `TEST_USER`. Re-create it with `POST /api/auth/sign-up/email` if it
+  is ever deleted.
 
 ## Database & environment safety
 
-- **Aiven PostgreSQL now exists** (used by Better Auth for users/sessions).
-  The E2E suite never talks to it directly — UI tests only probe
-  `/health`, and auth flows in tests still use the client-side mock.
-- When UI flows start writing data: E2E must target a **dedicated test
+- **Aiven PostgreSQL** backs Better Auth (users/sessions). The E2E suite
+  never connects to it directly, but UI sign-in/sign-up **do** write rows to
+  it, so test accounts accumulate over runs and are safe to prune.
+- Because UI flows now write data: E2E must target a **dedicated test
   database** in the test/staging environment. Production is off-limits —
   the Playwright config already refuses non-local base URLs without an
   explicit `PLAYWRIGHT_ALLOW_EXTERNAL=1` flag.
@@ -132,8 +137,10 @@ Only mark what actually exists in the application.
 - [x] Login (AUTH-001)
 - [x] Signup (AUTH-010 + validation AUTH-011…014)
 - [x] Logout (AUTH-003)
-- [ ] Protected routes — **not implemented** (AUTH-004 pins current behavior)
-- [ ] Session handling — **not implemented** (N/A)
+- [x] Protected routes — `RequireAuth` guards `/studio` (AUTH-004 asserts the
+  redirect; AUTH-010 asserts sign-up clears it)
+- [x] Session handling — cookie persists across reload (AUTH-009); the shared
+  `storageState` session keeps feature suites authenticated
 
 ### Search
 
@@ -176,12 +183,14 @@ Only mark what actually exists in the application.
    protected-route 401 at API level.
 2. **Search E2E** (valid / empty / error / input validation) as soon as the
    Studio search input is wired to real filtering or an API.
-3. **Session persistence & protected routes** when auth becomes real — invert
-   AUTH-004, add storageState setup project.
-4. **Playback with a controlled test asset** (local audio file, never an
+3. **Playback with a controlled test asset** (local audio file, never an
    external media service) when the player gets real media.
-5. **Persistence round-trip** (add favorite → reload → still present) when a
-   database exists.
-6. **Firefox/WebKit projects** for cross-browser confidence before release.
-7. **Visual smoke (screenshot comparison)** for the Studio layout once the
+4. **Persistence round-trip** (add favorite → reload → still present) once
+   favorites are stored — Aiven already exists, the feature is still local
+   state only.
+5. **Firefox/WebKit projects** for cross-browser confidence before release.
+6. **Visual smoke (screenshot comparison)** for the Studio layout once the
    design stabilizes.
+
+Completed: session persistence & protected routes (AUTH-004 inverted,
+AUTH-009 added, `setup` project reuses `storageState`).

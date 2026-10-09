@@ -58,9 +58,23 @@ export default defineConfig({
   },
 
   projects: [
+    // Signs in once and writes playwright/.auth/user.json. Must complete
+    // before `chromium` starts, hence the dependency.
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /.*\.setup\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        // /studio is guarded, so most suites inherit a live session instead
+        // of signing in themselves. Suites that must start signed out opt
+        // out with test.use({ storageState: ANONYMOUS }).
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
     },
     // Firefox/WebKit are intentionally not configured: only Chromium is
     // installed for this project. Add projects here after running

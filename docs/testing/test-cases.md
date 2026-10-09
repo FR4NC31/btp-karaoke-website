@@ -80,13 +80,19 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### AUTH-002
 
-- **Title:** Any credentials are accepted (prototype mock auth)
-- **Priority:** P1 — *known limitation*
-- **Steps:** 1. Sign in with a non-existent email and wrong password.
-- **Expected (current):** Login succeeds (auth is client-side mock; no
-  backend check exists). **When backend auth lands this case must be
-  rewritten to expect rejection.**
-- **Automation:** Playwright — **Status: Automated (pins prototype behavior)**
+- **Title:** Wrong password is rejected by the backend
+- **Priority:** P1
+- **Steps:** 1. Sign in with a valid email and an incorrect password.
+- **Expected:** Inline error shown, URL stays `/signin`, no session issued.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-002b
+
+- **Title:** Unknown account is rejected by the backend
+- **Priority:** P1
+- **Steps:** 1. Sign in with an email that has never registered.
+- **Expected:** Inline error shown, URL stays `/signin`.
+- **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-003
 
@@ -98,12 +104,12 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### AUTH-004
 
-- **Title:** `/studio` loads without a session (no auth guard)
-- **Priority:** P2 — *known limitation*
+- **Title:** `/studio` redirects to sign in without a session
+- **Priority:** P1
 - **Steps:** 1. Open `/studio` directly without logging in.
-- **Expected (current):** Studio renders. **When route guards are
-  implemented, invert this case to expect a redirect to `/signin`.**
-- **Automation:** Playwright — **Status: Automated (pins prototype behavior)**
+- **Expected:** Redirect to `/signin` with "Welcome back" visible. Reloading
+  must not return to `/studio`.
+- **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-005
 
@@ -136,6 +142,15 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P2
 - **Steps:** 1. Open `/signin`.
 - **Expected:** Google button disabled, "Soon" badge, prototype notice text.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-009
+
+- **Title:** Session survives a page reload
+- **Priority:** P1
+- **Steps:** 1. Sign in. 2. Reload the page.
+- **Expected:** Still on `/studio` with the studio rendered — the Better Auth
+  cookie persists, so the guard resolves without re-authenticating.
 - **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-010
@@ -179,6 +194,47 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Submit invalid short contact → error. 2. Fix contact.
   3. Submit again.
 - **Expected:** Registration succeeds → `/studio`.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-015
+
+- **Title:** Unreachable server shows an error instead of hanging
+- **Priority:** P1
+- **Steps:** 1. Block or stop the backend. 2. Submit the sign-in form.
+- **Expected:** An inline error appears, the URL stays `/signin`, and the
+  submit button returns to its ready state so the user can retry.
+- **Regression guard:** the handler once awaited the request without a
+  `try/catch`, so a rejection escaped and left the button spinning forever
+  with no message.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-016
+
+- **Title:** Sign-in works straight after logging out, without a reload
+- **Priority:** P1
+- **Steps:** 1. Sign in. 2. Log out. 3. Sign in again with correct
+  credentials. 4. Repeat without reloading the page.
+- **Expected:** Every attempt reaches `/studio`. None may bounce back to
+  `/signin`.
+- **Regression guard:** the sign-in form used to navigate immediately while
+  Better Auth's session atom still held the post-logout `null`, and the guard
+  read that stale value as "no session" and redirected back — the first
+  attempt silently did nothing and only the second one got through, so the
+  failure alternated. Must not use `page.goto()` after the first load, since a
+  reload wipes the in-memory cache and hides it.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-017
+
+- **Title:** Signed-in users are sent from the auth pages to the studio
+- **Priority:** P1
+- **Steps:** 1. Sign in. 2. Visit `/signin` directly. 3. Visit `/signup`
+  directly.
+- **Expected:** Both land on `/studio`; a login form is never shown to
+  someone who already has a session.
+- **Notes:** The mirror of AUTH-004, which keeps anonymous users out of
+  `/studio`. Implemented by `RequireGuest`, a layout route wrapping both auth
+  pages in `router.tsx`.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -345,12 +401,12 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Area                                   | Status                | Notes                                                        |
 | -------------------------------------- | --------------------- | ------------------------------------------------------------ |
 | Valid search / no-results / search errors / search validation | N/A | Studio search input is decorative (no state, no handler).    |
-| Invalid-credentials rejection (UI)               | N/A                   | Frontend still uses mock auth (see AUTH-002); the backend rejects wrong passwords with 401 but the UI does not call it yet. |
-| Session persistence (UI)                         | N/A                   | No session in the frontend yet (backend sessions exist via Better Auth). |
-| Protected pages (UI) / 401 / 403 in the UI       | N/A                   | No route guards in the frontend (AUTH-004 pins current behavior); backend `/api/me` returns 401 but is untested. |
-| API failure / 500 handling in UI       | N/A                   | Frontend makes zero API calls today.                         |
+| Invalid-credentials rejection (UI)               | Covered               | AUTH-002 / AUTH-002b: the form posts to the backend, which returns 401, and the error renders inline. |
+| Session persistence (UI)                         | Covered               | AUTH-009: the Better Auth cookie survives a reload, so `/studio` still resolves. |
+| Protected pages (UI) / 401 / 403 in the UI       | Covered               | `RequireAuth` guards `/studio` and redirects to `/signin` (AUTH-004). Backend `/api/me` returns 401 without a session. |
+| API failure / 500 handling in UI       | N/A                   | Auth calls surface their error codes as inline form messages (`src/lib/auth-errors.ts`); no 500/retry handling exists yet. |
 | Favorites / playlists round-trip       | N/A                   | Not implemented (like button is local state only).           |
-| Database persistence after refresh     | N/A                   | Aiven PostgreSQL exists (Better Auth) but no UI flow writes to it yet. |
+| Database persistence after refresh     | Partial               | Sign-up/sign-in read and write Aiven (AUTH-010, AUTH-001) and the session persists (AUTH-009); favorites/playlists are still local state only. |
 | Song detail / lyrics synchronization   | N/A                   | No detail page or lyrics implementation.                     |
 | Real playback, progress movement, volume | N/A                 | No audio element/media; player is UI state only.             |
 | Media loading failure / unavailable song | N/A                 | No media pipeline.                                           |

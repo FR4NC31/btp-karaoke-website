@@ -3,6 +3,8 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
+import { signUp } from '../../lib/auth-client'
+import { readableError, unexpectedError } from '../../lib/auth-errors'
 
 export default function SignUp() {
   const [firstName, setFirstName] = useState('')
@@ -12,13 +14,14 @@ export default function SignUp() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
 
   function handleContactChange(e: ChangeEvent<HTMLInputElement>) {
     setContact(e.target.value.replace(/\D/g, '').slice(0, 11))
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (contact.length !== 11) {
       setError('Contact number must be exactly 11 digits')
@@ -28,9 +31,34 @@ export default function SignUp() {
       setError('Passwords do not match')
       return
     }
+
+    setSubmitting(true)
     setError('')
-    console.log('register', { firstName, lastName, email, contact })
-    navigate('/studio')
+
+    try {
+      const { error: signUpError } = await signUp.email({
+        // Better Auth stores a single `name`; we keep the split fields too.
+        name: `${firstName} ${lastName}`.trim(),
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        contact_num: contact,
+      })
+
+      if (signUpError) {
+        setError(readableError(signUpError))
+        return
+      }
+
+      navigate('/studio')
+    } catch (err) {
+      setError(unexpectedError('sign-up', err))
+    } finally {
+      // Runs on every path, including an unexpected rejection — otherwise the
+      // button stays stuck on "Creating account…" with no way to retry.
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -115,9 +143,10 @@ export default function SignUp() {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-text-primary transition hover:bg-primary-hover"
+            disabled={submitting}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Register
+            {submitting ? 'Creating account…' : 'Register'}
           </button>
         </form>
 

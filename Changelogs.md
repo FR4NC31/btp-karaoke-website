@@ -2,10 +2,13 @@
 
 ## Unreleased
 
-Last updated: October 8, 2026
+Last updated: October 9, 2026
 
 ### Features
 
+- feat(frontend): guard the auth routes in both directions (a783831)
+- feat(frontend): guard /studio behind a session (a21478f)
+- feat(frontend): wire sign-up and sign-in to Better Auth (b5be774)
 - feat: mount Better Auth handler, session middleware, and dash plugin (f01b98c)
 - feat: set up Better Auth with Aiven PostgreSQL user table (46a598b)
 - feat: Implement Login/Sign up form with dashboard (9afb6f2)
@@ -13,6 +16,8 @@ Last updated: October 8, 2026
 
 ### Bug Fixes
 
+- fix(frontend): settle the session before navigating to /studio (67b7abb)
+- fix(frontend): handle rejected auth requests instead of hanging (fd17c80)
 - fix: drop mobile nav placeholder comment (b2d95b8)
 - fix: scope evidence attachment to recorded activity (eb8885b)
 - fix: address PR review issues in tests, UI and docs (4b7030b)
@@ -22,12 +27,14 @@ Last updated: October 8, 2026
 
 ### Chores
 
+- chore: update Aiven CA cert after service rotation (63d0527)
 - chore: exclude protected branches from changelog bot pushes (6fe9e6a)
 - chore: show date only in changelog (fa81fde)
 - chore: format development changelog (d79c6c6)
 
 ### Other Changes
 
+- Merge pull request #4 from FR4NC31/feat/setup-playright-with-documentation (7ffa23a)
 - test: add Playwright QA suite, CI workflow, and testing docs (8284443)
 - Merge pull request #3 from FR4NC31/feat/setup-login-method (11aff5c)
 - Setup frontend and backend dependencies (c2599df)

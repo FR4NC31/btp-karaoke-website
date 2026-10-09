@@ -1,6 +1,12 @@
 import { test, expect } from '../fixtures'
+import { ANONYMOUS } from '../helpers/auth'
 
 test.describe('navigation', () => {
+  // Every test here walks to /signin or /signup, which now send a
+  // signed-in user to /studio instead (AUTH-017). Asserting those links
+  // reach their pages therefore requires starting signed out.
+  test.use({ storageState: ANONYMOUS })
+
   test('NAV-001: header links reach sign in and sign up', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/')
 

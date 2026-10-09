@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures'
-import { signIn } from '../helpers/auth'
+import { ANONYMOUS, signIn } from '../helpers/auth'
 import { BACKEND_URL } from '../helpers/env'
 
 /**
@@ -13,11 +13,17 @@ test.describe('smoke', () => {
     await expect(page.getByRole('link', { name: 'BTP KARAOKE' })).toBeVisible()
   })
 
-  test('SMOKE-002: main navigation works', { tag: '@p0' }, async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('link', { name: 'Sign In' }).first().click()
-    await expect(page).toHaveURL('/signin')
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+  test.describe('as a guest', () => {
+    // /signin is guest-only, so the shared session would redirect this to
+    // /studio and the link would no longer reach the sign-in page.
+    test.use({ storageState: ANONYMOUS })
+
+    test('SMOKE-002: main navigation works', { tag: '@p0' }, async ({ page }) => {
+      await page.goto('/')
+      await page.getByRole('link', { name: 'Sign In' }).first().click()
+      await expect(page).toHaveURL('/signin')
+      await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    })
   })
 
   test('SMOKE-003: user can authenticate', { tag: '@p0' }, async ({ page }) => {
