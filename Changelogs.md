@@ -20,6 +20,7 @@ Last updated: October 10, 2026
 
 ### Bug Fixes
 
+- fix(ci): set dummy Google OAuth creds in e2e env (3938cb3)
 - fix(frontend): settle the session before navigating to /studio (67b7abb)
 - fix(frontend): handle rejected auth requests instead of hanging (fd17c80)
 - fix: drop mobile nav placeholder comment (b2d95b8)
@@ -38,6 +39,7 @@ Last updated: October 10, 2026
 
 ### Other Changes
 
+- Merge pull request #8 from FR4NC31/feat/implement-realprofile (1ecbec7)
 - Merge pull request #7 from FR4NC31/feat/google-auth (cab4fd1)
 - docs(auth): document account-linking policy (db53a46)
 - ﻿feat(auth): wire Google sign-in via Better Auth (2b5bd5b)
