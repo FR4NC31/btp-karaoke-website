@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 9, 2026
+Last updated: October 10, 2026
 
 ### Features
 
@@ -36,6 +36,7 @@ Last updated: October 9, 2026
 
 ### Other Changes
 
+- ﻿feat(auth): wire Google sign-in via Better Auth (2b5bd5b)
 - Merge pull request #6 from FR4NC31/feat/implement-features-and-connection (418335b)
 - ci: build backend/.env from repo secrets in e2e workflow (859d182)
 - Merge pull request #5 from FR4NC31/feature/auth-and-route-guards (bc8dede)
