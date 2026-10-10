@@ -6,6 +6,7 @@ Last updated: October 10, 2026
 
 ### Features
 
+- feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
 - feat(frontend): add About and Contact pages with shared site chrome (2e75735)
 - feat(frontend): guard the auth routes in both directions (a783831)
