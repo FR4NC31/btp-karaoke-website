@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { GoogleIcon } from '@hugeicons/core-free-icons'
 import TextInput from '../../components/TextInput'
+import googleIcon from '../../assets/icons/googleIcon.svg'
 import PasswordField from '../../components/PasswordField'
 import { signIn } from '../../lib/auth-client'
 import { oauthError, readableError, unexpectedError } from '../../lib/auth-errors'
@@ -138,7 +137,7 @@ export default function SignIn() {
           disabled={googleSubmitting}
           className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-primary transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <HugeiconsIcon icon={GoogleIcon} size={18} />
+          <img src={googleIcon} alt="" width={18} height={18} />
           {googleSubmitting ? 'Redirecting to Google…' : 'Continue with Google'}
         </button>
 

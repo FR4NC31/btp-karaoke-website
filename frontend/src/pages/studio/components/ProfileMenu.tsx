@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, Settings01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
-import Placeholder from '../../../components/Placeholder'
+import UserAvatar from '../../../components/UserAvatar'
 import { signOut, useSession } from '../../../lib/auth-client'
 import { readableError, unexpectedError } from '../../../lib/auth-errors'
 
@@ -13,8 +13,8 @@ import { readableError, unexpectedError } from '../../../lib/auth-errors'
  *
  * Name and email come from the live Better Auth session, so the menu always
  * reflects the account that signed in (first/last name recorded at sign-up;
- * the single `name` column is the fallback). Profile picture is not wired
- * yet — the striped placeholder avatar stays until it is.
+ * the single `name` column is the fallback). Profile picture shows session
+ * `user.image` (Google OAuth) or the striped placeholder.
  */
 export default function ProfileMenu() {
   const [profileOpen, setProfileOpen] = useState(false)
@@ -75,7 +75,12 @@ export default function ProfileMenu() {
           profileOpen ? 'ring-2 ring-primary' : 'hover:ring-2 hover:ring-border'
         }`}
       >
-        <Placeholder icon={UserIcon} iconSize={16} className="size-9 rounded-full" />
+        <UserAvatar
+          image={user?.image}
+          icon={UserIcon}
+          iconSize={16}
+          className="size-9 rounded-full"
+        />
       </button>
 
       {profileOpen && (

@@ -11,7 +11,7 @@ import {
   CheckmarkCircle01Icon,
   MusicNote01Icon,
 } from '@hugeicons/core-free-icons'
-import Placeholder from '../../components/Placeholder'
+import UserAvatar from '../../components/UserAvatar'
 import { useSession } from '../../lib/auth-client'
 
 /**
@@ -75,7 +75,12 @@ export default function ProfilePage() {
           {/* Profile card */}
           <section className="flex flex-wrap items-start gap-5 rounded-xl border border-border bg-surface p-6">
             <div className="relative shrink-0">
-              <Placeholder icon={UserIcon} iconSize={36} className="size-24 rounded-xl" />
+              <UserAvatar
+                image={user?.image}
+                icon={UserIcon}
+                iconSize={36}
+                className="size-24 rounded-xl"
+              />
               <span className="absolute -right-1 -bottom-1 size-4 rounded-full border-2 border-surface bg-success" />
             </div>
 
