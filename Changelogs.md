@@ -6,6 +6,7 @@ Last updated: October 10, 2026
 
 ### Features
 
+- feat: Implement real user profile image from database (5843a7c)
 - feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
 - feat(frontend): add About and Contact pages with shared site chrome (2e75735)
@@ -37,6 +38,7 @@ Last updated: October 10, 2026
 
 ### Other Changes
 
+- Merge pull request #7 from FR4NC31/feat/google-auth (cab4fd1)
 - docs(auth): document account-linking policy (db53a46)
 - ﻿feat(auth): wire Google sign-in via Better Auth (2b5bd5b)
 - Merge pull request #6 from FR4NC31/feat/implement-features-and-connection (418335b)
