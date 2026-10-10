@@ -50,6 +50,34 @@ export const auth = betterAuth({
       }),
     },
   },
+  // Policy: one identity per sign-in method — no implicit account linking.
+  //
+  // A Google sign-in whose email already has a password account is refused
+  // rather than merged. Better Auth 302s back to /signin?error=account_not_linked
+  // and the UI tells the person to sign in with the password they registered
+  // with (see OAUTH_MESSAGES in frontend/src/lib/auth-errors.ts).
+  //
+  // Better Auth enforces this by default, through `requireLocalEmailVerified`,
+  // and that default matters more than it looks here: nothing ever sets
+  // emailVerified=true locally, because there is no SMTP or verification flow.
+  // Password users therefore sit at false while Google users arrive at true.
+  // Merging on Google's claim alone would let anyone pre-register a victim's
+  // email without proving ownership of it, then hold on to password access
+  // once the real owner links their Google account — an account takeover.
+  //
+  // If linking is ever wanted, this is the toggle, with that risk accepted:
+  //
+  //   account: {
+  //     accountLinking: {
+  //       enabled: true,
+  //       trustedProviders: ['google'],
+  //       requireLocalEmailVerified: false,
+  //     },
+  //   },
+  //
+  // The sound route instead is real email verification
+  // (emailAndPassword.requireEmailVerification plus a Resend/SMTP sender), so
+  // a local email is proven before anything is allowed to merge into it.
   user: {
     additionalFields: {
       first_name: {
