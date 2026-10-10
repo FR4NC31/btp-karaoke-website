@@ -63,8 +63,11 @@ jobs:
             echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
             echo "DATABASE_URL=${DATABASE_URL}"
             echo "DB_CA_FILE=./ca.pem"
-            echo "GOOGLE_CLIENT_ID="
-            echo "GOOGLE_CLIENT_SECRET="
+            # Dummy non-empty values: AUTH-008 stubs the Google page itself,
+            # so the backend only needs *some* client id to build the OAuth
+            # redirect URL. Empty values make Better Auth 500 the handoff.
+            echo "GOOGLE_CLIENT_ID=e2e-dummy-client-id"
+            echo "GOOGLE_CLIENT_SECRET=e2e-dummy-client-secret"
           } > .env
 
       - name: Typecheck (backend)
@@ -132,8 +135,9 @@ jobs:
             echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
             echo "DATABASE_URL=${DATABASE_URL}"
             echo "DB_CA_FILE=./ca.pem"
-            echo "GOOGLE_CLIENT_ID="
-            echo "GOOGLE_CLIENT_SECRET="
+            # Dummy non-empty values — same reason as pr-checks above.
+            echo "GOOGLE_CLIENT_ID=e2e-dummy-client-id"
+            echo "GOOGLE_CLIENT_SECRET=e2e-dummy-client-secret"
           } > .env
 
       - name: Install Playwright browsers
