@@ -82,12 +82,45 @@ test.describe('authentication', () => {
     await expect(passwordInput).toHaveAttribute('type', 'password')
   })
 
-  test('AUTH-008: Google sign-in is disabled and labeled as prototype', { tag: '@p2' }, async ({ page }) => {
+  test('AUTH-008: Google sign-in is offered and hands off to Google', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/signin')
+
     const googleButton = page.getByRole('button', { name: 'Continue with Google' })
-    await expect(googleButton).toBeDisabled()
-    await expect(googleButton).toContainText('Soon')
-    await expect(page.getByText('Google sign-in is not available yet')).toBeVisible()
+    await expect(googleButton).toBeEnabled()
+    // The prototype disclosure only existed while the button was a stub.
+    await expect(page.getByText('Google sign-in is not available yet')).toHaveCount(0)
+
+    // Serve a stub so the test never depends on Google's real login page: we
+    // only need to prove we were *sent* there, carrying the callback path the
+    // backend will have registered in the Google console.
+    await page.route('https://accounts.google.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><title>Google stub</title>',
+      }),
+    )
+
+    await googleButton.click()
+    await page.waitForURL(/https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth/)
+
+    const params = new URL(page.url()).searchParams
+    expect(params.get('client_id')).toBeTruthy()
+    expect(params.get('state')).toBeTruthy()
+    expect(params.get('redirect_uri')).toMatch(/\/api\/auth\/callback\/google$/)
+  })
+
+  test('AUTH-018: an OAuth failure arriving as a query param is shown', { tag: '@p2' }, async ({ page }) => {
+    // Social sign-in never rejects a request — Better Auth 302s back to
+    // errorCallbackURL with a machine code in the query string. Ignoring
+    // `?error=` would leave the user staring at a silently blank form.
+    await page.goto('/signin?error=access_denied&error_description=The+user+cancelled')
+
+    await expect(page.getByRole('alert')).toHaveText('Google sign-in was cancelled.')
+    // Still on the sign-in page — the error must not bounce us to /studio.
+    // The query string it arrived with deliberately stays put, so a refresh
+    // re-surfaces the same message instead of dropping it silently.
+    expect(new URL(page.url()).pathname).toBe('/signin')
   })
 
   test('AUTH-009: session survives a page reload', { tag: '@p1' }, async ({ page }) => {

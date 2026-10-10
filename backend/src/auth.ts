@@ -34,6 +34,20 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      // Google's OIDC profile carries `given_name`/`family_name`, but never
+      // our `first_name`/`last_name`/`contact_num`. Those three are
+      // `required: true` below and NOT NULL in the migration, and Better Auth
+      // validates them while *creating* the user — before any user hook runs —
+      // so without this mapping every first-time Google sign-up dies with
+      // "first_name is required" and the callback reports
+      // "unable_to_create_user".
+      mapProfileToUser: (profile) => ({
+        first_name: profile.given_name ?? '',
+        last_name: profile.family_name ?? '',
+        // Google exposes no phone claim for the scopes we request, so leave it
+        // blank rather than invent a value. ProfilePage renders "Not set".
+        contact_num: '',
+      }),
     },
   },
   user: {

@@ -1,19 +1,32 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { GoogleIcon } from '@hugeicons/core-free-icons'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
 import { signIn } from '../../lib/auth-client'
-import { readableError, unexpectedError } from '../../lib/auth-errors'
+import { oauthError, readableError, unexpectedError } from '../../lib/auth-errors'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // A failed Google flow never rejects a request — Better Auth redirects back
+  // to `errorCallbackURL` with a machine code in the query string, so if we
+  // ignore it the user lands on a silently blank form.
+  //
+  // Read once in the state initializer instead of an effect: this arrives via
+  // a full-page redirect, so there is no later change to subscribe to, and an
+  // effect calling setError would trip react-hooks/set-state-in-effect.
+  const [error, setError] = useState(() => {
+    const code = searchParams.get('error')
+    return code ? oauthError(code, searchParams.get('error_description')) : ''
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -38,6 +51,34 @@ export default function SignIn() {
       // Runs on every path, including an unexpected rejection — otherwise the
       // button stays stuck on "Signing in…" with no way to retry.
       setSubmitting(false)
+    }
+  }
+
+  async function handleGoogle() {
+    setGoogleSubmitting(true)
+    setError('')
+
+    try {
+      // Both targets must be absolute. Google hands the browser back to the
+      // backend (`BETTER_AUTH_URL`/api/auth/callback/google), and Better Auth
+      // then 302s to `callbackURL` verbatim — a relative "/studio" would
+      // resolve against localhost:3000 and hit the API, not the SPA.
+      const origin = window.location.origin
+      const { error: socialError } = await signIn.social({
+        provider: 'google',
+        callbackURL: `${origin}/studio`,
+        errorCallbackURL: `${origin}/signin`,
+      })
+
+      // On success Better Auth returns a `url` and its client-side redirect
+      // plugin navigates straight to Google, so reaching this line means the
+      // flow never started. Report it instead of leaving a dead button.
+      if (socialError) setError(readableError(socialError))
+    } catch (err) {
+      setError(unexpectedError('Google sign-in', err))
+    } finally {
+      // Only meaningfully runs on failure — a successful flow navigates away.
+      setGoogleSubmitting(false)
     }
   }
 
@@ -93,18 +134,13 @@ export default function SignIn() {
 
         <button
           type="button"
-          disabled
-          className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-muted opacity-70 transition"
+          onClick={handleGoogle}
+          disabled={googleSubmitting}
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-primary transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
           <HugeiconsIcon icon={GoogleIcon} size={18} />
-          Continue with Google
-          <span className="ml-1 rounded border border-border px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-text-muted uppercase">
-            Soon
-          </span>
+          {googleSubmitting ? 'Redirecting to Google…' : 'Continue with Google'}
         </button>
-        <p className="mt-2 text-center text-[11px] text-text-muted">
-          Google sign-in is not available yet — this is a prototype.
-        </p>
 
         <p className="mt-6 text-center text-sm text-text-secondary">
           Don&apos;t have an account?{' '}

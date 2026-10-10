@@ -140,8 +140,10 @@ If the whole feature suite suddenly redirects to `/signin`, the saved state
 is stale: re-run once (the setup project recreates it) or check that
 `qa@example.com` still exists in the database.
 
-No production OAuth/accounts are used. The Google button is disabled in the
-product and asserted as such (AUTH-008).
+No production OAuth/accounts are used. The Google button is wired to the real
+Better Auth hand-off, but Playwright stubs Google's page, so the test asserts
+the outgoing authorization URL rather than completing a consent (AUTH-008);
+OAuth failures redirected back as query params are covered by AUTH-018.
 
 ## Test data
 
