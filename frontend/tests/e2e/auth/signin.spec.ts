@@ -123,6 +123,41 @@ test.describe('authentication', () => {
     expect(new URL(page.url()).pathname).toBe('/signin')
   })
 
+  test('AUTH-019: a refused Google link points at the password account', {
+    tag: '@p2',
+  }, async ({ page }) => {
+    // Better Auth will not merge a Google identity into an existing local
+    // user whose email was never verified, so a person who already signed up
+    // with this address always lands here. Without a mapped message the code
+    // degrades to a generic "sign-in failed" that hides the account they
+    // already have — and the way out is to use it.
+    await page.goto('/signin?error=account_not_linked')
+
+    await expect(page.getByRole('alert')).toContainText(
+      'Sign in with your email and password instead',
+    )
+    expect(new URL(page.url()).pathname).toBe('/signin')
+  })
+
+  test('AUTH-020: a failed logout is reported, not silently bounced', { tag: '@p1' }, async ({ page }) => {
+    // Better Auth's sign-out endpoint only fails when the request never
+    // lands (without `catchAllError` the client lets that rejection
+    // through). Navigating anyway would put a live cookie behind /signin,
+    // where RequireGuest sends us straight back to /studio — a logout that
+    // looks like it did nothing, with the cause only in the console.
+    test.setTimeout(60_000)
+    await signIn(page)
+    await page.route('**/api/auth/sign-out', (route) => route.abort('failed'))
+
+    await page.getByRole('button', { name: 'Open profile menu' }).click()
+    await page.getByRole('button', { name: 'Log out' }).click()
+
+    await expect(page.getByRole('alert')).toContainText('Could not reach the server')
+    await expect(page).toHaveURL('/studio')
+    // ...and it must stay retryable rather than sticking on "Signing out…".
+    await expect(page.getByRole('button', { name: 'Log out' })).toBeEnabled()
+  })
+
   test('AUTH-009: session survives a page reload', { tag: '@p1' }, async ({ page }) => {
     // The session cookie is the whole point of the guard — if a refresh
     // bounced the user back to /signin, signing in would be pointless.

@@ -4,6 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, Settings01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
 import Placeholder from '../../../components/Placeholder'
 import { signOut, useSession } from '../../../lib/auth-client'
+import { readableError, unexpectedError } from '../../../lib/auth-errors'
 
 /**
  * Avatar button + dropdown in the studio top bar. Owns its own open state,
@@ -17,6 +18,8 @@ import { signOut, useSession } from '../../../lib/auth-client'
  */
 export default function ProfileMenu() {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
   const navigate = useNavigate()
   const { data } = useSession()
 
@@ -35,19 +38,30 @@ export default function ProfileMenu() {
   }, [profileOpen])
 
   async function handleSignOut() {
-    setProfileOpen(false)
+    if (signingOut) return
+    setSignOutError('')
+    setSigningOut(true)
     try {
       // Clear the backend session before leaving; navigating
       // alone would leave the cookie valid.
-      await signOut()
+      const { error } = await signOut()
+      if (error) {
+        // Stay put. Leaving would put a still-valid cookie behind /signin,
+        // where RequireGuest sends us straight back to the studio — a logout
+        // that looks like it silently did nothing.
+        setSignOutError(readableError(error))
+        return
+      }
     } catch (err) {
-      console.error('[auth] sign-out failed:', err)
+      // Rejected rather than answered: the server never saw the request, so
+      // the cookie is still live. Report it instead of pretending it worked.
+      setSignOutError(unexpectedError('sign-out', err))
+      return
     } finally {
-      // Leave regardless. If the server is unreachable the
-      // cookie cannot be cleared either way, and stranding
-      // the user here would be worse than going to /signin.
-      navigate('/signin')
+      setSigningOut(false)
     }
+    setProfileOpen(false)
+    navigate('/signin')
   }
 
   return (
@@ -95,11 +109,17 @@ export default function ProfileMenu() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition hover:bg-primary-soft hover:text-error"
+              disabled={signingOut}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition hover:bg-primary-soft hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
             >
               <HugeiconsIcon icon={Logout01Icon} size={16} />
-              Log out
+              {signingOut ? 'Signing out…' : 'Log out'}
             </button>
+            {signOutError && (
+              <p role="alert" className="px-4 pb-2 pt-1 text-xs text-error">
+                {signOutError}
+              </p>
+            )}
           </div>
         </>
       )}
