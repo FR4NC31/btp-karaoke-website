@@ -138,10 +138,18 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### AUTH-008
 
-- **Title:** Google sign-in is disabled and labeled as prototype
+- **Title:** Google sign-in is offered and hands off to Google
 - **Priority:** P2
-- **Steps:** 1. Open `/signin`.
-- **Expected:** Google button disabled, "Soon" badge, prototype notice text.
+- **Steps:** 1. Open `/signin`. 2. Click **Continue with Google**.
+- **Expected:** The button is enabled and no prototype disclosure remains.
+  The browser is sent to Google's authorization endpoint carrying our
+  `client_id`, a `state`, and a `redirect_uri` that ends
+  `/api/auth/callback/google` — the exact URI that must be registered as an
+  Authorized redirect URI in the Google Cloud console.
+- **Notes:** Google's real login page is stubbed by a Playwright route, so the
+  test proves the hand-off without touching Google or needing an account. The
+  consent step itself is not automated — see the OAuth row in the coverage
+  matrix.
 - **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-009
@@ -235,6 +243,22 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Notes:** The mirror of AUTH-004, which keeps anonymous users out of
   `/studio`. Implemented by `RequireGuest`, a layout route wrapping both auth
   pages in `router.tsx`.
+- **Automation:** Playwright — **Status: Automated**
+
+### AUTH-018
+
+- **Title:** An OAuth failure arriving as a query param is shown
+- **Priority:** P2
+- **Steps:** 1. Visit
+  `/signin?error=access_denied&error_description=The+user+cancelled`.
+- **Expected:** The sign-in page renders "Google sign-in was cancelled." in the
+  alert slot and stays on `/signin`.
+- **Notes:** Social sign-in never rejects a request — Better Auth 302s back to
+  `errorCallbackURL` with a machine code in the query string. `SignIn.tsx`
+  reads that in its state initializer (not an effect, which would trip
+  `react-hooks/set-state-in-effect`), and `oauthError()` in
+  `src/lib/auth-errors.ts` maps the codes. The query string is deliberately
+  left in place so a refresh re-surfaces the message.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -442,5 +466,5 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Song detail / lyrics synchronization   | N/A                   | No detail page or lyrics implementation.                     |
 | Real playback, progress movement, volume | N/A                 | No audio element/media; player is UI state only.             |
 | Media loading failure / unavailable song | N/A                 | No media pipeline.                                           |
-| OAuth login flow (Google)              | N/A                   | Button disabled in product (covered by AUTH-008).            |
+| OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Backend auth API tests                 | **Recommended next**  | `/api/auth/*` + `/api/me` exist (sign-up 200, sign-in 200, wrong password 401) with no automated coverage yet.        |

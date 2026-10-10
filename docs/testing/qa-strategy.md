@@ -56,7 +56,7 @@ Secondary behavior, styling states and edge cases:
 
 | Area                              | Test IDs                        |
 | --------------------------------- | ------------------------------- |
-| Prototype disclosures (Google)    | AUTH-008                        |
+| Google OAuth hand-off, OAuth errors | AUTH-008, AUTH-018           |
 | Protected route redirects         | AUTH-004                        |
 | Auth cross-links, error recovery  | NAV-002, AUTH-014               |
 | Sidebar/like styling states       | KARAOKE-004, PLAYER-008         |

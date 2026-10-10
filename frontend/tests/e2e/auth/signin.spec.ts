@@ -82,12 +82,80 @@ test.describe('authentication', () => {
     await expect(passwordInput).toHaveAttribute('type', 'password')
   })
 
-  test('AUTH-008: Google sign-in is disabled and labeled as prototype', { tag: '@p2' }, async ({ page }) => {
+  test('AUTH-008: Google sign-in is offered and hands off to Google', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/signin')
+
     const googleButton = page.getByRole('button', { name: 'Continue with Google' })
-    await expect(googleButton).toBeDisabled()
-    await expect(googleButton).toContainText('Soon')
-    await expect(page.getByText('Google sign-in is not available yet')).toBeVisible()
+    await expect(googleButton).toBeEnabled()
+    // The prototype disclosure only existed while the button was a stub.
+    await expect(page.getByText('Google sign-in is not available yet')).toHaveCount(0)
+
+    // Serve a stub so the test never depends on Google's real login page: we
+    // only need to prove we were *sent* there, carrying the callback path the
+    // backend will have registered in the Google console.
+    await page.route('https://accounts.google.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><title>Google stub</title>',
+      }),
+    )
+
+    await googleButton.click()
+    await page.waitForURL(/https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth/)
+
+    const params = new URL(page.url()).searchParams
+    expect(params.get('client_id')).toBeTruthy()
+    expect(params.get('state')).toBeTruthy()
+    expect(params.get('redirect_uri')).toMatch(/\/api\/auth\/callback\/google$/)
+  })
+
+  test('AUTH-018: an OAuth failure arriving as a query param is shown', { tag: '@p2' }, async ({ page }) => {
+    // Social sign-in never rejects a request — Better Auth 302s back to
+    // errorCallbackURL with a machine code in the query string. Ignoring
+    // `?error=` would leave the user staring at a silently blank form.
+    await page.goto('/signin?error=access_denied&error_description=The+user+cancelled')
+
+    await expect(page.getByRole('alert')).toHaveText('Google sign-in was cancelled.')
+    // Still on the sign-in page — the error must not bounce us to /studio.
+    // The query string it arrived with deliberately stays put, so a refresh
+    // re-surfaces the same message instead of dropping it silently.
+    expect(new URL(page.url()).pathname).toBe('/signin')
+  })
+
+  test('AUTH-019: a refused Google link points at the password account', {
+    tag: '@p2',
+  }, async ({ page }) => {
+    // Better Auth will not merge a Google identity into an existing local
+    // user whose email was never verified, so a person who already signed up
+    // with this address always lands here. Without a mapped message the code
+    // degrades to a generic "sign-in failed" that hides the account they
+    // already have — and the way out is to use it.
+    await page.goto('/signin?error=account_not_linked')
+
+    await expect(page.getByRole('alert')).toContainText(
+      'Sign in with your email and password instead',
+    )
+    expect(new URL(page.url()).pathname).toBe('/signin')
+  })
+
+  test('AUTH-020: a failed logout is reported, not silently bounced', { tag: '@p1' }, async ({ page }) => {
+    // Better Auth's sign-out endpoint only fails when the request never
+    // lands (without `catchAllError` the client lets that rejection
+    // through). Navigating anyway would put a live cookie behind /signin,
+    // where RequireGuest sends us straight back to /studio — a logout that
+    // looks like it did nothing, with the cause only in the console.
+    test.setTimeout(60_000)
+    await signIn(page)
+    await page.route('**/api/auth/sign-out', (route) => route.abort('failed'))
+
+    await page.getByRole('button', { name: 'Open profile menu' }).click()
+    await page.getByRole('button', { name: 'Log out' }).click()
+
+    await expect(page.getByRole('alert')).toContainText('Could not reach the server')
+    await expect(page).toHaveURL('/studio')
+    // ...and it must stay retryable rather than sticking on "Signing out…".
+    await expect(page.getByRole('button', { name: 'Log out' })).toBeEnabled()
   })
 
   test('AUTH-009: session survives a page reload', { tag: '@p1' }, async ({ page }) => {

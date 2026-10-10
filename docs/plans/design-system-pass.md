@@ -1,6 +1,12 @@
 # Design System Pass — btp-karaoke/frontend
 
 **Status:** approved, NOT started.
+
+> **Stale assumption (2026-10-10):** the AUTH-008 references below predate real
+> Better Auth and assume a *disabled* Google button with a `Soon` chip. Google
+> sign-in is now wired up — AUTH-008 asserts the hand-off to Google instead.
+> Render the Google button as a working `variant="secondary"` control, and do
+> not restore the disabled state or the prototype notice.
 **Scope:** tokens + shared Button/Card/Badge/IconButton + apply across pages + font optimization + nav cleanup. No page restructuring, no router changes, no auth changes, no Studio split.
 **User decisions:** frontend-only (keep mock auth) · convert TTF → WOFF2 · remove dead nav items (Songs/About/Contacts) · design-system-only pass size.
 **Validate:** `lint` → `tsc -b` → `build` → `test:e2e:smoke` (CI PR gate). E2E pins protect against regressions.

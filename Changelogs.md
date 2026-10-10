@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 9, 2026
+Last updated: October 10, 2026
 
 ### Features
 
+- feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
 - feat(frontend): add About and Contact pages with shared site chrome (2e75735)
 - feat(frontend): guard the auth routes in both directions (a783831)
@@ -36,6 +37,9 @@ Last updated: October 9, 2026
 
 ### Other Changes
 
+- docs(auth): document account-linking policy (db53a46)
+- ﻿feat(auth): wire Google sign-in via Better Auth (2b5bd5b)
+- Merge pull request #6 from FR4NC31/feat/implement-features-and-connection (418335b)
 - ci: build backend/.env from repo secrets in e2e workflow (859d182)
 - Merge pull request #5 from FR4NC31/feature/auth-and-route-guards (bc8dede)
 - Merge pull request #4 from FR4NC31/feat/setup-playright-with-documentation (7ffa23a)
