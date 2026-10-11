@@ -21,6 +21,7 @@ Last updated: October 11, 2026
 
 ### Bug Fixes
 
+- fix(frontend): scope header auth buttons to About/Contact, rename Login to Sign In (c1869d0)
 - fix(frontend): address cubic review findings on PR #10 (5bbe09b)
 - fix(ci): set dummy Google OAuth creds in e2e env (3938cb3)
 - fix(frontend): settle the session before navigating to /studio (67b7abb)
