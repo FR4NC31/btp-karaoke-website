@@ -2,22 +2,33 @@ import { test, expect } from '../fixtures'
 import { ANONYMOUS } from '../helpers/auth'
 
 test.describe('navigation', () => {
-  // Every test here walks to /signin or /signup, which now send a
-  // signed-in user to /studio instead (AUTH-017). Asserting those links
-  // reach their pages therefore requires starting signed out.
+  // The landing auth buttons open modals, and the /signin + /signup
+  // fallback routes still send a signed-in user to /studio (AUTH-017).
+  // Asserting either requires starting signed out.
   test.use({ storageState: ANONYMOUS })
 
-  test('NAV-001: header links reach sign in and sign up', { tag: '@p0' }, async ({ page }) => {
+  test('NAV-001: landing auth buttons open sign-up and sign-in modals', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/')
 
-    await page.getByRole('link', { name: 'Login' }).first().click()
-    await expect(page).toHaveURL('/signin')
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    // Get Started → sign-up modal
+    await page.getByRole('button', { name: 'Get Started' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
+    await expect(page).toHaveURL('/')
 
-    await page.goBack()
-    await page.getByRole('link', { name: 'Sign Up' }).first().click()
-    await expect(page).toHaveURL('/signup')
-    await expect(page.getByRole('heading', { name: 'Create account' })).toBeVisible()
+    // Modal cross-links switch modes in place — both directions
+    await dialog.getByRole('button', { name: 'Sign in' }).click()
+    await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    await dialog.getByRole('button', { name: 'Sign up' }).click()
+    await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+
+    // Hero Sign In → sign-in modal
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+    await expect(page.getByRole('dialog').getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    await expect(page).toHaveURL('/')
   })
 
   test('NAV-002: auth pages cross-link to each other', { tag: '@p2' }, async ({ page }) => {
@@ -53,8 +64,8 @@ test.describe('navigation', () => {
       await expect(mobileNav).toBeVisible()
       await expect(page.getByRole('button', { name: 'Close menu' })).toHaveAttribute('aria-expanded', 'true')
 
-      await mobileNav.getByRole('link', { name: 'Login' }).click()
-      await expect(page).toHaveURL('/signin')
+      await mobileNav.getByRole('link', { name: 'Contact' }).click()
+      await expect(page).toHaveURL('/contact')
 
       await page.goto('/')
       await page.getByRole('button', { name: 'Open menu' }).click()

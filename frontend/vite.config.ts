@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -11,6 +12,11 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss()
     ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
     server: {
       // Proxy auth/API calls to the backend so the browser sees one origin.
       // Same-origin means Better Auth's session cookies work without CORS.

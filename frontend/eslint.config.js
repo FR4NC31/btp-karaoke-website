@@ -20,6 +20,13 @@ export default defineConfig([
     },
   },
   {
+    // shadcn/ui components co-export variants/helpers (buttonVariants, etc.)
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
     files: ['playwright.config.ts', 'tests/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },

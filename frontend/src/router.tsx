@@ -3,7 +3,7 @@ import RootLayout from './layouts/RootLayout'
 import RequireAuth from "./components/RequireAuth"
 import RequireGuest from "./components/RequireGuest"
 import RouteError from "./components/RouteError"
-import Home from "./pages/Home"
+import LandingPage from "./pages/LandingPage"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
 import NotFound from "./pages/NotFound"
@@ -26,7 +26,7 @@ export const router = createBrowserRouter([
                 children: [
                     {
                         path: "/",
-                        element: <Home />,
+                        element: <LandingPage />,
                     },
                     {
                         path: "/about",

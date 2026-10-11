@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Menu01Icon, Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import BrandLogo from '../components/BrandLogo'
+import AuthDialog from '../components/AuthDialog'
 import SiteFooter from './SiteFooter'
+import { useSession } from '../lib/auth-client'
+import type { AuthMode } from '../lib/auth-dialog'
 
 // `to` set = routable link; missing = planned section without a page yet —
 // shown, but honestly inert.
@@ -18,6 +21,53 @@ const navItems: { label: string; to?: string }[] = [
 
 export default function RootLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const location = useLocation()
+  const { data: session, isPending } = useSession()
+  // Auth lives in a modal now (opened from the landing hero or the header);
+  // the /signin and /signup routes remain as fallbacks for direct URLs.
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null)
+
+  // Close the modal on navigation (Back/Forward included): RootLayout stays
+  // mounted across child routes, so plain useState would follow along and a
+  // stale entry would even reopen the dialog on Back. Clear during render
+  // (React's "adjust state when props change" pattern) — no post-paint flash.
+  const [settledPath, setSettledPath] = useState(location.pathname)
+  if (settledPath !== location.pathname) {
+    setSettledPath(location.pathname)
+    if (authMode !== null) setAuthMode(null)
+  }
+
+  const openAuth = (mode: AuthMode) => setAuthMode(mode)
+
+  // Signed-in users already have the profile menu; /signin and /signup have
+  // their own forms; the landing hero has its own CTAs. The secondary pages
+  // (/about, /contact) are the ones that need a header entry point.
+  const onContentPage = location.pathname === '/about' || location.pathname === '/contact'
+  const showHeaderAuth = !isPending && session == null && onContentPage
+  const headerAuthButtons = (onPick?: () => void) => (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          onPick?.()
+          openAuth('signin')
+        }}
+        className="rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:text-text-primary"
+      >
+        Sign In
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onPick?.()
+          openAuth('signup')
+        }}
+        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-text-primary transition hover:bg-primary-hover"
+      >
+        Sign Up
+      </button>
+    </div>
+  )
 
   return (
     <div className="min-h-dvh bg-background text-text-primary">
@@ -79,19 +129,7 @@ export default function RootLayout() {
                   ⌘K
                 </kbd>
               </div>
-
-              <Link
-                to="/signin"
-                className="rounded-lg border border-border bg-surface-elevated px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-surface"
-              >
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-primary-hover"
-              >
-                Sign Up
-              </Link>
+              {showHeaderAuth && headerAuthButtons()}
             </div>
           </nav>
 
@@ -134,21 +172,20 @@ export default function RootLayout() {
                 ),
               )}
             </ul>
-            <div className="flex gap-5 border-t border-border pt-4">
-              <Link to="/signin" onClick={() => setMenuOpen(false)} className="text-text-secondary hover:text-text-primary">
-                Login
-              </Link>
-              <Link to="/signup" onClick={() => setMenuOpen(false)} className="text-primary hover:text-primary-hover">
-                Sign Up
-              </Link>
-            </div>
+            {showHeaderAuth && headerAuthButtons(() => setMenuOpen(false))}
           </nav>
         )}
       </header>
 
       <main className="mx-auto max-w-6xl p-6">
-        <Outlet />
+        <Outlet context={{ openAuth }} />
       </main>
+
+      <AuthDialog
+        mode={authMode}
+        onClose={() => setAuthMode(null)}
+        onSwitch={openAuth}
+      />
 
       <SiteFooter />
     </div>

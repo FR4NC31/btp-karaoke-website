@@ -2,10 +2,14 @@
 
 ## Unreleased
 
-Last updated: October 10, 2026
+Last updated: October 11, 2026
 
 ### Features
 
+- feat(frontend): add Go Back button to 404 page (4034966)
+- feat(frontend): reveal About sections on scroll via ScrollTrigger (50afe0b)
+- feat(frontend): add GSAP entrance animations to About and Contact pages (54eab02)
+- feat: Polished other UI with using shadcn/ui for components and gsap for animation (18b37fa)
 - feat: Implement real user profile image from database (5843a7c)
 - feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
@@ -20,6 +24,11 @@ Last updated: October 10, 2026
 
 ### Bug Fixes
 
+- fix(frontend): fall back to home from 404 when history is empty (747f5f9)
+- fix(frontend): tighten Contact layout to fit without scrollbar (9c7dcf2)
+- fix(frontend): pin dialog close button outside scroll region (1e1b046)
+- fix(frontend): scope header auth buttons to About/Contact, rename Login to Sign In (c1869d0)
+- fix(frontend): address cubic review findings on PR #10 (5bbe09b)
 - fix(ci): set dummy Google OAuth creds in e2e env (3938cb3)
 - fix(frontend): settle the session before navigating to /studio (67b7abb)
 - fix(frontend): handle rejected auth requests instead of hanging (fd17c80)
@@ -39,6 +48,7 @@ Last updated: October 10, 2026
 
 ### Other Changes
 
+- Merge pull request #9 from FR4NC31/fix/authentication-error (c1bae93)
 - Merge pull request #8 from FR4NC31/feat/implement-realprofile (1ecbec7)
 - Merge pull request #7 from FR4NC31/feat/google-auth (cab4fd1)
 - docs(auth): document account-linking policy (db53a46)
