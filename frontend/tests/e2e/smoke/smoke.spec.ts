@@ -20,9 +20,20 @@ test.describe('smoke', () => {
 
     test('SMOKE-002: main navigation works', { tag: '@p0' }, async ({ page }) => {
       await page.goto('/')
-      await page.getByRole('link', { name: 'Sign In' }).first().click()
-      await expect(page).toHaveURL('/signin')
-      await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+
+      // Hero auth button opens the sign-in modal instead of routing.
+      await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+      const dialog = page.getByRole('dialog')
+      await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+      await expect(page).toHaveURL('/')
+
+      await page.keyboard.press('Escape')
+      await expect(dialog).toBeHidden()
+
+      // Header nav still routes normally.
+      await page.getByRole('link', { name: 'Contact' }).first().click()
+      await expect(page).toHaveURL('/contact')
+      await expect(page.getByRole('heading', { level: 1, name: 'Direct Lines' })).toBeVisible()
     })
   })
 
