@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import SignInForm from '../pages/auth/SignInForm'
@@ -20,20 +20,24 @@ type Props = {
 export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const open = mode !== null
   const navigate = useNavigate()
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
+  // Held here so a typed email survives switching between sign-in and
+  // sign-up (the forms unmount on switch and would drop their own state).
+  const [email, setEmail] = useState('')
 
-  // Same contract as RequireGuest: a signed-in user gets bounced to /studio
-  // instead of being offered a sign-in form they no longer need.
+  // Same contract as RequireGuest: wait for the session check so a
+  // signed-in user is bounced to /studio instead of being handed a form
+  // they don't need — and the dialog stays closed while that check runs.
   useEffect(() => {
-    if (open && session) {
+    if (open && !isPending && session) {
       onClose()
       navigate('/studio')
     }
-  }, [open, session, onClose, navigate])
+  }, [open, isPending, session, onClose, navigate])
 
   return (
     <Dialog
-      open={open}
+      open={open && !isPending}
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
@@ -51,9 +55,9 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
         </DialogHeader>
 
         {mode === 'signup' ? (
-          <SignUpForm onSwitch={onSwitch} onSuccess={onClose} />
+          <SignUpForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={onClose} />
         ) : mode === 'signin' ? (
-          <SignInForm onSwitch={onSwitch} onSuccess={onClose} />
+          <SignInForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={onClose} />
         ) : null}
       </DialogContent>
     </Dialog>

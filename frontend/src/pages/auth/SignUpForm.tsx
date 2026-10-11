@@ -12,22 +12,31 @@ type Props = {
   onSwitch?: (mode: AuthMode) => void
   /** Called right before the post-auth redirect (lets a modal close first). */
   onSuccess?: () => void
+  /** Modal context: email lifted to AuthDialog so it survives mode switches. */
+  email?: string
+  onEmailChange?: (email: string) => void
 }
 
 /**
  * Sign-up form logic shared by the /signup page and the auth modal.
  * Headings live in the wrappers, not here.
  */
-export default function SignUpForm({ onSwitch, onSuccess }: Props) {
+export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEmailChange }: Props) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
+  const [internalEmail, setInternalEmail] = useState('')
+  const email = emailProp ?? internalEmail
   const [contact, setContact] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+
+  function handleEmailChange(value: string) {
+    if (emailProp === undefined) setInternalEmail(value)
+    onEmailChange?.(value)
+  }
 
   function handleContactChange(e: ChangeEvent<HTMLInputElement>) {
     setContact(e.target.value.replace(/\D/g, '').slice(0, 11))
@@ -104,7 +113,7 @@ export default function SignUpForm({ onSwitch, onSuccess }: Props) {
           type="email"
           placeholder="you@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => handleEmailChange(e.target.value)}
           autoComplete="email"
           required
         />

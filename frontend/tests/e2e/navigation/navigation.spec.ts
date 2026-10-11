@@ -16,9 +16,11 @@ test.describe('navigation', () => {
     await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
     await expect(page).toHaveURL('/')
 
-    // Modal cross-links switch modes in place
+    // Modal cross-links switch modes in place — both directions
     await dialog.getByRole('button', { name: 'Sign in' }).click()
     await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    await dialog.getByRole('button', { name: 'Sign up' }).click()
+    await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
 
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()

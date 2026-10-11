@@ -5,7 +5,7 @@
  * assertions only ever match the real content underneath.
  */
 function Bar({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-surface-elevated ${className}`} />
+  return <div className={`animate-pulse motion-reduce:animate-none rounded-md bg-surface-elevated ${className}`} />
 }
 
 export default function StudioSkeleton() {

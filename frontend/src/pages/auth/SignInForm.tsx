@@ -13,17 +13,26 @@ type Props = {
   onSwitch?: (mode: AuthMode) => void
   /** Called right before the post-auth redirect (lets a modal close first). */
   onSuccess?: () => void
+  /** Modal context: email lifted to AuthDialog so it survives mode switches. */
+  email?: string
+  onEmailChange?: (email: string) => void
 }
 
 /**
  * Sign-in form logic shared by the /signin page and the auth modal.
  * Headings live in the wrappers, not here.
  */
-export default function SignInForm({ onSwitch, onSuccess }: Props) {
-  const [email, setEmail] = useState('')
+export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEmailChange }: Props) {
+  const [internalEmail, setInternalEmail] = useState('')
+  const email = emailProp ?? internalEmail
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+
+  function handleEmailChange(value: string) {
+    if (emailProp === undefined) setInternalEmail(value)
+    onEmailChange?.(value)
+  }
 
   // A failed Google flow never rejects a request — Better Auth redirects back
   // to `errorCallbackURL` with a machine code in the query string, so if we
@@ -85,11 +94,15 @@ export default function SignInForm({ onSwitch, onSuccess }: Props) {
       // On success Better Auth returns a `url` and its client-side redirect
       // plugin navigates straight to Google, so reaching this line means the
       // flow never started. Report it instead of leaving a dead button.
-      if (socialError) setError(readableError(socialError))
+      if (socialError) {
+        setError(readableError(socialError))
+        setGoogleSubmitting(false)
+      }
+      // On success the browser is leaving for Google — keep the flag set so
+      // the "Redirecting to Google…" state holds and the button can't be
+      // re-clicked mid-redirect. Only failure paths re-enable it.
     } catch (err) {
       setError(unexpectedError('Google sign-in', err))
-    } finally {
-      // Only meaningfully runs on failure — a successful flow navigates away.
       setGoogleSubmitting(false)
     }
   }
@@ -103,7 +116,7 @@ export default function SignInForm({ onSwitch, onSuccess }: Props) {
           type="email"
           placeholder="you@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => handleEmailChange(e.target.value)}
           autoComplete="email"
           required
         />

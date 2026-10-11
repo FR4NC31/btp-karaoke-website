@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Menu01Icon, Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import BrandLogo from '../components/BrandLogo'
 import AuthDialog from '../components/AuthDialog'
 import SiteFooter from './SiteFooter'
+import { useSession } from '../lib/auth-client'
 import type { AuthMode } from '../lib/auth-dialog'
 
 // `to` set = routable link; missing = planned section without a page yet —
@@ -20,9 +21,52 @@ const navItems: { label: string; to?: string }[] = [
 
 export default function RootLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
-  // Auth lives in a modal now (opened from the landing hero); the
-  // /signin and /signup routes remain as fallbacks for direct URLs.
+  const location = useLocation()
+  const { data: session, isPending } = useSession()
+  // Auth lives in a modal now (opened from the landing hero or the header);
+  // the /signin and /signup routes remain as fallbacks for direct URLs.
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
+
+  // Close the modal on navigation (Back/Forward included): RootLayout stays
+  // mounted across child routes, so plain useState would follow along and a
+  // stale entry would even reopen the dialog on Back. Clear during render
+  // (React's "adjust state when props change" pattern) — no post-paint flash.
+  const [settledPath, setSettledPath] = useState(location.pathname)
+  if (settledPath !== location.pathname) {
+    setSettledPath(location.pathname)
+    if (authMode !== null) setAuthMode(null)
+  }
+
+  const openAuth = (mode: AuthMode) => setAuthMode(mode)
+
+  // Signed-in users already have the profile menu; auth pages have their own
+  // forms. Everyone else (e.g. /about, /contact) needs a header entry point.
+  const onAuthPage = location.pathname === '/signin' || location.pathname === '/signup'
+  const showHeaderAuth = !isPending && session == null && !onAuthPage
+  const headerAuthButtons = (onPick?: () => void) => (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          onPick?.()
+          openAuth('signin')
+        }}
+        className="rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:text-text-primary"
+      >
+        Login
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onPick?.()
+          openAuth('signup')
+        }}
+        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-text-primary transition hover:bg-primary-hover"
+      >
+        Sign Up
+      </button>
+    </div>
+  )
 
   return (
     <div className="min-h-dvh bg-background text-text-primary">
@@ -84,6 +128,7 @@ export default function RootLayout() {
                   ⌘K
                 </kbd>
               </div>
+              {showHeaderAuth && headerAuthButtons()}
             </div>
           </nav>
 
@@ -126,18 +171,19 @@ export default function RootLayout() {
                 ),
               )}
             </ul>
+            {showHeaderAuth && headerAuthButtons(() => setMenuOpen(false))}
           </nav>
         )}
       </header>
 
       <main className="mx-auto max-w-6xl p-6">
-        <Outlet context={{ openAuth: setAuthMode }} />
+        <Outlet context={{ openAuth }} />
       </main>
 
       <AuthDialog
         mode={authMode}
         onClose={() => setAuthMode(null)}
-        onSwitch={setAuthMode}
+        onSwitch={openAuth}
       />
 
       <SiteFooter />

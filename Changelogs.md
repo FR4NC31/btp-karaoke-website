@@ -6,7 +6,7 @@ Last updated: October 11, 2026
 
 ### Features
 
-- feat: Polished other UI with using shadcn/ui for components and gsap for animation (18b37fa)
+- feat(frontend): polish UI with shadcn/ui components and GSAP animations (18b37fa)
 - feat: Implement real user profile image from database (5843a7c)
 - feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
