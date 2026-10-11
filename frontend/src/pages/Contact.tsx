@@ -1,4 +1,6 @@
+import { useLayoutEffect, useRef } from 'react'
 import { Link } from 'react-router'
+import { gsap } from 'gsap'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import { Facebook01Icon, Mail01Icon, PhoneIcon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
@@ -53,8 +55,36 @@ const channels: Channel[] = [
 ]
 
 export default function Contact() {
+  const pageRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const page = pageRef.current
+    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const animation = gsap.context(() => {
+      const entrance = gsap.timeline({
+        defaults: { duration: 0.65, ease: 'power3.out' },
+      })
+
+      entrance
+        .fromTo(
+          '[data-contact-hero] > *',
+          { autoAlpha: 0, y: 24 },
+          { autoAlpha: 1, y: 0, stagger: 0.1 },
+        )
+        .fromTo(
+          '[data-contact-card]',
+          { autoAlpha: 0, y: 20 },
+          { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.12 },
+          '-=0.25',
+        )
+    }, page)
+
+    return () => animation.revert()
+  }, [])
+
   return (
-    <div className="py-8">
+    <div ref={pageRef} className="py-8">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="text-xs font-semibold tracking-widest uppercase">
         <Link to="/" className="text-primary hover:text-primary-hover">
@@ -64,7 +94,7 @@ export default function Contact() {
       </nav>
 
       {/* Hero */}
-      <section className="mt-10 text-center">
+      <section data-contact-hero className="mt-10 text-center">
         <div className="flex justify-center">
           <SectionEyebrow>Official Channels</SectionEyebrow>
         </div>
@@ -82,6 +112,7 @@ export default function Contact() {
         {channels.map((channel) => (
           <article
             key={channel.title}
+            data-contact-card
             className="flex flex-col rounded-xl border border-border bg-surface p-6"
           >
             <span
