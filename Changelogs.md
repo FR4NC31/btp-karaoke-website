@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 10, 2026
+Last updated: October 11, 2026
 
 ### Features
 
+- feat: Polished other UI with using shadcn/ui for components and gsap for animation (18b37fa)
 - feat: Implement real user profile image from database (5843a7c)
 - feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
@@ -39,6 +40,7 @@ Last updated: October 10, 2026
 
 ### Other Changes
 
+- Merge pull request #9 from FR4NC31/fix/authentication-error (c1bae93)
 - Merge pull request #8 from FR4NC31/feat/implement-realprofile (1ecbec7)
 - Merge pull request #7 from FR4NC31/feat/google-auth (cab4fd1)
 - docs(auth): document account-linking policy (db53a46)
