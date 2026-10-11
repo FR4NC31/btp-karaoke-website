@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
@@ -92,7 +93,7 @@ const storyColumns = [
 
 function SectionHeader({ eyebrow, title, desc, meta }: { eyebrow: string; title: string; desc?: string; meta?: string }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
+    <div data-about-reveal className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <SectionEyebrow>{eyebrow}</SectionEyebrow>
         <h2 className="mt-3 font-heading text-3xl font-bold tracking-wide uppercase sm:text-4xl">{title}</h2>
@@ -103,6 +104,8 @@ function SectionHeader({ eyebrow, title, desc, meta }: { eyebrow: string; title:
   )
 }
 
+gsap.registerPlugin(ScrollTrigger)
+
 export default function About() {
   const pageRef = useRef<HTMLDivElement>(null)
 
@@ -111,22 +114,32 @@ export default function About() {
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const animation = gsap.context(() => {
-      const entrance = gsap.timeline({
-        defaults: { duration: 0.65, ease: 'power3.out' },
-      })
+      // Hero plays on load; everything below reveals as it scrolls into view.
+      gsap.fromTo(
+        '[data-about-hero] > *',
+        { autoAlpha: 0, y: 24 },
+        { autoAlpha: 1, y: 0, duration: 0.65, ease: 'power3.out', stagger: 0.1 },
+      )
 
-      entrance
-        .fromTo(
-          '[data-about-hero] > *',
-          { autoAlpha: 0, y: 24 },
-          { autoAlpha: 1, y: 0, stagger: 0.1 },
+      gsap.utils.toArray<HTMLElement>('[data-about-reveal]').forEach((el, i) => {
+        gsap.fromTo(
+          el,
+          { autoAlpha: 0, y: 28 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.6,
+            ease: 'power3.out',
+            // Stagger siblings that enter together (e.g. card grids).
+            delay: (i % 4) * 0.08,
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 88%',
+              once: true,
+            },
+          },
         )
-        .fromTo(
-          '[data-about-card]',
-          { autoAlpha: 0, y: 20 },
-          { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.08 },
-          '-=0.45',
-        )
+      })
     }, page)
 
     return () => animation.revert()
@@ -198,7 +211,7 @@ export default function About() {
           {stats.map((stat, i) => (
             <div
               key={stat.value}
-              data-about-card
+              data-about-reveal
               className={`px-5 py-8 sm:px-6 ${i >= 2 ? 'border-t border-border' : ''} ${
                 i % 2 === 1 ? 'border-l border-border' : ''
               } lg:border-t-0 ${i > 0 ? 'lg:border-l lg:border-border' : ''}`}
@@ -220,7 +233,7 @@ export default function About() {
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {services.map((service) => (
-            <article key={service.title} data-about-card className="flex flex-col rounded-xl border border-border bg-surface p-6">
+            <article key={service.title} data-about-reveal className="flex flex-col rounded-xl border border-border bg-surface p-6">
               <span aria-hidden="true">
                 <HugeiconsIcon icon={service.icon} size={22} className="text-text-primary" />
               </span>
@@ -239,7 +252,7 @@ export default function About() {
         <SectionHeader eyebrow="The Journey" title="Our Story & Vision" meta="BTP Production Archive" />
         <div className="mt-8 grid gap-8 md:grid-cols-2">
           {storyColumns.map((column) => (
-            <div key={column.heading} data-about-card>
+            <div key={column.heading} data-about-reveal>
               <h3 className="font-heading text-lg font-bold tracking-wide uppercase">{column.heading}</h3>
               <div className="mt-4 space-y-4 text-sm leading-relaxed text-text-secondary">
                 {column.paragraphs.map((paragraph) => (
@@ -256,7 +269,7 @@ export default function About() {
         <SectionHeader eyebrow="Guiding Principles" title="Our Core Commitments" />
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {commitments.map((item) => (
-            <article key={item.title} data-about-card className="rounded-xl border border-border bg-surface p-6">
+            <article key={item.title} data-about-reveal className="rounded-xl border border-border bg-surface p-6">
               <span aria-hidden="true">
                 <HugeiconsIcon icon={item.icon} size={20} className="text-primary" />
               </span>
@@ -268,7 +281,7 @@ export default function About() {
       </section>
 
       {/* CTA band */}
-      <section data-about-card className="-mx-6 mt-16 border-y border-border bg-surface px-6 py-14 text-center">
+      <section data-about-reveal className="-mx-6 mt-16 border-y border-border bg-surface px-6 py-14 text-center">
         <div className="flex justify-center">
           <SectionEyebrow>Collaborate &amp; Connect</SectionEyebrow>
         </div>
