@@ -39,10 +39,11 @@ export default function RootLayout() {
 
   const openAuth = (mode: AuthMode) => setAuthMode(mode)
 
-  // Signed-in users already have the profile menu; auth pages have their own
-  // forms. Everyone else (e.g. /about, /contact) needs a header entry point.
-  const onAuthPage = location.pathname === '/signin' || location.pathname === '/signup'
-  const showHeaderAuth = !isPending && session == null && !onAuthPage
+  // Signed-in users already have the profile menu; /signin and /signup have
+  // their own forms; the landing hero has its own CTAs. The secondary pages
+  // (/about, /contact) are the ones that need a header entry point.
+  const onContentPage = location.pathname === '/about' || location.pathname === '/contact'
+  const showHeaderAuth = !isPending && session == null && onContentPage
   const headerAuthButtons = (onPick?: () => void) => (
     <div className="flex items-center gap-2">
       <button
@@ -53,7 +54,7 @@ export default function RootLayout() {
         }}
         className="rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:text-text-primary"
       >
-        Login
+        Sign In
       </button>
       <button
         type="button"
