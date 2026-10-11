@@ -6,7 +6,7 @@ Last updated: October 11, 2026
 
 ### Features
 
-- feat(frontend): polish UI with shadcn/ui components and GSAP animations (18b37fa)
+- feat: Polished other UI with using shadcn/ui for components and gsap for animation (18b37fa)
 - feat: Implement real user profile image from database (5843a7c)
 - feat(frontend): surface auth and route errors (acbeeea)
 - feat(frontend): split studio into shell with routed profile page (dcebca4)
@@ -21,6 +21,7 @@ Last updated: October 11, 2026
 
 ### Bug Fixes
 
+- fix(frontend): address cubic review findings on PR #10 (5bbe09b)
 - fix(ci): set dummy Google OAuth creds in e2e env (3938cb3)
 - fix(frontend): settle the session before navigating to /studio (67b7abb)
 - fix(frontend): handle rejected auth requests instead of hanging (fd17c80)
