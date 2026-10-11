@@ -84,7 +84,7 @@ export default function Contact() {
   }, [])
 
   return (
-    <div ref={pageRef} className="py-8">
+    <div ref={pageRef} className="py-6 sm:py-8">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="text-xs font-semibold tracking-widest uppercase">
         <Link to="/" className="text-primary hover:text-primary-hover">
@@ -94,43 +94,43 @@ export default function Contact() {
       </nav>
 
       {/* Hero */}
-      <section data-contact-hero className="mt-10 text-center">
+      <section data-contact-hero className="mt-3 text-center">
         <div className="flex justify-center">
           <SectionEyebrow>Official Channels</SectionEyebrow>
         </div>
-        <h1 className="mt-4 font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
+        <h1 className="mt-3 font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
           Direct Lines
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-text-secondary">
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-text-secondary">
           Connect with BTP Music Production directly via our official channels for inquiries, demos, licensing,
           and studio bookings.
         </p>
       </section>
 
       {/* Channels */}
-      <section className="mt-12 grid gap-4 md:grid-cols-3">
+      <section className="mt-7 grid gap-4 md:grid-cols-3">
         {channels.map((channel) => (
           <article
             key={channel.title}
             data-contact-card
-            className="flex flex-col rounded-xl border border-border bg-surface p-6"
+            className="flex flex-col rounded-xl border border-border bg-surface px-5 py-4"
           >
             <span
               aria-hidden="true"
-              className="grid size-11 place-items-center rounded-lg bg-surface-elevated text-text-primary"
+              className="grid size-10 place-items-center rounded-lg bg-surface-elevated text-text-primary"
             >
               <HugeiconsIcon icon={channel.icon} size={20} />
             </span>
-            <h2 className="mt-4 font-heading text-lg leading-tight font-bold tracking-wide uppercase">
+            <h2 className="mt-3 font-heading text-lg leading-tight font-bold tracking-wide uppercase">
               {channel.title}
             </h2>
             <p className="mt-1 text-xs font-bold tracking-widest text-primary uppercase">{channel.label}</p>
-            <p className="mt-3 text-sm font-semibold break-words text-text-primary">{channel.value}</p>
+            <p className="mt-2 text-sm font-semibold break-words text-text-primary">{channel.value}</p>
             <p className="mt-2 flex-1 text-sm leading-relaxed text-text-secondary">{channel.desc}</p>
             <a
               href={channel.href}
               {...(channel.external ? { target: '_blank', rel: 'noreferrer' } : {})}
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:border-primary/50 hover:text-primary"
+              className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-text-primary transition hover:border-primary/50 hover:text-primary"
             >
               {channel.action}
               <HugeiconsIcon icon={channel.actionIcon} size={15} />
