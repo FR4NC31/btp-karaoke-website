@@ -24,6 +24,7 @@ Last updated: October 11, 2026
 
 ### Bug Fixes
 
+- fix(frontend): fall back to home from 404 when history is empty (747f5f9)
 - fix(frontend): tighten Contact layout to fit without scrollbar (9c7dcf2)
 - fix(frontend): pin dialog close button outside scroll region (1e1b046)
 - fix(frontend): scope header auth buttons to About/Contact, rename Login to Sign In (c1869d0)
