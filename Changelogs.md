@@ -6,6 +6,7 @@ Last updated: October 11, 2026
 
 ### Features
 
+- feat(frontend): add GSAP entrance animations to About and Contact pages (54eab02)
 - feat: Polished other UI with using shadcn/ui for components and gsap for animation (18b37fa)
 - feat: Implement real user profile image from database (5843a7c)
 - feat(frontend): surface auth and route errors (acbeeea)
