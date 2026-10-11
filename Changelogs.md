@@ -6,6 +6,8 @@ Last updated: October 11, 2026
 
 ### Features
 
+- feat(frontend): add Go Back button to 404 page (4034966)
+- feat(frontend): reveal About sections on scroll via ScrollTrigger (50afe0b)
 - feat(frontend): add GSAP entrance animations to About and Contact pages (54eab02)
 - feat: Polished other UI with using shadcn/ui for components and gsap for animation (18b37fa)
 - feat: Implement real user profile image from database (5843a7c)
@@ -22,6 +24,8 @@ Last updated: October 11, 2026
 
 ### Bug Fixes
 
+- fix(frontend): tighten Contact layout to fit without scrollbar (9c7dcf2)
+- fix(frontend): pin dialog close button outside scroll region (1e1b046)
 - fix(frontend): scope header auth buttons to About/Contact, rename Login to Sign In (c1869d0)
 - fix(frontend): address cubic review findings on PR #10 (5bbe09b)
 - fix(ci): set dummy Google OAuth creds in e2e env (3938cb3)
