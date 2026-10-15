@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 11, 2026
+Last updated: October 15, 2026
 
 ### Features
 
+- feat: Add Services UI in navbar and page (12d5188)
 - feat(frontend): add Go Back button to 404 page (4034966)
 - feat(frontend): reveal About sections on scroll via ScrollTrigger (50afe0b)
 - feat(frontend): add GSAP entrance animations to About and Contact pages (54eab02)
@@ -48,6 +49,7 @@ Last updated: October 11, 2026
 
 ### Other Changes
 
+- Merge pull request #10 from FR4NC31/feat/polished-UI (8f7039c)
 - Merge pull request #9 from FR4NC31/fix/authentication-error (c1bae93)
 - Merge pull request #8 from FR4NC31/feat/implement-realprofile (1ecbec7)
 - Merge pull request #7 from FR4NC31/feat/google-auth (cab4fd1)

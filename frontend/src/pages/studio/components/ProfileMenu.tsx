@@ -61,7 +61,9 @@ export default function ProfileMenu() {
       setSigningOut(false)
     }
     setProfileOpen(false)
-    navigate('/signin')
+    // Land on the public landing page, not /signin — RequireGuest would be
+    // fine either way, but the visitor is free now, not mid-auth-flow.
+    navigate('/')
   }
 
   return (

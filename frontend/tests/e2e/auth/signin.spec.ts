@@ -34,12 +34,12 @@ test.describe('authentication', () => {
     await expect(page).toHaveURL('/signin')
   })
 
-  test('AUTH-003: logout returns to sign in', { tag: '@p0' }, async ({ page }) => {
+  test('AUTH-003: logout returns to the landing page', { tag: '@p0' }, async ({ page }) => {
     await signIn(page)
     await page.getByRole('button', { name: 'Open profile menu' }).click()
     await page.getByRole('button', { name: 'Log out' }).click()
-    await expect(page).toHaveURL('/signin')
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+    await expect(page).toHaveURL('/')
+    await expect(page.getByRole('heading', { level: 1, name: /Sing your heart out/i })).toBeVisible()
   })
 
   test('AUTH-004: /studio redirects to sign in without a session', { tag: '@p1' }, async ({ page }) => {
@@ -205,16 +205,26 @@ test.describe('authentication', () => {
     //
     // Two details make this test catch it:
     //   * it never calls page.goto() after the first load, because a reload
-    //     wipes the in-memory cache and hides the stale value;
+    //     wipes the in-memory cache and hides the stale value — so after the
+    //     first cycle (logout now lands on the landing page) each retry opens
+    //     the sign-in MODAL via the hero button instead of routing;
     //   * it loops, because a single attempt can land on the working side.
     await page.goto('/signin')
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      await page.getByLabel('Email').fill(TEST_USER.email)
-      await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
-      await page.getByRole('button', { name: 'Sign In' }).click()
+      if (attempt === 0) {
+        await page.getByLabel('Email').fill(TEST_USER.email)
+        await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
+        await page.getByRole('button', { name: 'Sign In' }).click()
+      } else {
+        await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+        const dialog = page.getByRole('dialog')
+        await dialog.getByLabel('Email').fill(TEST_USER.email)
+        await dialog.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
+        await dialog.getByRole('button', { name: 'Sign In' }).click()
+      }
 
-      // The bounce showed up as an immediate return to /signin.
+      // The bounce showed up as an immediate return to the auth screen.
       await expect(page).toHaveURL('/studio')
       await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
 
@@ -222,7 +232,7 @@ test.describe('authentication', () => {
       // null that the next attempt has to contend with.
       await page.getByRole('button', { name: 'Open profile menu' }).click()
       await page.getByRole('button', { name: 'Log out' }).click()
-      await expect(page).toHaveURL('/signin')
+      await expect(page).toHaveURL('/')
     }
   })
 })

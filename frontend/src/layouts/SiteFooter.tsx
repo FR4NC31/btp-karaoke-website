@@ -15,7 +15,7 @@ const columns = [
       { label: 'Home', accent: false },
       { label: 'Song Catalog', accent: false },
       { label: 'Rooms', accent: false },
-      { label: 'Bookings', accent: false },
+      { label: 'Services', accent: false },
       { label: 'About Us', accent: false },
     ],
   },

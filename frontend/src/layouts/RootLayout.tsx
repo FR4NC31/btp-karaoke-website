@@ -14,7 +14,7 @@ const navItems: { label: string; to?: string }[] = [
   { label: 'Home', to: '/' },
   { label: 'Songs' },
   { label: 'Rooms' },
-  { label: 'Bookings' },
+  { label: 'Services', to: '/services' },
   { label: 'About', to: '/about' },
   { label: 'Contact', to: '/contact' },
 ]
@@ -42,7 +42,8 @@ export default function RootLayout() {
   // Signed-in users already have the profile menu; /signin and /signup have
   // their own forms; the landing hero has its own CTAs. The secondary pages
   // (/about, /contact) are the ones that need a header entry point.
-  const onContentPage = location.pathname === '/about' || location.pathname === '/contact'
+  const onContentPage =
+    location.pathname === '/about' || location.pathname === '/contact' || location.pathname === '/services'
   const showHeaderAuth = !isPending && session == null && onContentPage
   const headerAuthButtons = (onPick?: () => void) => (
     <div className="flex items-center gap-2">
