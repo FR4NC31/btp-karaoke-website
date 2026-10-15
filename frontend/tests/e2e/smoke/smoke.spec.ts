@@ -61,7 +61,7 @@ test.describe('smoke', () => {
 
     await page.getByRole('button', { name: 'Open profile menu' }).click()
     await page.getByRole('button', { name: 'Log out' }).click()
-    await expect(page).toHaveURL('/signin')
+    await expect(page).toHaveURL('/')
   })
 
   test('SMOKE-006: backend health endpoint responds', { tag: '@p0' }, async ({ request }) => {

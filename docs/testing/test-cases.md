@@ -54,7 +54,7 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Sign in. 2. Filter by **Ballad**. 3. Start playback in the
   player bar. 4. Open the profile menu → **Log out**.
 - **Expected:** Collection filters, playback toggles to Pause, logout
-  returns to `/signin`.
+  returns to `/`.
 - **Automation:** Playwright — **Status: Automated**
 
 ### SMOKE-006
@@ -96,10 +96,10 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### AUTH-003
 
-- **Title:** Logout returns to sign in
+- **Title:** Logout returns to the landing page
 - **Priority:** P0
 - **Steps:** 1. Sign in. 2. Open profile menu. 3. Click **Log out**.
-- **Expected:** URL `/signin`, "Welcome back" visible.
+- **Expected:** URL `/`, landing h1 "Sing your heart out…" visible.
 - **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-004
@@ -229,7 +229,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   read that stale value as "no session" and redirected back — the first
   attempt silently did nothing and only the second one got through, so the
   failure alternated. Must not use `page.goto()` after the first load, since a
-  reload wipes the in-memory cache and hides it.
+  reload wipes the in-memory cache and hides it. Logout lands on `/`, so
+  retries after the first cycle open the sign-in modal via the hero button
+  instead of routing.
 - **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-017

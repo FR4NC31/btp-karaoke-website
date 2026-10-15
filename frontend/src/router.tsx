@@ -6,6 +6,7 @@ import RouteError from "./components/RouteError"
 import LandingPage from "./pages/LandingPage"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
+import Services from "./pages/Services"
 import NotFound from "./pages/NotFound"
 import SignIn from "./pages/auth/SignIn"
 import SignUp from "./pages/auth/SignUp"
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
                     {
                         path: "/contact",
                         element: <Contact />,
+                    },
+                    {
+                        path: "/services",
+                        element: <Services />,
                     },
                 ]
             },
