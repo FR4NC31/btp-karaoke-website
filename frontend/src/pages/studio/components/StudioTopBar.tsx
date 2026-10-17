@@ -1,5 +1,7 @@
+import { Link, useLocation } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  ArrowLeft01Icon,
   Search01Icon,
   ChevronDownIcon,
   HeadphonesIcon,
@@ -10,9 +12,23 @@ import BrandLogo from '../../../components/BrandLogo'
 import ProfileMenu from './ProfileMenu'
 
 export default function StudioTopBar() {
+  const { pathname } = useLocation()
+  // Back to the hub from any page that is not the hub itself (console,
+  // profile) — the sidebar selection is cosmetic, so this is the way back.
+  const showBack = pathname !== '/studio'
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
       <div className="flex shrink-0 items-center gap-3">
+        {showBack && (
+          <Link
+            to="/studio"
+            aria-label="Back"
+            className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
+          </Link>
+        )}
         <BrandLogo className="size-9 shrink-0 rounded-md" />
         <div className="hidden leading-tight sm:block">
           <div className="flex items-center gap-2">

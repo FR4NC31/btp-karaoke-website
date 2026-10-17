@@ -104,7 +104,7 @@ frontend/tests/e2e/
 ├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…004 collections, genre filter, telemetry
+├── karaoke/discovery.spec.ts    KARAOKE-001…006 media hub, console hop, video playback
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
@@ -161,14 +161,15 @@ What the product actually implements today (test coverage is limited to this):
 
 | Feature                          | Status                | Tests                     |
 | -------------------------------- | --------------------- | ------------------------- |
-| Collections + genre filter       | Working (client-side) | KARAOKE-001/002, SMOKE-004 |
-| Telemetry track listing          | Working (static data) | KARAOKE-003               |
+| Media hub sections (video/music/radio) | Working (static data) | KARAOKE-001/003/005, SMOKE-004 |
+| Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
+| Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
-| Player play/pause/like toggles   | Working (UI state)    | PLAYER-001/003/004/008    |
-| Progress display                 | Static values only    | PLAYER-006                |
+| Player play/pause/like toggles   | Working (UI state; real on console) | PLAYER-001/003/004/008 |
+| Progress display                 | Live m:ss on every studio page (video on console, lobby music elsewhere) | PLAYER-006 |
 | Search input (top bar)           | **Not wired** (decorative) | — (N/A, test-cases.md) |
 | Song detail / lyrics page        | Does not exist        | —                         |
-| Real audio / media               | Does not exist        | —                         |
+| Music Player / Radio actions     | Visual only (buttons) | —                         |
 | Previous/Next/Shuffle/Repeat     | Buttons without handlers | — (asserted only where visible) |
 
 ## API integration

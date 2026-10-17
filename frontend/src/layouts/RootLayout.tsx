@@ -41,7 +41,7 @@ export default function RootLayout() {
 
   // Signed-in users already have the profile menu; /signin and /signup have
   // their own forms; the landing hero has its own CTAs. The secondary pages
-  // (/about, /contact) are the ones that need a header entry point.
+  // (/about, /contact, /services) are the ones that need a header entry point.
   const onContentPage =
     location.pathname === '/about' || location.pathname === '/contact' || location.pathname === '/services'
   const showHeaderAuth = !isPending && session == null && onContentPage

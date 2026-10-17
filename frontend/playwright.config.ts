@@ -44,7 +44,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   timeout: 30_000,
-  expect: { timeout: 5_000 },
+  // 10 s: the studio opens behind a session check against the remote Aiven
+  // database plus a ~3.5 s skeleton, and both slow down under parallel workers.
+  expect: { timeout: 10_000 },
   reporter: reporters,
   outputDir: 'test-results',
 

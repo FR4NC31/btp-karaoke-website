@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#101214"/>
+      <stop offset="1" stop-color="#0a0b0c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.8" r="0.5">
+      <stop offset="0" stop-color="#d32f2f" stop-opacity="0.22"/>
+      <stop offset="0.55" stop-color="#d32f2f" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#d32f2f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff5a5a" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ff5a5a" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ff5a5a" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+
+  <!-- waveform bars (left cluster, rising toward center) -->
+  <g fill="#d32f2f" opacity="0.5">
+    <rect x="150" y="458" width="12" height="24" rx="6"/>
+    <rect x="182" y="444" width="12" height="52" rx="6"/>
+    <rect x="214" y="427" width="12" height="86" rx="6"/>
+    <rect x="246" y="407" width="12" height="126" rx="6"/>
+    <rect x="278" y="384" width="12" height="172" rx="6"/>
+    <rect x="310" y="359" width="12" height="222" rx="6"/>
+    <rect x="342" y="335" width="12" height="270" rx="6"/>
+    <rect x="374" y="314" width="12" height="312" rx="6"/>
+    <rect x="406" y="297" width="12" height="346" rx="6"/>
+    <rect x="438" y="284" width="12" height="372" rx="6"/>
+  </g>
+  <!-- waveform bars (right cluster, rising toward center) -->
+  <g fill="#d32f2f" opacity="0.5">
+    <rect x="1438" y="458" width="12" height="24" rx="6"/>
+    <rect x="1406" y="444" width="12" height="52" rx="6"/>
+    <rect x="1374" y="427" width="12" height="86" rx="6"/>
+    <rect x="1342" y="407" width="12" height="126" rx="6"/>
+    <rect x="1310" y="384" width="12" height="172" rx="6"/>
+    <rect x="1278" y="359" width="12" height="222" rx="6"/>
+    <rect x="1246" y="335" width="12" height="270" rx="6"/>
+    <rect x="1214" y="314" width="12" height="312" rx="6"/>
+    <rect x="1182" y="297" width="12" height="346" rx="6"/>
+    <rect x="1150" y="284" width="12" height="372" rx="6"/>
+  </g>
+
+  <!-- singer silhouette (neck + head + slimmer torso) -->
+  <rect x="783" y="356" width="24" height="72" rx="12" fill="#060708"/>
+  <circle cx="795" cy="330" r="42" fill="#060708"/>
+  <circle cx="795" cy="330" r="42" fill="none" stroke="#d32f2f" stroke-opacity="0.3" stroke-width="4"/>
+  <path d="M740 806 C744 600 750 486 768 448 C777 428 787 420 795 418 C803 420 813 428 822 448 C840 486 846 600 850 806 Z" fill="#060708"/>
+  <path d="M740 806 C744 600 750 486 768 448 C777 428 787 420 795 418 C803 420 813 428 822 448 C840 486 846 600 850 806" fill="none" stroke="#d32f2f" stroke-opacity="0.3" stroke-width="4"/>
+
+  <!-- mic + stand -->
+  <line x1="886" y1="806" x2="854" y2="456" stroke="#2b2f33" stroke-width="8" stroke-linecap="round"/>
+  <rect x="845" y="408" width="15" height="44" rx="7.5" fill="#34383d"/>
+
+  <!-- stage floor light -->
+  <rect x="0" y="782" width="1600" height="3" fill="url(#floor)"/>
+  <rect x="0" y="789" width="1600" height="1.5" fill="#ff5a5a" opacity="0.4"/>
+</svg>

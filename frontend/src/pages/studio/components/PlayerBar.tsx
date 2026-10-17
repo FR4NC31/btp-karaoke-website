@@ -9,18 +9,86 @@ import {
   PauseIcon,
   SkipForwardIcon,
   RepeatIcon,
-  ListIcon,
+  RepeatOffIcon,
+  RepeatOne01Icon,
   VolumeHighIcon,
   FullScreenIcon,
 } from '@hugeicons/core-free-icons'
 import Placeholder from '../../../components/Placeholder'
+import type { KaraokeVideoApi } from '../../../lib/karaoke-player'
 
-export default function PlayerBar() {
-  const [playing, setPlaying] = useState(false)
+/** m:ss readout for the player bar. */
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
+  const total = Math.floor(seconds)
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
+/**
+ * Studio player bar. The shell transport registers two sources — the
+ * console's karaoke <video> and the lobby music <audio> (StudioBgm); the
+ * video wins while it is attached. The bar drives whichever source is
+ * active: play/pause, the full-width top-edge seek strip (native slider with
+ * a thumb circle — slide it or click the track to scrub; mouse, touch and
+ * arrow keys) and volume. With no source registered at all the same controls
+ * fall back to their previous cosmetic behaviour.
+ */
+export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
   const [liked, setLiked] = useState(false)
+  const [demoPlaying, setDemoPlaying] = useState(false)
+  const [repeat, setRepeat] = useState<'off' | 'all' | 'one'>('off')
+  const [shuffled, setShuffled] = useState(false)
+
+  const playing = player.hasMedia ? player.playing : demoPlaying
+  const progress =
+    player.hasMedia && player.duration > 0 ? (player.currentTime / player.duration) * 100 : 33
+  const current = player.hasMedia ? formatTime(player.currentTime) : '1:24'
+  const duration = player.hasMedia ? formatTime(player.duration) : '4:11'
+
+  const toggle = () => {
+    if (player.hasMedia) player.toggle()
+    else setDemoPlaying((v) => !v)
+  }
+
+  const canSeek = player.hasMedia && player.duration > 0
+
+  // Repeat cycles off → all → one (RepeatOff / Repeat / RepeatOne01 icons);
+  // off and the two repeat modes mirror onto the video's loop flag.
+  const repeatLabel = repeat === 'one' ? 'Repeat one' : repeat === 'all' ? 'Repeat all' : 'Repeat off'
+  const repeatIcon = repeat === 'one' ? RepeatOne01Icon : repeat === 'all' ? RepeatIcon : RepeatOffIcon
+
+  const cycleRepeat = () => {
+    const next = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off'
+    setRepeat(next)
+    player.setLoop(next !== 'off')
+  }
 
   return (
-    <footer className="flex h-20 shrink-0 items-center gap-3 border-t border-border bg-surface px-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:px-4">
+    <footer className="relative flex h-20 shrink-0 items-center gap-3 bg-surface px-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:px-4">
+      {/* Seek strip — doubles as the bar's top border. Native range slider:
+          drag the thumb circle, click the track or use arrow keys to scrub;
+          the red fill mirrors the live transport position. */}
+      <div className="absolute top-0 left-0 z-10 h-3 w-full">
+        <div className="absolute top-1 left-0 h-1 w-full bg-border">
+          <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={canSeek ? player.duration : 0}
+          step="any"
+          value={canSeek ? player.currentTime : 0}
+          onChange={(event) => player.seek(Number(event.target.value))}
+          disabled={!canSeek}
+          aria-label="Seek"
+          aria-valuetext={`${current} / ${duration}`}
+          className={`absolute inset-0 w-full appearance-none bg-transparent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${
+            canSeek
+              ? 'cursor-pointer [&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary'
+              : 'cursor-default [&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:opacity-0 [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:opacity-0'
+          }`}
+        />
+      </div>
       {/* Track info */}
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
@@ -41,13 +109,17 @@ export default function PlayerBar() {
         </button>
       </div>
 
-      {/* Controls + progress */}
+      {/* Controls + time readout */}
       <div className="flex min-w-0 flex-1 flex-col items-center gap-2 sm:w-[min(36rem,40vw)] sm:flex-none">
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
+            onClick={() => setShuffled((v) => !v)}
             aria-label="Shuffle"
-            className="hidden text-text-muted transition hover:text-text-primary sm:block"
+            aria-pressed={shuffled}
+            className={`hidden transition hover:text-text-primary sm:block ${
+              shuffled ? 'text-warning' : 'text-text-muted'
+            }`}
           >
             <HugeiconsIcon icon={ShuffleIcon} size={16} />
           </button>
@@ -56,7 +128,7 @@ export default function PlayerBar() {
           </button>
           <button
             type="button"
-            onClick={() => setPlaying((v) => !v)}
+            onClick={toggle}
             aria-label={playing ? 'Pause' : 'Play'}
             className="grid size-9 place-items-center rounded-full bg-primary text-text-primary transition hover:bg-primary-hover"
           >
@@ -67,25 +139,19 @@ export default function PlayerBar() {
           </button>
           <button
             type="button"
-            aria-label="Repeat"
-            className="hidden text-text-muted transition hover:text-text-primary sm:block"
+            onClick={cycleRepeat}
+            aria-label={repeatLabel}
+            className={`hidden transition hover:text-text-primary sm:block ${
+              repeat === 'off' ? 'text-text-muted' : 'text-primary'
+            }`}
           >
-            <HugeiconsIcon icon={RepeatIcon} size={16} />
-          </button>
-          <button
-            type="button"
-            aria-label="Queue"
-            className="hidden text-text-muted transition hover:text-text-primary sm:block"
-          >
-            <HugeiconsIcon icon={ListIcon} size={16} />
+            <HugeiconsIcon icon={repeatIcon} size={16} />
           </button>
         </div>
-        <div className="group flex w-full items-center gap-3 text-[10px] text-text-muted">
-          <span className="w-8 shrink-0 text-right tabular-nums">1:24</span>
-          <div className="h-1.5 flex-1 cursor-pointer rounded-full bg-border transition group-hover:h-2">
-            <div className="h-full w-1/3 rounded-full bg-primary" />
-          </div>
-          <span className="w-8 shrink-0 tabular-nums">4:11</span>
+        <div className="flex w-full items-center justify-center gap-2 text-[10px] text-text-muted">
+          <span className="tabular-nums">{current}</span>
+          <span aria-hidden="true">/</span>
+          <span className="tabular-nums">{duration}</span>
         </div>
       </div>
 
@@ -97,9 +163,16 @@ export default function PlayerBar() {
         </span>
         <span className="rounded bg-primary-soft px-2 py-1 text-[10px] font-bold text-primary">STEMS MIX</span>
         <HugeiconsIcon icon={VolumeHighIcon} size={15} className="text-text-muted" />
-        <div className="h-1 w-14 rounded-full bg-border">
-          <div className="h-full w-2/3 rounded-full bg-primary" />
-        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={player.volume}
+          onChange={(event) => player.changeVolume(Number(event.target.value))}
+          aria-label="Volume"
+          className="h-1.5 w-16 cursor-pointer accent-primary"
+        />
         <button type="button" aria-label="Fullscreen" className="text-text-muted transition hover:text-text-primary">
           <HugeiconsIcon icon={FullScreenIcon} size={15} />
         </button>

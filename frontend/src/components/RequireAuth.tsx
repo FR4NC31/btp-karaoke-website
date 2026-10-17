@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet } from 'react-router'
 import { useSession } from '../lib/auth-client'
+import { isSessionExitInProgress, markSessionExit } from '../lib/session-exit'
 import { SessionChecking, SessionUnavailable } from './SessionStates'
 
 /**
@@ -43,6 +44,12 @@ export default function RequireAuth() {
   }, [error])
 
   useEffect(() => {
+    // A live session means any earlier sign-out is over; future "no session"
+    // answers are genuine bounces again, not an exit in progress.
+    if (data) markSessionExit(false)
+  }, [data])
+
+  useEffect(() => {
     // `asked` makes this fire at most once per mount, so an empty answer
     // settles the decision instead of asking again forever.
     if (data || isPending || asked.current) return
@@ -61,6 +68,9 @@ export default function RequireAuth() {
 
   return (
     // `replace` so Back doesn't return straight to the guarded page.
-    <Navigate to="/signin" replace />
+    // A deliberate sign-out is not an unauthorized bounce: while one is in
+    // flight, aim at the landing page the sign-out handler targets so the
+    // two navigations can never disagree (see lib/session-exit.ts).
+    <Navigate to={isSessionExitInProgress() ? '/' : '/signin'} replace />
   )
 }
