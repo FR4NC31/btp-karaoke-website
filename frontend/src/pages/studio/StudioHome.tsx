@@ -1,17 +1,18 @@
-import FeaturedCollection from './components/FeaturedCollection'
-import CollectionsSection from './components/CollectionsSection'
-import TelemetryTable from './components/TelemetryTable'
+import VideoSongSection from './components/VideoSongSection'
+import MusicPlayerSection from './components/MusicPlayerSection'
+import RadioSection from './components/RadioSection'
 
 /**
- * /studio index: the discovery content shown inside StudioShell.
+ * /studio index: the studio media hub shown inside StudioShell.
+ * Three sections, top to bottom: Video Song, Music Player, Radio.
  * All region state lives in the region components themselves.
  */
 export default function StudioHome() {
   return (
     <div className="space-y-8">
-      <FeaturedCollection />
-      <CollectionsSection />
-      <TelemetryTable />
+      <VideoSongSection />
+      <MusicPlayerSection />
+      <RadioSection />
     </div>
   )
 }

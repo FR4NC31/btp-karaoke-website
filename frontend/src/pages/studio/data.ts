@@ -8,26 +8,6 @@ export interface SidebarSection {
   items: SidebarItem[]
 }
 
-export interface Collection {
-  title: string
-  desc: string
-  bpm: string
-  key: string
-  tag: string
-  genre: string
-}
-
-export interface Track {
-  no: string
-  title: string
-  artist: string
-  fmt: string
-  date: string
-  key: string
-  tempo: string
-  len: string
-}
-
 export const sidebarSections: SidebarSection[] = [
   {
     label: 'Production Archives',
@@ -60,29 +40,53 @@ export const studioTools: StudioTool[] = [
   { code: 'Banjo B', name: 'Minus-I Split', desc: 'StemExtractor' },
 ]
 
-export const filterGenres = [
-  'All Genres',
-  'Pop',
-  'Rock',
-  'R&B',
-  'Hip-Hop',
-  'Ballad',
-  'Acoustic',
+export interface MusicTrack {
+  tag: string
+  title: string
+  subtitle: string
+  tempo: string
+  key: string
+}
+
+/** Audio songs (minus-one sets) for the Music Player card grid. */
+export const musicTracks: MusicTrack[] = [
+  { tag: 'MIX', title: 'Afternoon Drive', subtitle: 'Mastered by Frankie Dev', tempo: '118 BPM', key: 'Fmaj' },
+  { tag: 'VAULT', title: 'Strict Minus-One Kit', subtitle: 'BTP Production Originals', tempo: '124 BPM', key: 'Amin' },
+  { tag: 'LIVE', title: 'Pivot Rhythm Anthems Vol.', subtitle: 'Glass Avenue FH Archive', tempo: '132 BPM', key: 'Gmaj' },
+  { tag: 'TAPE', title: 'OPM Classics & Golden Eras', subtitle: 'BTP Production Master Tape', tempo: '96 BPM', key: 'Cmaj' },
+  { tag: 'MIX', title: 'Soft Acoustic & Chill', subtitle: 'Acoustic Room Sessions', tempo: '72 BPM', key: 'Dmin' },
 ]
 
-export const collections: Collection[] = [
-  { title: 'Afternoon Drive', desc: 'Mastered by Frankie Dev', bpm: '118 BPM', key: 'Fmaj', tag: 'Mix', genre: 'Pop' },
-  { title: 'Strict Minus-One Kit', desc: 'BTP Production Originals', bpm: '124 BPM', key: 'Amin', tag: 'Vault', genre: 'Hip-Hop' },
-  { title: 'Pivot Rhythm Anthems Vol.', desc: 'Glass Avenue FH Archive', bpm: '132 BPM', key: 'Gmaj', tag: 'Live', genre: 'Rock' },
-  { title: 'Opn Classics & Golden Eras', desc: 'BTP Production Master Tape', bpm: '96 BPM', key: 'Cmaj', tag: 'Tape', genre: 'R&B' },
-  { title: 'Soft Acoustic & Chill', desc: 'Acoustic Room Sessions', bpm: '72 BPM', key: 'Dmin', tag: 'Mix', genre: 'Acoustic' },
-  { title: 'Midnight Serenade', desc: 'BTP Ballad Selections', bpm: '68 BPM', key: 'Bmin', tag: 'Mix', genre: 'Ballad' },
+export interface VideoSong {
+  tag: string
+  title: string
+  subtitle: string
+  duration: string
+  plays: string
+}
+
+/**
+ * Karaoke video songs for the Video Song card grid. Every card opens the
+ * player-queue console; the one local video master ("The Reason") plays
+ * through the shell player bar there.
+ */
+export const videoSongs: VideoSong[] = [
+  { tag: 'KTV', title: 'The Reason', subtitle: 'Hoobastank', duration: '3:54', plays: '12.4K' },
+  { tag: 'DUET', title: 'Die With A Smile (Cover)', subtitle: 'Lady Gaga & Bruno Mars', duration: '4:11', plays: '8.1K' },
+  { tag: 'POP', title: 'APT.', subtitle: 'ROSÉ & Bruno Mars', duration: '2:49', plays: '9.6K' },
+  { tag: 'OPM', title: 'Kisapmata', subtitle: 'Rivermaya', duration: '4:32', plays: '5.2K' },
 ]
 
-export const telemetry: Track[] = [
-  { no: '01', title: 'Die With A Smile (Cover)', artist: 'Lady Gaga & Bruno Mars', fmt: 'WAV 24-bit', date: '2025-08-12', key: 'C Maj', tempo: '104 BPM', len: '4:11' },
-  { no: '02', title: 'Afternoon Drive', artist: 'Frankie Dev', fmt: 'FLAC 16-bit', date: '2025-08-10', key: 'F Maj', tempo: '118 BPM', len: '3:44' },
-  { no: '03', title: 'Pivot Drill Selection', artist: 'Glass Avenue FH', fmt: 'WAV 24-bit', date: '2025-08-09', key: 'G Min', tempo: '132 BPM', len: '2:58' },
-  { no: '04', title: 'Strict Minus-One Kit', artist: 'BTP Production', fmt: 'FLAC 16-bit', date: '2025-08-05', key: 'A Min', tempo: '124 BPM', len: '5:02' },
-  { no: '05', title: 'Acoustic Lounge Live', artist: 'BTP Sessions', fmt: 'WAV 24-bit', date: '2025-08-01', key: 'D Maj', tempo: '88 BPM', len: '6:21' },
+export interface RadioStation {
+  name: string
+  genre: string
+  freq: string
+  listeners: string
+}
+
+export const radioStations: RadioStation[] = [
+  { name: 'BTP Lounge Radio', genre: 'OPM & Lounge', freq: 'FM 91.5', listeners: '1,204' },
+  { name: 'OPM Gold FM', genre: 'Classic OPM', freq: 'FM 98.7', listeners: '892' },
+  { name: 'Pinoy Rock Wave', genre: 'Rock', freq: 'FM 105.3', listeners: '654' },
+  { name: 'Acoustic Chill FM', genre: 'Acoustic', freq: 'AM 720', listeners: '431' },
 ]

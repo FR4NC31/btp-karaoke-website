@@ -62,6 +62,8 @@ run (and reuses already-running local servers), then stops them afterwards.
 Already set up in this repo. On a new machine:
 
 ```bash
+git lfs install            # media master (the-reason.mp4) is Git LFS-tracked
+git lfs pull               # fetch the actual video/audio file, not its pointer
 cd frontend
 npm ci
 npx playwright install chromium
@@ -77,7 +79,7 @@ All commands from `frontend/`:
 
 | Command                    | Purpose                                  |
 | -------------------------- | ---------------------------------------- |
-| `npm run test:e2e`         | Full suite (35 tests)                    |
+| `npm run test:e2e`         | Full suite                    |
 | `npm run test:e2e:smoke`   | Smoke suite only (fast P0 checks)        |
 | `npm run test:e2e:headed`  | Visible browser                          |
 | `npm run test:e2e:ui`      | Interactive UI mode (pick/debug tests)   |
@@ -104,7 +106,7 @@ frontend/tests/e2e/
 ├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…004 collections, genre filter, telemetry
+├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub, console, player bar, PiP, cross-page sync
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
@@ -161,15 +163,16 @@ What the product actually implements today (test coverage is limited to this):
 
 | Feature                          | Status                | Tests                     |
 | -------------------------------- | --------------------- | ------------------------- |
-| Collections + genre filter       | Working (client-side) | KARAOKE-001/002, SMOKE-004 |
-| Telemetry track listing          | Working (static data) | KARAOKE-003               |
+| Media hub sections (video/music/radio) | Working (static data) | KARAOKE-001/003/005, SMOKE-004 |
+| Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
+| Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
-| Player play/pause/like toggles   | Working (UI state)    | PLAYER-001/003/004/008    |
-| Progress display                 | Static values only    | PLAYER-006                |
+| Player play/pause/like toggles   | Working (UI state; real on console) | PLAYER-001/003/004/008 |
+| Progress display                 | Live m:ss on every studio page (video on console, lobby music elsewhere) | PLAYER-006 |
 | Search input (top bar)           | **Not wired** (decorative) | — (N/A, test-cases.md) |
 | Song detail / lyrics page        | Does not exist        | —                         |
-| Real audio / media               | Does not exist        | —                         |
-| Previous/Next/Shuffle/Repeat     | Buttons without handlers | — (asserted only where visible) |
+| Music Player / Radio actions     | Visual only (buttons) | —                         |
+| Previous/Next/Shuffle/Repeat     | Repeat cycles off → all → one on the bar (drives the video `loop`); Previous/Next + Shuffle visual only | — (asserted only where visible) |
 
 ## API integration
 
@@ -250,7 +253,7 @@ High-risk PRs: run the full suite locally (`npm run test:e2e`) before merge.
   **BLOCKED** at startup (environment issue, not a product bug).
 - **Search**: the Studio search input is decorative (no handler/results) —
   no search tests exist because the feature does not work yet.
-- **Real playback / media errors**: no audio element or media files yet.
+- **Media files / Git LFS**: the karaoke master (`frontend/src/assets/video_local/the-reason.mp4`) is Git LFS-tracked — without `git lfs pull` the file is just a pointer and the karaoke/player specs fail (environment issue, not a product bug).
 - **Cross-browser**: Chromium only; Firefox/WebKit projects are commented in
   the config until installed.
 - Full list of N/A cases: [test-cases.md](test-cases.md#not-implemented--n/a).

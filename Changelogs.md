@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 15, 2026
+Last updated: October 17, 2026
 
 ### Features
 
+- feat: Add local and functional video player (764f437)
 - feat: Add Services UI in navbar and page (12d5188)
 - feat(frontend): add Go Back button to 404 page (4034966)
 - feat(frontend): reveal About sections on scroll via ScrollTrigger (50afe0b)
@@ -25,6 +26,7 @@ Last updated: October 15, 2026
 
 ### Bug Fixes
 
+- fix(studio): real track metadata, logout bounce gate, LFS video (a363aeb)
 - fix(frontend): fall back to home from 404 when history is empty (747f5f9)
 - fix(frontend): tighten Contact layout to fit without scrollbar (9c7dcf2)
 - fix(frontend): pin dialog close button outside scroll region (1e1b046)
@@ -49,6 +51,7 @@ Last updated: October 15, 2026
 
 ### Other Changes
 
+- Merge pull request #11 from FR4NC31/feat/services-ui (d0418af)
 - Merge pull request #10 from FR4NC31/feat/polished-UI (8f7039c)
 - Merge pull request #9 from FR4NC31/fix/authentication-error (c1bae93)
 - Merge pull request #8 from FR4NC31/feat/implement-realprofile (1ecbec7)

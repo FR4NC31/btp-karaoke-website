@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures'
 import { ANONYMOUS, signIn } from '../helpers/auth'
 import { BACKEND_URL } from '../helpers/env'
+import { settlePlayerBar } from '../helpers/player'
 
 /**
  * SMOKE — "Can a user actually use the BTP Karaoke website?"
@@ -42,22 +43,28 @@ test.describe('smoke', () => {
     await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
   })
 
-  test('SMOKE-004: user can discover a karaoke collection', { tag: '@p0' }, async ({ page }) => {
+  test('SMOKE-004: user can discover the video song', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/studio')
-    await page.getByRole('button', { name: 'Rock', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Pivot Rhythm Anthems Vol.' })).toBeVisible()
-    await expect(page.getByText('Viewing 1 of 6 sets')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
+    await expect(page.getByRole('link', { name: 'Play The Reason' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
   })
 
   test('SMOKE-005: critical karaoke flow works', { tag: '@p0' }, async ({ page }) => {
     await signIn(page)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
 
-    await page.getByRole('button', { name: 'Ballad', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Midnight Serenade' })).toBeVisible()
-
+    // The bar drives the real lobby track on the hub — settle any autoplay
+    // first, then the Play/Pause toggle runs deterministically.
+    await settlePlayerBar(page)
     const playerBar = page.getByRole('contentinfo')
     await playerBar.getByRole('button', { name: 'Play' }).click()
     await expect(playerBar.getByRole('button', { name: 'Pause' })).toBeVisible()
+
+    // The video song card hops into the player-queue console.
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.getByRole('heading', { name: 'Karaoke & Studio Audio Console' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Open profile menu' }).click()
     await page.getByRole('button', { name: 'Log out' }).click()

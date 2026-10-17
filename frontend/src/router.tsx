@@ -7,6 +7,7 @@ import LandingPage from "./pages/LandingPage"
 import About from "./pages/About"
 import Contact from "./pages/Contact"
 import Services from "./pages/Services"
+import PlayerQueue from "./pages/PlayerQueue"
 import NotFound from "./pages/NotFound"
 import SignIn from "./pages/auth/SignIn"
 import SignUp from "./pages/auth/SignUp"
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
                         children: [
                             { index: true, element: <StudioHome /> },
                             { path: "profile", element: <ProfilePage /> },
+                            { path: "player-queue", element: <PlayerQueue /> },
                         ],
                     },
                 ]

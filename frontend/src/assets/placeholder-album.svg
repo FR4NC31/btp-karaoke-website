@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24272b"/>
+      <stop offset="1" stop-color="#16181a"/>
+    </linearGradient>
+    <pattern id="stripes" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="28" fill="#f4f4f2" opacity="0.035"/>
+    </pattern>
+  </defs>
+
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <rect width="800" height="800" fill="url(#stripes)"/>
+
+  <!-- music note -->
+  <g fill="#70747a" opacity="0.85">
+    <ellipse cx="282" cy="562" rx="74" ry="56" transform="rotate(-18 282 562)"/>
+    <ellipse cx="562" cy="502" rx="74" ry="56" transform="rotate(-18 562 502)"/>
+    <rect x="330" y="262" width="22" height="300" rx="11"/>
+    <rect x="610" y="202" width="22" height="300" rx="11"/>
+    <path d="M330 262 L632 202 L632 254 L330 314 Z"/>
+  </g>
+</svg>

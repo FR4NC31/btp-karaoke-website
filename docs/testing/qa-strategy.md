@@ -30,8 +30,8 @@ Core journeys that must work or the site is unusable:
 | Main navigation         | SMOKE-002, NAV-001                          |
 | Authentication (login)  | SMOKE-003, AUTH-001                         |
 | Logout                  | AUTH-003                                    |
-| Karaoke discovery       | SMOKE-004, KARAOKE-001, KARAOKE-002         |
-| Critical flow completion| SMOKE-005 (sign in → filter → play → logout)|
+| Studio media hub        | SMOKE-004, KARAOKE-001, KARAOKE-002         |
+| Critical flow completion| SMOKE-005 (sign in → play → console → logout)|
 | Registration            | AUTH-010                                    |
 | Backend availability    | SMOKE-006                                   |
 
@@ -44,7 +44,7 @@ Important functionality; degraded experience but a workaround exists:
 | Form/validation rules         | AUTH-005, AUTH-006, AUTH-011…013      |
 | Invalid credentials rejected  | AUTH-002, AUTH-002b                   |
 | Session persistence           | AUTH-009                              |
-| Track listing (telemetry)     | KARAOKE-003                           |
+| Music player track listing    | KARAOKE-003, KARAOKE-005              |
 | Player controls               | PLAYER-001, PLAYER-003, PLAYER-004    |
 | Mobile navigation             | NAV-003                               |
 | Password visibility           | AUTH-007                              |
@@ -59,7 +59,7 @@ Secondary behavior, styling states and edge cases:
 | Google OAuth hand-off, OAuth errors | AUTH-008, AUTH-018           |
 | Protected route redirects         | AUTH-004                        |
 | Auth cross-links, error recovery  | NAV-002, AUTH-014               |
-| Sidebar/like styling states       | KARAOKE-004, PLAYER-008         |
+| Sidebar/like styling, video play  | KARAOKE-004, KARAOKE-006, PLAYER-008 |
 | Progress display, backend 404     | PLAYER-006, ERROR-004           |
 
 ## Severity definitions
@@ -150,12 +150,12 @@ Only mark what actually exists in the application.
 
 ### Karaoke
 
-- [x] Song/collection discovery (KARAOKE-001, KARAOKE-002)
-- [x] Song listing details (KARAOKE-003)
+- [x] Studio media hub sections (KARAOKE-001, KARAOKE-003, KARAOKE-005)
+- [x] Video song → console hop (KARAOKE-002)
 - [x] Player opens with track (PLAYER-001)
 - [x] Playback start / pause / resume (PLAYER-003, PLAYER-004)
 - [x] Like toggle (PLAYER-008)
-- [ ] Song loads real media — **no media implemented** (N/A)
+- [x] Song loads real media — local karaoke video via shell player bar (KARAOKE-006)
 - [ ] Player error / media failure handling — N/A
 
 ### Backend
@@ -169,8 +169,8 @@ Only mark what actually exists in the application.
 
 ### UX
 
-- [x] Genre filter narrows and restores collections (KARAOKE-002)
-- [ ] Loading/empty filter states — not reachable with the shipped dataset (N/A)
+- [x] Hub sections render for video/music/radio (KARAOKE-001, KARAOKE-005)
+- [ ] Loading/empty states — no empty datasets shipped (N/A)
 - [x] Error states: 404 page (ERROR-001)
 - [x] No console errors / failed requests on key pages (ERROR-002/003)
 - [ ] Accessibility beyond basics — not audited (P3 gap)

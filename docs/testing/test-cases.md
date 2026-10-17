@@ -40,21 +40,22 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### SMOKE-004
 
-- **Title:** User can discover a karaoke collection
+- **Title:** User can discover the video song
 - **Priority:** P0
-- **Steps:** 1. Open `/studio`. 2. Click the **Rock** genre filter.
-- **Expected:** Matching collection is shown and the counter reads
-  "Viewing 1 of 6 sets".
+- **Steps:** 1. Open `/studio`.
+- **Expected:** Video Song section shows h1 "The Reason", the "Play The
+  Reason" link, and the Radio section heading.
 - **Automation:** Playwright — **Status: Automated**
 
 ### SMOKE-005
 
 - **Title:** Critical karaoke flow works
 - **Priority:** P0
-- **Steps:** 1. Sign in. 2. Filter by **Ballad**. 3. Start playback in the
-  player bar. 4. Open the profile menu → **Log out**.
-- **Expected:** Collection filters, playback toggles to Pause, logout
-  returns to `/`.
+- **Steps:** 1. Sign in. 2. Toggle playback in the player bar. 3. Open the
+  video song card (**Play The Reason**). 4. Open the profile menu →
+  **Log out**.
+- **Expected:** Hub loads with h1 "The Reason", playback toggles to Pause,
+  the `/studio/player-queue` console opens, logout returns to `/`.
 - **Automation:** Playwright — **Status: Automated**
 
 ### SMOKE-006
@@ -308,30 +309,34 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### KARAOKE-001
 
-- **Title:** Studio opens with master vault collections
+- **Title:** Studio hub opens with video song, music player and radio
 - **Priority:** P0
-- **Preconditions:** Collections exist in the shipped dataset (6 sets).
+- **Preconditions:** Media hub sections shipped (video song, music player,
+  radio); telemetry table retired.
 - **Steps:** 1. Open `/studio`.
-- **Expected:** Studio header, featured collection heading, counter
-  "Viewing 6 of 6 sets", 6 collection cards.
+- **Expected:** Studio header, h1 "The Reason", the three section headings
+  (Video Song / Music Player / Radio), 13 media cards (4 video + 5 music +
+  4 radio); the old telemetry heading is absent.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-002
 
-- **Title:** Genre filter narrows and restores collections
+- **Title:** Video song opens the console and auto-plays
 - **Priority:** P0
-- **Steps:** 1. Open `/studio`. 2. Click **Rock**. 3. Click **All Genres**.
-- **Expected:** Only the Rock card shows while filtered ("Viewing 1 of 6");
-  all cards return on All Genres.
+- **Steps:** 1. Open `/studio`. 2. Click **Play The Reason**.
+- **Expected:** `/studio/player-queue` loads with h1 "Karaoke & Studio
+  Audio Console"; the video auto-plays (player bar shows **Pause**,
+  `paused === false`).
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-003
 
-- **Title:** Telemetry listing shows track details
+- **Title:** Music player lists the minus-one sets
 - **Priority:** P1
-- **Steps:** 1. Open `/studio`. 2. Inspect the telemetry table.
-- **Expected:** Header + 5 track rows; first row shows title, artist and
-  format ("WAV 24-bit"); per-row Play action visible.
+- **Steps:** 1. Open `/studio`. 2. Inspect the Music Player section.
+- **Expected:** "Viewing 5 of 5 tracks"; the Afternoon Drive card shows
+  subtitle "Mastered by Frankie Dev", meta "118 BPM" / "Fmaj" and its own
+  more-options action.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-004
@@ -343,6 +348,80 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   state; no `aria-pressed` yet).
 - **Automation:** Playwright — **Status: Automated**
 
+### KARAOKE-005
+
+- **Title:** Radio section shows on-air stations
+- **Priority:** P2
+- **Steps:** 1. Open `/studio`. 2. Inspect the Radio section.
+- **Expected:** "Viewing 4 of 4 stations"; 4 station cards each with an
+  "On Air" tag; the BTP Lounge Radio card shows genre, frequency and its
+  own more-options action.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-006
+
+- **Title:** Shell player bar plays the local video on the console
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/player-queue`. 2. Click **Play** in the player
+  bar.
+- **Expected:** Toggle becomes **Pause** and the `<video>` element is
+  actually playing (`paused === false`).
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-007
+
+- **Title:** Clicking the stage toggles playback with the bar icon
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/player-queue`. 2. Click the video stage, then
+  click it again.
+- **Expected:** First click plays (bar toggles to **Pause**), second click
+  pauses (bar back to **Play**) — the icon mirrors the video state.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-008
+
+- **Title:** Seek bar scrubs with click and drag
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/player-queue`. 2. Click the top seek strip at
+  ~75%, then drag from ~25% to ~50%.
+- **Expected:** The thumb circle marks the current position; the click jumps
+  to ~75% and the drag scrubs continuously to ~50% (`currentTime / duration`
+  follows both).
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-009
+
+- **Title:** Console back button returns to the studio hub
+- **Priority:** P2
+- **Steps:** 1. Open `/studio` (no back link on the hub). 2. Open the video
+  song console. 3. Click the top bar's **Back** link.
+- **Expected:** You land back on the hub with the 'The Reason' heading
+  visible.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-010
+
+- **Title:** Leaving the console hands the song to the hub, synced
+- **Priority:** P2
+- **Steps:** 1. Open `/studio`. 2. Open the console and let the video play
+  past ~1.5 s. 3. Click the top bar's **Back** link.
+- **Expected:** On the hub the lobby audio continues the same song from the
+  video's position (bar shows **Pause** and the synced m:ss).
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-011
+
+- **Title:** Picture in picture floats across studio pages
+- **Priority:** P2
+- **Steps:** 1. Open the console and let the video pass ~1.5 s. 2. Click
+  **Picture in picture**. 3. Hover the floating **Mini player** and pause,
+  then play. 4. Click **Expand**.
+- **Expected:** The hub shows the mini player in the corner, still playing
+  the same song from the console position; the overlay button pauses and
+  resumes it. Expand returns to `/studio/player-queue` with the video
+  playing from the carried-over position, and the mini hides.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Player — `frontend/tests/e2e/player/player.spec.ts`
@@ -352,7 +431,7 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Player bar shows the current track
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Inspect the player bar.
-- **Expected:** Track title "Die With A Smile (Cover)" and artist visible.
+- **Expected:** Track title "The Reason" and artist "Hoobastank" visible — the bar mirrors the real transport (every source plays the one local master).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-003
@@ -360,7 +439,8 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Playback starts
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Play** in the player bar.
-- **Expected:** The toggle becomes **Pause**.
+- **Expected:** The toggle becomes **Pause** (the spec settles the lobby
+  track to paused first — the test browser allows autoplay).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-004
@@ -368,7 +448,8 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Pause and resume work
 - **Priority:** P1
 - **Steps:** 1. Play → Pause → Play.
-- **Expected:** Toggle cycles Pause → Play → Pause correctly.
+- **Expected:** Toggle cycles Pause → Play → Pause correctly (same settle
+  step as PLAYER-003).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-006
@@ -376,8 +457,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Progress display shows current and total time
 - **Priority:** P2
 - **Steps:** 1. Open `/studio`.
-- **Expected:** Times "1:24" / "4:11" are displayed (static in prototype;
-  progress is not simulated).
+- **Expected:** The bar mirrors the real lobby music transport — total time
+  "3:54" (placeholder lobby track) and a live m:ss current time (0:00 until
+  playback starts); the console shows the video's own m:ss.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-008

@@ -5,6 +5,7 @@ import { UserIcon, Settings01Icon, Logout01Icon } from '@hugeicons/core-free-ico
 import UserAvatar from '../../../components/UserAvatar'
 import { signOut, useSession } from '../../../lib/auth-client'
 import { readableError, unexpectedError } from '../../../lib/auth-errors'
+import { markSessionExit } from '../../../lib/session-exit'
 
 /**
  * Avatar button + dropdown in the studio top bar. Owns its own open state,
@@ -41,6 +42,9 @@ export default function ProfileMenu() {
     if (signingOut) return
     setSignOutError('')
     setSigningOut(true)
+    // Flag the deliberate exit before the atom can turn null, so RequireAuth
+    // stops aiming its no-session bounce at /signin while we navigate to /.
+    markSessionExit(true)
     try {
       // Clear the backend session before leaving; navigating
       // alone would leave the cookie valid.
@@ -49,12 +53,14 @@ export default function ProfileMenu() {
         // Stay put. Leaving would put a still-valid cookie behind /signin,
         // where RequireGuest sends us straight back to the studio — a logout
         // that looks like it silently did nothing.
+        markSessionExit(false)
         setSignOutError(readableError(error))
         return
       }
     } catch (err) {
       // Rejected rather than answered: the server never saw the request, so
       // the cookie is still live. Report it instead of pretending it worked.
+      markSessionExit(false)
       setSignOutError(unexpectedError('sign-out', err))
       return
     } finally {
