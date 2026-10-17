@@ -25,32 +25,24 @@ function formatTime(seconds: number): string {
 }
 
 /**
- * Studio player bar. The shell transport registers two sources — the
- * console's karaoke <video> and the lobby music <audio> (StudioBgm); the
- * video wins while it is attached. The bar drives whichever source is
- * active: play/pause, the full-width top-edge seek strip (native slider with
- * a thumb circle — slide it or click the track to scrub; mouse, touch and
- * arrow keys) and volume. With no source registered at all the same controls
- * fall back to their previous cosmetic behaviour.
+ * Studio player bar. The shell transport registers up to three sources — the
+ * console's karaoke <video>, the floating PiP mini player (StudioPip) and
+ * the lobby music <audio> (StudioBgm), in that priority. The bar drives
+ * whichever source is active: play/pause, the full-width top-edge seek strip
+ * (native slider with a thumb circle — slide it or click the track to scrub;
+ * mouse, touch and arrow keys) and volume. Track metadata is static because
+ * every current source plays the same local master (The Reason).
  */
 export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
   const [liked, setLiked] = useState(false)
-  const [demoPlaying, setDemoPlaying] = useState(false)
   const [repeat, setRepeat] = useState<'off' | 'all' | 'one'>('off')
   const [shuffled, setShuffled] = useState(false)
 
-  const playing = player.hasMedia ? player.playing : demoPlaying
-  const progress =
-    player.hasMedia && player.duration > 0 ? (player.currentTime / player.duration) * 100 : 33
-  const current = player.hasMedia ? formatTime(player.currentTime) : '1:24'
-  const duration = player.hasMedia ? formatTime(player.duration) : '4:11'
-
-  const toggle = () => {
-    if (player.hasMedia) player.toggle()
-    else setDemoPlaying((v) => !v)
-  }
-
-  const canSeek = player.hasMedia && player.duration > 0
+  const playing = player.playing
+  const progress = player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
+  const current = formatTime(player.currentTime)
+  const duration = formatTime(player.duration)
+  const canSeek = player.duration > 0
 
   // Repeat cycles off → all → one (RepeatOff / Repeat / RepeatOne01 icons);
   // off and the two repeat modes mirror onto the video's loop flag.
@@ -93,8 +85,8 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-sm font-semibold uppercase">Die With A Smile (Cover)</p>
-          <p className="truncate text-[11px] text-text-muted">Lady Gaga &amp; Bruno Mars</p>
+          <p className="truncate text-sm font-semibold uppercase">The Reason</p>
+          <p className="truncate text-[11px] text-text-muted">Hoobastank</p>
           <p className="mt-0.5 hidden text-[9px] font-bold tracking-wider text-primary uppercase sm:block">
             24-Bit · WAV · FLAC
           </p>
@@ -128,7 +120,7 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
           </button>
           <button
             type="button"
-            onClick={toggle}
+            onClick={player.toggle}
             aria-label={playing ? 'Pause' : 'Play'}
             className="grid size-9 place-items-center rounded-full bg-primary text-text-primary transition hover:bg-primary-hover"
           >

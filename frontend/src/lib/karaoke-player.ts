@@ -14,10 +14,6 @@ import { useOutletContext } from 'react-router'
  * outlet context.
  */
 export type KaraokeVideoApi = {
-  /** True while any element (video, mini or music) is registered. */
-  hasMedia: boolean
-  /** True while the console's <video> is registered (the console page). */
-  hasVideo: boolean
   /** True while the in-app PiP mini player holds the session. */
   pip: boolean
   playing: boolean
@@ -57,9 +53,6 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const videoVolumeRef = useRef(DEFAULT_VOLUME)
   const loopRef = useRef(false)
 
-  const [hasVideo, setHasVideo] = useState(false)
-  const [hasMini, setHasMini] = useState(false)
-  const [hasMusic, setHasMusic] = useState(false)
   const [pip, setPip] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -125,14 +118,11 @@ export function useKaraokeVideo(): KaraokeVideoApi {
         videoRef.current = el
         el.volume = videoVolumeRef.current
         el.loop = loopRef.current
-        setHasVideo(true)
       } else if (kind === 'mini') {
         miniRef.current = el
         el.loop = loopRef.current
-        setHasMini(true)
       } else {
         musicRef.current = el
-        setHasMusic(true)
       }
       if (active() === el) syncFrom(el)
 
@@ -147,7 +137,6 @@ export function useKaraokeVideo(): KaraokeVideoApi {
 
         if (kind === 'video') {
           if (videoRef.current === el) videoRef.current = null
-          setHasVideo(false)
           const mini = miniRef.current
           if (pipRef.current && mini) {
             // PiP armed: the floating player takes the session where the
@@ -159,15 +148,17 @@ export function useKaraokeVideo(): KaraokeVideoApi {
             // Plain exit → hand the song to the lobby track, synced: a video
             // that made real progress moves its position onto the lobby
             // <audio> (StudioBgm's route effect then resumes it from there).
+            // Dev-only quirk: StrictMode invokes the console's attach effect
+            // twice, so this also fires once right after a (re)entry — it
+            // only nudges the parked, silent lobby track; production mounts
+            // the effect a single time.
             const music = musicRef.current
             if (music && el.currentTime > 1) music.currentTime = el.currentTime
           }
         } else if (kind === 'mini') {
           if (miniRef.current === el) miniRef.current = null
-          setHasMini(false)
         } else {
           if (musicRef.current === el) musicRef.current = null
-          setHasMusic(false)
         }
 
         // Fall back to the next source (or reset when nothing is left).
@@ -218,8 +209,6 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   }, [])
 
   return {
-    hasMedia: hasVideo || hasMini || hasMusic,
-    hasVideo,
     pip,
     playing,
     currentTime,

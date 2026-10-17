@@ -13,8 +13,8 @@ test.describe('player', () => {
     await page.goto('/studio')
     const playerBar = page.getByRole('contentinfo')
     await expect(playerBar).toBeVisible()
-    await expect(playerBar.getByText('Die With A Smile (Cover)')).toBeVisible()
-    await expect(playerBar.getByText('Lady Gaga & Bruno Mars')).toBeVisible()
+    await expect(playerBar.getByText('The Reason')).toBeVisible()
+    await expect(playerBar.getByText('Hoobastank')).toBeVisible()
   })
 
   test('PLAYER-003: playback starts', { tag: '@p1' }, async ({ page }) => {

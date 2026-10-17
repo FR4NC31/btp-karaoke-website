@@ -21,7 +21,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import placeholderVideo from '../assets/placeholder-video.svg'
 import placeholderAlbum from '../assets/placeholder-album.svg'
-import localVideo from '../assets/video_local/the reason.mp4'
+import localVideo from '../assets/video_local/the-reason.mp4'
 import { useKaraokeVideoControls } from '../lib/karaoke-player'
 
 /**
@@ -223,7 +223,7 @@ export default function PlayerQueue() {
                   </span>
                 </div>
                 <h2 className="mt-2 truncate font-heading text-xl font-bold tracking-wide">
-                  <span className="text-primary">APT.</span> — ROSE &amp; Bruno Mars
+                  <span className="text-primary">The Reason</span> — Hoobastank
                 </h2>
               </div>
               <button

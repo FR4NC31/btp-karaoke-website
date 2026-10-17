@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowUp01Icon, PauseIcon, PlayIcon } from '@hugeicons/core-free-icons'
-import localVideo from '../../../assets/video_local/the reason.mp4'
+import localVideo from '../../../assets/video_local/the-reason.mp4'
 import type { KaraokeVideoApi } from '../../../lib/karaoke-player'
 
 /**
@@ -60,7 +60,7 @@ export default function StudioPip({ player }: { player: KaraokeVideoApi }) {
           ref={videoRef}
           src={localVideo}
           playsInline
-          preload="auto"
+          preload="metadata"
           onClick={toggle}
           className="aspect-video w-full cursor-pointer object-cover"
         />

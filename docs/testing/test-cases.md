@@ -431,7 +431,7 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Player bar shows the current track
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Inspect the player bar.
-- **Expected:** Track title "Die With A Smile (Cover)" and artist visible.
+- **Expected:** Track title "The Reason" and artist "Hoobastank" visible — the bar mirrors the real transport (every source plays the one local master).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-003

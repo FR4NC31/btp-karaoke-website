@@ -71,10 +71,10 @@ export interface VideoSong {
  * through the shell player bar there.
  */
 export const videoSongs: VideoSong[] = [
-  { tag: 'KTV', title: 'The Reason', subtitle: 'Hoobastank', duration: '03:54', plays: '12.4K' },
-  { tag: 'DUET', title: 'Die With A Smile (Cover)', subtitle: 'Lady Gaga & Bruno Mars', duration: '04:11', plays: '8.1K' },
-  { tag: 'POP', title: 'APT.', subtitle: 'ROSÉ & Bruno Mars', duration: '02:49', plays: '9.6K' },
-  { tag: 'OPM', title: 'Kisapmata', subtitle: 'Rivermaya', duration: '04:32', plays: '5.2K' },
+  { tag: 'KTV', title: 'The Reason', subtitle: 'Hoobastank', duration: '3:54', plays: '12.4K' },
+  { tag: 'DUET', title: 'Die With A Smile (Cover)', subtitle: 'Lady Gaga & Bruno Mars', duration: '4:11', plays: '8.1K' },
+  { tag: 'POP', title: 'APT.', subtitle: 'ROSÉ & Bruno Mars', duration: '2:49', plays: '9.6K' },
+  { tag: 'OPM', title: 'Kisapmata', subtitle: 'Rivermaya', duration: '4:32', plays: '5.2K' },
 ]
 
 export interface RadioStation {

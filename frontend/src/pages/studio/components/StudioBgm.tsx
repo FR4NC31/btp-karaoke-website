@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router'
-import lobbyTrack from '../../../assets/video_local/the reason.mp4'
+import lobbyTrack from '../../../assets/video_local/the-reason.mp4'
 import type { KaraokeVideoApi } from '../../../lib/karaoke-player'
 
 /** Background loudness — low enough to sit under the chrome. */

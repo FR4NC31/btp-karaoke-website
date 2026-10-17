@@ -6,9 +6,11 @@ BTP Karaoke QA runs on Playwright (browser E2E against frontend + backend):
 
 ```bash
 cd frontend
-npm run test:e2e          # full suite (35 tests)
+npm run test:e2e          # full suite
 npm run test:e2e:smoke    # fast P0 smoke suite
 ```
+
+> Media master (`frontend/src/assets/video_local/the-reason.mp4`) is Git LFS-tracked — run `git lfs pull` after cloning.
 
 Documentation:
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Navigate, Outlet } from 'react-router'
+import { Outlet, useNavigate } from 'react-router'
 import { useSession } from '../lib/auth-client'
 import { isSessionExitInProgress, markSessionExit } from '../lib/session-exit'
 import { SessionChecking, SessionUnavailable } from './SessionStates'
@@ -34,7 +34,12 @@ import { SessionChecking, SessionUnavailable } from './SessionStates'
  */
 export default function RequireAuth() {
   const { data, error, isPending, refetch } = useSession()
+  const navigate = useNavigate()
   const asked = useRef(false)
+  // Whether THIS guard ever held a live session. The exit redirect below is
+  // only for a session it watched drop; a visitor who mounts after an earlier
+  // sign-out gets the normal /signin bounce instead (see session-exit.ts).
+  const sawSession = useRef(false)
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
@@ -46,7 +51,10 @@ export default function RequireAuth() {
   useEffect(() => {
     // A live session means any earlier sign-out is over; future "no session"
     // answers are genuine bounces again, not an exit in progress.
-    if (data) markSessionExit(false)
+    if (data) {
+      sawSession.current = true
+      markSessionExit(false)
+    }
   }, [data])
 
   useEffect(() => {
@@ -59,18 +67,28 @@ export default function RequireAuth() {
     void refetch().finally(() => setChecked(true))
   }, [data, isPending, refetch])
 
+  // The genuine "no session" bounce. Declared as an effect (not a <Navigate>
+  // render) because the decision reads `sawSession` — a ref, and refs are
+  // off-limits during render. A deliberate sign-out is not an unauthorized
+  // bounce: while one is in flight, aim at the landing page the sign-out
+  // handler targets so the two navigations can never disagree (see
+  // lib/session-exit.ts). Only a guard that watched the session drop honors
+  // it — a visitor mounting after an earlier exit (flag still set) still
+  // gets the normal /signin bounce.
+  const willBounce = !isPending && !data && !error && checked
+  useEffect(() => {
+    if (!willBounce) return
+    const exitInProgress = sawSession.current && isSessionExitInProgress()
+    // `replace` so Back doesn't return straight to the guarded page.
+    navigate(exitInProgress ? '/' : '/signin', { replace: true })
+  }, [willBounce, navigate])
+
   if (isPending) return <SessionChecking />
   if (data) return <Outlet />
   if (error) return <SessionUnavailable />
   // Either we have just asked and are waiting, or the answer was a genuine
-  // "no session" — only the latter may redirect.
+  // "no session" — only the latter may redirect; the effect above does it.
   if (!checked) return <SessionChecking />
-
-  return (
-    // `replace` so Back doesn't return straight to the guarded page.
-    // A deliberate sign-out is not an unauthorized bounce: while one is in
-    // flight, aim at the landing page the sign-out handler targets so the
-    // two navigations can never disagree (see lib/session-exit.ts).
-    <Navigate to={isSessionExitInProgress() ? '/' : '/signin'} replace />
-  )
+  // Bounce in flight.
+  return null
 }
