@@ -241,6 +241,22 @@ test.describe('console entry points', () => {
     await expect(page).toHaveURL('/admin')
     await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
   })
+
+  test('ADMIN-011: a signed-in admin is never dropped into the user dashboard', { tag: '@p1' }, async ({ page }) => {
+    // Guest-only pages bounce by role…
+    await page.goto('/signin')
+    await expect(page).toHaveURL('/admin')
+    await page.goto('/signup')
+    await expect(page).toHaveURL('/admin')
+
+    // …and so does the landing page's auth dialog: clicking Sign In while
+    // already authenticated used to hardcode /studio (the customer hub).
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+    await expect(page).toHaveURL('/admin')
+    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+  })
 })
 
 test.describe('media hub catalog', () => {

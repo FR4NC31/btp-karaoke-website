@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 import SignInForm from '../pages/auth/SignInForm'
 import SignUpForm from '../pages/auth/SignUpForm'
 import { useSession } from '../lib/auth-client'
+import { landingPathFor } from '../lib/redirects'
 import type { AuthMode } from '../lib/auth-dialog'
 
 type Props = {
@@ -20,20 +21,24 @@ type Props = {
 export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const open = mode !== null
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { data: session, isPending } = useSession()
   // Held here so a typed email survives switching between sign-in and
   // sign-up (the forms unmount on switch and would drop their own state).
   const [email, setEmail] = useState('')
 
   // Same contract as RequireGuest: wait for the session check so a
-  // signed-in user is bounced to /studio instead of being handed a form
-  // they don't need — and the dialog stays closed while that check runs.
+  // signed-in user is bounced to their landing page — announced by role,
+  // so an admin always lands on the console, never the customer studio —
+  // instead of being handed a form they don't need. A parked `?next=`
+  // target wins (validated in landingPathFor), and the dialog stays closed
+  // while the session check runs.
   useEffect(() => {
     if (open && !isPending && session) {
       onClose()
-      navigate('/studio')
+      navigate(landingPathFor(session.user.role, searchParams.get('next')))
     }
-  }, [open, isPending, session, onClose, navigate])
+  }, [open, isPending, session, onClose, navigate, searchParams])
 
   return (
     <Dialog

@@ -98,10 +98,15 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
       // backend (`BETTER_AUTH_URL`/api/auth/callback/google), and Better Auth
       // then 302s to `callbackURL` verbatim — a relative "/studio" would
       // resolve against localhost:3000 and hit the API, not the SPA.
+      //
+      // Success lands on /signin, not /studio: RequireGuest owns the
+      // guest-only route and bounces the finished session to its landing
+      // page by role (admins → /admin, everyone else → /studio). Jumping
+      // straight to /studio dropped admin sign-ins into the customer view.
       const origin = window.location.origin
       const { error: socialError } = await signIn.social({
         provider: 'google',
-        callbackURL: `${origin}/studio`,
+        callbackURL: `${origin}/signin`,
         errorCallbackURL: `${origin}/signin`,
       })
 

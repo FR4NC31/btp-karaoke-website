@@ -743,6 +743,14 @@ desk: every test-created reservation is driven to a terminal state
 - **Expected:** 400 "Only MP4 video or MP3 audio files can be uploaded."; 400 with a "does not match" message; 401 for the anonymous caller (`requireAdmin` on the sub-app). Nothing is written to disk for any of them.
 - **Automation:** Playwright — **Status: Automated**
 
+### ADMIN-011
+
+- **Title:** A signed-in admin is never dropped into the user dashboard
+- **Priority:** P1
+- **Steps:** 1. As a signed-in admin, open `/signin` and `/signup`. 2. On the landing page, click **Sign In** (the auth dialog) while already authenticated.
+- **Expected:** Every path lands on `/admin` — the guest-only pages bounce by role (`landingPathFor`), and the landing auth dialog routes the same way instead of hardcoding `/studio`. The dialog never opens a sign-in form for an authenticated user. (Regression: the dialog and the Google OAuth callback used to send any session — admins included — to `/studio`.)
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Error states & health — `frontend/tests/e2e/errors/errors.spec.ts`
