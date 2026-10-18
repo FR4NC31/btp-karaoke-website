@@ -6,6 +6,8 @@ Last updated: October 18, 2026
 
 ### Features
 
+- feat(media): move the hub onto a managed catalog (1d9d13f)
+- feat(admin): add admin role and booking console (3043d92)
 - feat: Add local and functional video player (764f437)
 - feat: Add Services UI in navbar and page (12d5188)
 - feat(frontend): add Go Back button to 404 page (4034966)
@@ -51,6 +53,7 @@ Last updated: October 18, 2026
 
 ### Other Changes
 
+- ﻿feat(media): upload real MP4/MP3 files and confirm deletes (2879b1a)
 - ﻿fix(backend): repair sslmode strip, pool errors, date validation (6884db3)
 - ﻿feat(booking): day-only booking desk with Drizzle-backed service catalog (d6cf197)
 - Merge pull request #12 from FR4NC31/feat/player-queue (5fcca18)
