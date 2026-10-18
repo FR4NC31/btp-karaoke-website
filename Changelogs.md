@@ -51,6 +51,7 @@ Last updated: October 18, 2026
 
 ### Other Changes
 
+- ﻿fix(backend): repair sslmode strip, pool errors, date validation (6884db3)
 - ﻿feat(booking): day-only booking desk with Drizzle-backed service catalog (d6cf197)
 - Merge pull request #12 from FR4NC31/feat/player-queue (5fcca18)
 - Merge pull request #11 from FR4NC31/feat/services-ui (d0418af)
