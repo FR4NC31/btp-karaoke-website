@@ -6,6 +6,7 @@ Last updated: October 18, 2026
 
 ### Features
 
+- feat(media): read file tags and carry covers through the hub (0c4c631)
 - feat(media): move the hub onto a managed catalog (1d9d13f)
 - feat(admin): add admin role and booking console (3043d92)
 - feat: Add local and functional video player (764f437)
