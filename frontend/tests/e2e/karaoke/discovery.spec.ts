@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures'
+import { createMediaItemAsAdmin, deleteMediaItemAsAdmin } from '../helpers/media'
 
 /**
  * KARAOKE — the studio media hub on /studio (video song, music player and
@@ -6,21 +7,25 @@ import { test, expect } from '../fixtures'
  * filter / collections grid / telemetry table were retired with the media
  * hub restructure.
  *
+ * The catalog is database-backed now, curated from /admin/media. Only the
+ * one real local master ("The Reason", seeded) always exists; music and
+ * radio rows are created through the admin API by the tests that assert
+ * them, then deleted. Sections with no published rows render nothing, so
+ * no test may assume another section's presence.
+ *
  * /studio is opened directly: it is guarded by RequireAuth, but the
  * `chromium` project injects the shared session saved by setup/auth.setup.ts,
  * so a UI sign-in here would only add time. The full sign-in → console
  * journey is covered by SMOKE-005.
  */
 test.describe('karaoke discovery', () => {
-  test('KARAOKE-001: studio hub opens with video song, music player and radio', { tag: '@p0' }, async ({ page }) => {
+  test('KARAOKE-001: studio hub opens with the published video song', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/studio')
     await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    // The seeded local master is the first video row and carries the h1.
     await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
     await expect(page.getByRole('heading', { name: 'Video Song' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Music Player' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
-    // 4 video + 5 music + 4 radio cards.
-    await expect(page.locator('main article')).toHaveCount(13)
+    await expect(page.getByRole('link', { name: 'Play The Reason' })).toBeVisible()
     // Retired with the restructure.
     await expect(page.getByText('Active Stem & Track Telemetry')).toHaveCount(0)
   })
@@ -40,15 +45,30 @@ test.describe('karaoke discovery', () => {
       .toBe(false)
   })
 
-  test('KARAOKE-003: music player lists the minus-one sets', { tag: '@p1' }, async ({ page }) => {
-    await page.goto('/studio')
-    await expect(page.getByText('Viewing 5 of 5 tracks')).toBeVisible()
+  test('KARAOKE-003: music player renders published catalog tracks', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const title = `E2E Minus-One ${Date.now()}`
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'music',
+      title,
+      subtitle: 'E2E session archive',
+      tag: 'TAPE',
+      tempo: '118 BPM',
+      songKey: 'Fmaj',
+    })
 
-    const card = page.locator('main article').filter({ hasText: 'Afternoon Drive' })
-    await expect(card).toContainText('Mastered by Frankie Dev')
-    await expect(card).toContainText('118 BPM')
-    await expect(card).toContainText('Fmaj')
-    await expect(card.getByRole('button', { name: 'More options for Afternoon Drive' })).toBeVisible()
+    try {
+      await page.goto('/studio')
+      await expect(page.getByRole('heading', { name: 'Music Player' })).toBeVisible()
+      await expect(page.getByText(/Viewing \d+ of \d+ tracks/)).toBeVisible()
+
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('E2E session archive')
+      await expect(card).toContainText('118 BPM')
+      await expect(card).toContainText('Fmaj')
+      await expect(card.getByRole('button', { name: `More options for ${title}` })).toBeVisible()
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+    }
   })
 
   test('KARAOKE-004: sidebar session browsing highlights selection', { tag: '@p2' }, async ({ page }) => {
@@ -65,15 +85,30 @@ test.describe('karaoke discovery', () => {
     await expect(defaultItem).not.toHaveClass(/bg-primary-soft/)
   })
 
-  test('KARAOKE-005: radio section shows on-air stations', { tag: '@p2' }, async ({ page }) => {
-    await page.goto('/studio')
-    await expect(page.getByText('Viewing 4 of 4 stations')).toBeVisible()
-    await expect(page.getByText('On Air', { exact: true })).toHaveCount(4)
+  test('KARAOKE-005: radio section renders published stations', { tag: '@p2' }, async ({ page, baseURL }) => {
+    const title = `E2E Station ${Date.now()}`
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'radio',
+      title,
+      subtitle: 'E2E genre',
+      freq: 'FM 88.3',
+      listeners: 1234,
+    })
 
-    const card = page.locator('main article').filter({ hasText: 'BTP Lounge Radio' })
-    await expect(card).toContainText('OPM & Lounge')
-    await expect(card).toContainText('FM 91.5')
-    await expect(card.getByRole('button', { name: 'More options for BTP Lounge Radio' })).toBeVisible()
+    try {
+      await page.goto('/studio')
+      await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
+      await expect(page.getByText(/Viewing \d+ of \d+ stations/)).toBeVisible()
+
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('E2E genre')
+      await expect(card).toContainText('FM 88.3')
+      await expect(card).toContainText('1.2K') // 1234 → compact form
+      await expect(card).toContainText('On Air') // default tag when none is set
+      await expect(card.getByRole('button', { name: `More options for ${title}` })).toBeVisible()
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+    }
   })
 
   test('KARAOKE-006: shell player bar plays the local video on the console', { tag: '@p2' }, async ({ page }) => {

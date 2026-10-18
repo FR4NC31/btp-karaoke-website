@@ -7,6 +7,7 @@ import {
   TEST_USER,
   signInAsAdmin,
 } from '../helpers/auth'
+import { createMediaItemAsAdmin, deleteMediaItemAsAdmin } from '../helpers/media'
 
 /**
  * ADMIN — the /admin console itself.
@@ -239,5 +240,101 @@ test.describe('console entry points', () => {
 
     await expect(page).toHaveURL('/admin')
     await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
+  })
+})
+
+test.describe('media hub catalog', () => {
+  test('ADMIN-007: the admin adds a music track and it reaches the hub', { tag: '@p1' }, async ({ page }) => {
+    const title = `E2E Session ${Date.now()}`
+
+    await page.goto('/admin/media/new')
+    // The editor swaps fields per type: music wants tempo/key, not duration.
+    await page.getByLabel('Type').selectOption('music')
+    await page.getByLabel('Title', { exact: true }).fill(title)
+    await page.getByLabel('Description').fill('E2E mixdown notes')
+    await page.getByLabel('Tempo').fill('120 BPM')
+    await page.getByLabel('Key', { exact: true }).fill('Am')
+    await page.getByRole('button', { name: 'Add to the hub' }).click()
+
+    const flash = flashWith(page, title)
+    await expect(flash).toBeVisible()
+    await expect(flash).toContainText('live on the hub')
+
+    // The console lists it as a live music row…
+    await page.goto('/admin/media')
+    const row = page.locator('main li').filter({ hasText: title })
+    await expect(row).toContainText('Live')
+    await expect(row).toContainText('120 BPM')
+    await expect(row).toContainText('Key Am')
+
+    // …and the studio hub renders the card.
+    await page.goto('/studio')
+    const card = page.locator('main article').filter({ hasText: title })
+    await expect(card).toContainText('E2E mixdown notes')
+    await expect(card).toContainText('120 BPM')
+
+    // Cleanup through the console's delete button.
+    await page.goto('/admin/media')
+    const cleanup = page.locator('main li').filter({ hasText: title })
+    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+    await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+    await expect(cleanup).toBeHidden()
+  })
+
+  test('ADMIN-008: media rows can be hidden, reordered, and edited', { tag: '@p2' }, async ({ page, baseURL }) => {
+    const stamp = Date.now()
+    const alpha = `E2E Alpha ${stamp}`
+    const beta = `E2E Beta ${stamp}`
+    const alphaItem = await createMediaItemAsAdmin(baseURL, { section: 'video', title: alpha, tag: 'DUET' })
+    const betaItem = await createMediaItemAsAdmin(baseURL, { section: 'video', title: beta, tag: 'POP' })
+
+    // The section list's row index for a title (admin list, video group).
+    const rowIndexOf = async (needle: string) => {
+      const texts = await page.locator('main li').allTextContents()
+      return texts.findIndex((text) => text.includes(needle))
+    }
+
+    try {
+      await page.goto('/admin/media')
+      const betaRow = page.locator('main li').filter({ hasText: beta })
+      await expect(betaRow).toContainText('Live')
+
+      // Hide → the row stays manageable but leaves the hub.
+      await betaRow.getByRole('button', { name: `Hide ${beta}` }).click()
+      await expect(flashWith(page, `${beta} is now hidden.`)).toBeVisible()
+      await expect(betaRow).toContainText('Hidden')
+
+      await page.goto('/studio')
+      await expect(page.locator('main article').filter({ hasText: alpha })).toBeVisible()
+      await expect(page.locator('main article').filter({ hasText: beta })).toHaveCount(0)
+
+      // Show it again — back on the hub.
+      await page.goto('/admin/media')
+      const shownRow = page.locator('main li').filter({ hasText: beta })
+      await shownRow.getByRole('button', { name: `Show ${beta}` }).click()
+      await expect(flashWith(page, `${beta} is now live.`)).toBeVisible()
+      await expect(shownRow).toContainText('Live')
+
+      // Reorder: beta moves one slot earlier in its section.
+      const before = await rowIndexOf(beta)
+      await shownRow.getByRole('button', { name: `Move ${beta} up` }).click()
+      await expect(flashWith(page, `${beta} moved up.`)).toBeVisible()
+      await expect.poll(() => rowIndexOf(beta)).toBeLessThan(before)
+
+      // Edit the copy through the editor page.
+      await page.locator('main li').filter({ hasText: beta }).getByRole('link', { name: `Edit ${beta}` }).click()
+      await expect(page).toHaveURL(/\/admin\/media\//)
+      await expect(page.getByLabel('Title', { exact: true })).toHaveValue(beta)
+      await page.getByLabel('Title', { exact: true }).fill(`${beta} v2`)
+      await page.getByRole('button', { name: 'Save changes' }).click()
+      await expect(flashWith(page, 'Saved')).toBeVisible()
+
+      await page.goto('/admin/media')
+      await expect(page.locator('main li').filter({ hasText: `${beta} v2` })).toContainText('Live')
+    } finally {
+      // API cleanup: works even if the UI half of the test failed midway.
+      await deleteMediaItemAsAdmin(baseURL, alphaItem.id)
+      await deleteMediaItemAsAdmin(baseURL, betaItem.id)
+    }
   })
 })

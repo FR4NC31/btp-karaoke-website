@@ -4,6 +4,7 @@ import {
   CalendarAdd01Icon,
   CalendarCheck01Icon,
   DashboardSquare01Icon,
+  MusicNote01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
 import BrandLogo from '../../components/BrandLogo'
@@ -27,6 +28,8 @@ const navLinks = [
   { to: '/admin', label: 'Overview', icon: DashboardSquare01Icon, end: true },
   { to: '/admin/bookings', label: 'Reservations', icon: CalendarCheck01Icon, end: true },
   { to: '/admin/bookings/new', label: 'New reservation', icon: CalendarAdd01Icon, end: true },
+  // No `end`: the Media Hub entry stays lit while adding or editing an item.
+  { to: '/admin/media', label: 'Media Hub', icon: MusicNote01Icon, end: false },
 ]
 
 export default function AdminShell() {

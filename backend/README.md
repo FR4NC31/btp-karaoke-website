@@ -30,7 +30,7 @@ PostgreSQL on Aiven. Two libraries share one connection pool (`src/db.ts`):
 | Owner            | Tables                                          | Migrations live in        |
 | ---------------- | ----------------------------------------------- | ------------------------- |
 | **Better Auth**  | `user`, `session`, `account`, `verification`     | `better-auth_migrations/` |
-| **Drizzle ORM**  | `service`, `booking`                            | `drizzle/`                |
+| **Drizzle ORM**  | `service`, `booking`, `media_item`              | `drizzle/`                |
 
 The split is deliberate: `bun x auth@latest migrate` can regenerate its own folder,
 so application tables must never live there or they would be clobbered.
@@ -39,7 +39,7 @@ so application tables must never live there or they would be clobbered.
 cd backend
 npm run db:generate   # src/schema.ts -> a new drizzle/*.sql file (offline)
 npm run migrate       # apply pending migrations
-npm run seed          # (re)load the sample service catalog
+npm run seed          # (re)load the service catalog + the one real media row
 npm run migrate -- --status   # what has been applied
 ```
 
@@ -49,7 +49,10 @@ npm run migrate -- --status   # what has been applied
   and `sslmode` handling. That is why applying is **not** `drizzle-kit migrate`.
 - `npm run seed` upserts on `service.code`, so it is safe to re-run: it inserts
   the eight catalog rows on a fresh database and refreshes them on an existing
-  one without touching `booking`.
+  one without touching `booking`. It also upserts the single media row backed by
+  a real file (`med_reason_01` — the karaoke master the frontend ships); only
+  its copy refreshes, so admin visibility and ordering survive re-runs. Every
+  other `media_item` row is managed from `/admin/media`.
 
 **Fresh database:** run `bun x auth@latest migrate` *before* `npm run migrate`.
 `booking.userId` references Better Auth's `user` table, so the FK has nothing to

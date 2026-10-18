@@ -3,6 +3,7 @@ import {
   type Booking,
   type BookingStatus,
 } from './booking-api'
+import type { AdminMediaItem, MediaSection } from './media-api'
 
 /**
  * Client for the admin API (backend/src/index.ts, mounted at /api/admin/*).
@@ -82,4 +83,90 @@ export function adminBookingAction(
 export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
   const q = query.trim()
   return request(`/api/admin/users${q ? `?query=${encodeURIComponent(q)}` : ''}`)
+}
+
+// ---------------------------------------------------------------------------
+// Media hub catalog (/admin/media)
+// ---------------------------------------------------------------------------
+
+/** The editor's field set. Empty strings and nulls clear the column. */
+export interface AdminMediaInput {
+  section: MediaSection
+  title: string
+  subtitle?: string
+  tag?: string
+  duration?: string
+  plays?: number | null
+  tempo?: string
+  songKey?: string
+  freq?: string
+  listeners?: number | null
+}
+
+/** Blank text boxes are sent as "missing" so the backend stores null. */
+function mediaPayload(input: AdminMediaInput): Record<string, unknown> {
+  const clean = (value: string | undefined) => {
+    const text = value?.trim()
+    return text ? text : undefined
+  }
+  return {
+    section: input.section,
+    title: input.title.trim(),
+    subtitle: clean(input.subtitle),
+    tag: clean(input.tag),
+    duration: clean(input.duration),
+    plays: input.plays ?? undefined,
+    tempo: clean(input.tempo),
+    songKey: clean(input.songKey),
+    freq: clean(input.freq),
+    listeners: input.listeners ?? undefined,
+  }
+}
+
+export function fetchAdminMedia(section?: MediaSection): Promise<{ items: AdminMediaItem[] }> {
+  const query = section ? `?section=${encodeURIComponent(section)}` : ''
+  return request(`/api/admin/media${query}`)
+}
+
+export function createAdminMediaItem(input: AdminMediaInput): Promise<{ item: AdminMediaItem }> {
+  return request('/api/admin/media', {
+    method: 'POST',
+    body: JSON.stringify(mediaPayload(input)),
+  })
+}
+
+export function updateAdminMediaItem(
+  id: string,
+  input: AdminMediaInput,
+): Promise<{ item: AdminMediaItem }> {
+  return request(`/api/admin/media/${encodeURIComponent(id)}`, {
+    method: 'POST',
+    body: JSON.stringify(mediaPayload(input)),
+  })
+}
+
+export function adminMediaVisibility(
+  id: string,
+  isActive: boolean,
+): Promise<{ item: AdminMediaItem }> {
+  return request(`/api/admin/media/${encodeURIComponent(id)}/visibility`, {
+    method: 'POST',
+    body: JSON.stringify({ isActive }),
+  })
+}
+
+export function adminMediaMove(
+  id: string,
+  direction: 'up' | 'down',
+): Promise<{ item: AdminMediaItem }> {
+  return request(`/api/admin/media/${encodeURIComponent(id)}/move`, {
+    method: 'POST',
+    body: JSON.stringify({ direction }),
+  })
+}
+
+export function deleteAdminMediaItem(id: string): Promise<{ item: AdminMediaItem }> {
+  return request(`/api/admin/media/${encodeURIComponent(id)}/delete`, {
+    method: 'POST',
+  })
 }

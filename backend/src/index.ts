@@ -17,6 +17,17 @@ import {
   type AdminBookingAction,
   type BookingStatus,
 } from './bookings.ts'
+import {
+  MediaError,
+  createMediaItem,
+  deleteMediaItem,
+  listMediaForAdmin,
+  listPublicMedia,
+  moveMediaItem,
+  setMediaVisibility,
+  updateMediaItem,
+  type MediaSection,
+} from './media.ts'
 
 const app = new Hono()
 
@@ -72,6 +83,13 @@ app.get('/api/me', requireSession, (c) => {
 app.get('/api/services', async (c) => {
   const services = await listServices()
   return c.json({ services, studioToday: studioToday() })
+})
+
+// Public: the media hub catalog behind /studio — active rows only, already
+// section-ordered (video → music → radio) so the hub only has to group.
+app.get('/api/media', async (c) => {
+  const items = await listPublicMedia()
+  return c.json({ items })
 })
 
 // The caller's own bookings only — never another user's.
@@ -239,6 +257,126 @@ adminApi.post('/bookings/:id/:action', async (c) => {
 adminApi.get('/users', async (c) => {
   const users = await listUsersForTagging(c.req.query('query'))
   return c.json({ users })
+})
+
+// ---------------------------------------------------------------------------
+// Admin: media hub catalog
+//
+// /studio renders what these routes curate — video songs, music tracks and
+// radio stations. Hidden rows drop out of the public /api/media feed without
+// being deleted; `move` reorders within a section; `delete` is permanent.
+// Bodies are validated in src/media.ts, so a bad field is a 400 with a
+// specific message.
+// ---------------------------------------------------------------------------
+
+const MEDIA_SECTIONS: MediaSection[] = ['video', 'music', 'radio']
+
+adminApi.get('/media', async (c) => {
+  const sectionParam = c.req.query('section')
+  const section =
+    sectionParam && (MEDIA_SECTIONS as string[]).includes(sectionParam)
+      ? (sectionParam as MediaSection)
+      : undefined
+
+  const items = await listMediaForAdmin(section)
+  return c.json({ items })
+})
+
+// Create. The same field shape as update — the form always submits the full
+// set, and the new row lands active at the bottom of its section.
+adminApi.post('/media', async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  try {
+    const item = await createMediaItem((body ?? {}) as Record<string, unknown>)
+    return c.json({ item }, 201)
+  } catch (err) {
+    if (err instanceof MediaError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Replace one row's editable fields (an update is a replace: clearing a box
+// clears the column).
+adminApi.post('/media/:id', async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  try {
+    const item = await updateMediaItem(c.req.param('id'), (body ?? {}) as Record<string, unknown>)
+    return c.json({ item })
+  } catch (err) {
+    if (err instanceof MediaError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Hide/show without deleting. Body: { "isActive": true | false }.
+adminApi.post('/media/:id/visibility', async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  const { isActive } = (body ?? {}) as Record<string, unknown>
+  try {
+    const item = await setMediaVisibility(c.req.param('id'), isActive)
+    return c.json({ item })
+  } catch (err) {
+    if (err instanceof MediaError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Swap with the neighbour inside the section. Body: { "direction": "up" | "down" }.
+adminApi.post('/media/:id/move', async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  const { direction } = (body ?? {}) as Record<string, unknown>
+  try {
+    const item = await moveMediaItem(c.req.param('id'), direction)
+    return c.json({ item })
+  } catch (err) {
+    if (err instanceof MediaError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Permanent removal — prefer visibility=false when the row is merely retired.
+adminApi.post('/media/:id/delete', async (c) => {
+  try {
+    const item = await deleteMediaItem(c.req.param('id'))
+    return c.json({ item })
+  } catch (err) {
+    if (err instanceof MediaError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
 })
 
 app.route('/api/admin', adminApi)

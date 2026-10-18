@@ -102,15 +102,16 @@ frontend/tests/e2e/
 ├── fixtures.ts                  shared evidence fixture (console/network)
 ├── helpers/
 │   ├── auth.ts                  signIn() + controlled TEST_USER
+│   ├── media.ts                 admin API helpers: create/delete one catalog row (KARAOKE-003/005 create their own)
 │   └── env.ts                   BACKEND_URL (no hard-coded hosts)
 ├── smoke/smoke.spec.ts          SMOKE-001…006   P0 "can a user use the site?"
 ├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub, console, player bar, PiP, cross-page sync
+├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub (DB-backed catalog), console, player bar, PiP, cross-page sync
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
-├── admin/admin.spec.ts          ADMIN-001…006    console: queue, reservations, booking for others
+├── admin/admin.spec.ts          ADMIN-001…008    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
@@ -182,7 +183,7 @@ What the product actually implements today (test coverage is limited to this):
 
 | Feature                          | Status                | Tests                     |
 | -------------------------------- | --------------------- | ------------------------- |
-| Media hub sections (video/music/radio) | Working (static data) | KARAOKE-001/003/005, SMOKE-004 |
+| Media hub sections (video/music/radio) | Working — DB-backed catalog curated from `/admin/media`; empty sections render nothing | KARAOKE-001/003/005, SMOKE-004 |
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
 | Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
@@ -195,8 +196,8 @@ What the product actually implements today (test coverage is limited to this):
 
 ## Booking desk testing
 
-`/studio/bookings` is the first feature built on **application-owned tables**
-(`service` + `booking`), as opposed to the static data the studio hub renders.
+`/studio/bookings` is built on **application-owned tables** (`service` +
+`booking`), like the media hub catalog behind `/studio` (`media_item`).
 Day-only by design: a booking claims one whole calendar day of one service —
 there is no time slot or time block yet, and no payment.
 
@@ -230,6 +231,14 @@ step — and belong to either a tagged registered customer or a free-text guest
 name (`booking.guestName`; the `booking_owner_check` constraint enforces that
 every reservation has one of the two).
 
+The console also curates the **media hub catalog** (`/admin/media`): the
+`media_item` rows that `/studio` renders (video songs, minus-one tracks, radio
+stations). New rows append to their section and go live immediately; hide/show
+pulls a row from the public feed without deleting it, move reorders within a
+section, and delete is permanent. Only the one real local master ("The
+Reason") ships seeded — music and radio start empty, so their tests create the
+rows they assert and delete them afterwards.
+
 | Feature                                | Status                                   | Tests        |
 | -------------------------------------- | ---------------------------------------- | ------------ |
 | Admin sign-in lands on `/admin`        | Working (role-aware redirect)            | ADMIN-001    |
@@ -240,6 +249,8 @@ every reservation has one of the two).
 | Console entry from the studio chrome   | Working — shown to admins only; the top bar link is the mobile path | ADMIN-006 / SEC-004 |
 | `/api/admin/*` 401/403 boundary        | Working — fail-closed sub-app mount      | SEC-001/002  |
 | Role self-promotion                    | Closed — `input: false`; promotion is CLI-only | SEC-003 |
+| Media catalog add / edit               | Working — rows drive `/studio` immediately | ADMIN-007    |
+| Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
 | User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
 ## API integration
@@ -261,11 +272,16 @@ every reservation has one of the two).
   request is ever sent, so those branches are unreachable from the UI.
 - The **admin API** (`GET/POST /api/admin/bookings`,
   `POST /api/admin/bookings/:id/{confirm,reject,complete,cancel}`,
-  `GET /api/admin/users`) is driven end-to-end by ADMIN-001…006, and its
-  boundary is pinned by direct calls: SEC-001 (401 anonymous) and SEC-002
-  (403 for a signed-in non-admin, on every route shape). SEC-003 calls the
-  auth API directly to prove `role` cannot be set at sign-up or through
-  `update-user`.
+  `GET /api/admin/users`, plus the media catalog: `GET/POST /api/admin/media`,
+  `POST /api/admin/media/:id`, `POST /api/admin/media/:id/{visibility,move,delete}`)
+  is driven end-to-end by ADMIN-001…008, and its boundary is pinned by direct
+  calls: SEC-001 (401 anonymous) and SEC-002 (403 for a signed-in non-admin,
+  on every route shape). SEC-003 calls the auth API directly to prove `role`
+  cannot be set at sign-up or through `update-user`.
+- The **public media API** (`GET /api/media`) serves the active catalog to the
+  hub. KARAOKE-003/005 exercise it by creating rows through the admin API
+  (`helpers/media.ts`), asserting the cards render them, then deleting them —
+  the hub's sections exist only while rows are published.
 - **Not yet covered**: broad direct API-level tests of `/api/auth/*` and
   `/api/me` (wrong-password 401, protected-route 401) — SEC-003 covers the
   role-escalation paths only; the rest is still the top recommended next

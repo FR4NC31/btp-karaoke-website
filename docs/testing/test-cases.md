@@ -43,8 +43,10 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** User can discover the video song
 - **Priority:** P0
 - **Steps:** 1. Open `/studio`.
-- **Expected:** Video Song section shows h1 "The Reason", the "Play The
-  Reason" link, and the Radio section heading.
+- **Expected:** The published catalog renders: the Video Song section shows
+  h1 "The Reason" and the "Play The Reason" link. Sections render only while
+  the admin-managed catalog has published rows, so no empty section is
+  asserted.
 - **Automation:** Playwright — **Status: Automated**
 
 ### SMOKE-005
@@ -309,14 +311,15 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### KARAOKE-001
 
-- **Title:** Studio hub opens with video song, music player and radio
+- **Title:** Studio hub opens with the published video song
 - **Priority:** P0
-- **Preconditions:** Media hub sections shipped (video song, music player,
-  radio); telemetry table retired.
+- **Preconditions:** The seeded catalog holds the one real local master
+  ("The Reason"); the telemetry table is retired.
 - **Steps:** 1. Open `/studio`.
-- **Expected:** Studio header, h1 "The Reason", the three section headings
-  (Video Song / Music Player / Radio), 13 media cards (4 video + 5 music +
-  4 radio); the old telemetry heading is absent.
+- **Expected:** Studio header, h1 "The Reason" (the first video row), the
+  Video Song section heading, and the "Play The Reason" link; the old
+  telemetry heading is absent. Music and radio render only while published
+  rows exist, so they are not asserted here.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-002
@@ -331,12 +334,16 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### KARAOKE-003
 
-- **Title:** Music player lists the minus-one sets
+- **Title:** Music player renders published catalog tracks
 - **Priority:** P1
-- **Steps:** 1. Open `/studio`. 2. Inspect the Music Player section.
-- **Expected:** "Viewing 5 of 5 tracks"; the Afternoon Drive card shows
-  subtitle "Mastered by Frankie Dev", meta "118 BPM" / "Fmaj" and its own
-  more-options action.
+- **Preconditions:** Creates its own music row through the admin API
+  (`helpers/media.ts`) and deletes it afterwards — the seeded catalog has
+  none.
+- **Steps:** 1. Create a music row (title, description, tag, "118 BPM",
+  "Fmaj"). 2. Open `/studio`. 3. Inspect the Music Player section.
+- **Expected:** The section heading and "Viewing N of N tracks" render; the
+  card for the created title shows the description, "118 BPM" / "Fmaj" and
+  its own more-options action.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-004
@@ -350,12 +357,15 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### KARAOKE-005
 
-- **Title:** Radio section shows on-air stations
+- **Title:** Radio section renders published stations
 - **Priority:** P2
-- **Steps:** 1. Open `/studio`. 2. Inspect the Radio section.
-- **Expected:** "Viewing 4 of 4 stations"; 4 station cards each with an
-  "On Air" tag; the BTP Lounge Radio card shows genre, frequency and its
-  own more-options action.
+- **Preconditions:** Creates its own station row through the admin API and
+  deletes it afterwards.
+- **Steps:** 1. Create a station (genre, "FM 88.3", 1234 listeners).
+  2. Open `/studio`. 3. Inspect the Radio section.
+- **Expected:** The section heading and "Viewing N of N stations" render; the
+  card shows the genre, the frequency, the compact listener count ("1.2K")
+  and the default "On Air" tag; the more-options action is present.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-006
@@ -685,6 +695,23 @@ desk: every test-created reservation is driven to a terminal state
 - **Expected:** The link is visible in the studio chrome (the top bar entry is the mobile-width path, since the console link in the sidebar is `hidden md:flex`), and it navigates to `/admin`.
 - **Automation:** Playwright — **Status: Automated**
 
+### ADMIN-007
+
+- **Title:** The admin adds a music track and it reaches the hub
+- **Priority:** P1
+- **Steps:** 1. Open `/admin/media/new`, pick **Music track**. 2. Fill title, description, tempo "120 BPM", key "Am"; save. 3. Check `/admin/media`, then `/studio`. 4. Delete the row from the console.
+- **Expected:** The editor's fields switch per type (music asks tempo/key); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; deleting removes it (cleanup).
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-008
+
+- **Title:** Media rows can be hidden, reordered, and edited
+- **Priority:** P2
+- **Preconditions:** Creates two video rows through the admin API; both are deleted in `finally`.
+- **Steps:** 1. Hide one in the console, then check `/studio`. 2. Show it again. 3. Move it up. 4. Open its editor, retitle it, save.
+- **Expected:** Hidden rows keep a Hidden chip in the console but vanish from `/studio`; Show restores them; Move swaps one slot earlier; the editor pre-fills and saving shows the Saved flash and the new title in the list. API cleanup runs even if the UI half fails.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Error states & health — `frontend/tests/e2e/errors/errors.spec.ts`
@@ -744,6 +771,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
+| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008). KARAOKE-003/005 create their rows via the admin API and delete them. |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |

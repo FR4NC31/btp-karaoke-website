@@ -8,6 +8,8 @@ interface MediaCardMeta {
   text: string
 }
 
+export type { MediaCardMeta }
+
 interface MediaCardProps {
   tag: string
   icon: IconSvgElement

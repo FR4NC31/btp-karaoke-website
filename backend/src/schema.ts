@@ -19,7 +19,8 @@ import {
  *   - Better Auth owns "user" / "session" / "account" / "verification". Those
  *     are created and re-created by `bun x auth@latest migrate` from
  *     backend/better-auth_migrations/, NOT from here.
- *   - Drizzle owns "service" and "booking" (backend/drizzle/ migrations).
+ *   - Drizzle owns "service", "booking" and "media_item" (backend/drizzle/
+ *     migrations).
  *
  * `user` is declared below only so `booking.userId` can carry a real database
  * foreign key. Its CREATE is deliberately stripped out of the generated
@@ -89,6 +90,46 @@ export const service = pgTable('service', {
   createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
 })
+
+/**
+ * The media hub catalog behind /studio: one row per card, across three
+ * sections. Admin-managed from /admin/media; the public hub reads the active
+ * rows only. Section-specific display columns (duration/plays, tempo/key,
+ * freq/listeners) are nullable — a row fills only its section's pair.
+ */
+export const mediaItem = pgTable(
+  'media_item',
+  {
+    id: text('id').primaryKey(),
+    /** Hub section: video | music | radio. */
+    section: text('section').notNull(),
+    title: text('title').notNull(),
+    subtitle: text('subtitle'),
+    /** Chip label on the card ("KTV", "MIX", "On Air"…). */
+    tag: text('tag'),
+    /** Video: runtime as shown, e.g. "3:54". */
+    duration: text('duration'),
+    /** Video: display-only play count. */
+    plays: integer('plays'),
+    /** Music: tempo as shown, e.g. "118 BPM". */
+    tempo: text('tempo'),
+    /** Music: musical key as shown, e.g. "Fmaj". */
+    songKey: text('songKey'),
+    /** Radio: dial position as shown, e.g. "FM 91.5". */
+    freq: text('freq'),
+    /** Radio: display-only listener count. */
+    listeners: integer('listeners'),
+    /** Display order within the section; ties fall back to title. */
+    sortOrder: integer('sortOrder').notNull().default(0),
+    /** false hides the row from /api/media without deleting it. */
+    isActive: boolean('isActive').notNull().default(true),
+    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('media_item_section_check', sql`"section" in ('video', 'music', 'radio')`),
+  ],
+)
 
 /**
  * One service, one customer, one day. The customer is either a registered

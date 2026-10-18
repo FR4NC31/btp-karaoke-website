@@ -150,7 +150,8 @@ Only mark what actually exists in the application.
 
 ### Karaoke
 
-- [x] Studio media hub sections (KARAOKE-001, KARAOKE-003, KARAOKE-005)
+- [x] Studio media hub sections (KARAOKE-001, KARAOKE-003, KARAOKE-005) —
+  catalog is DB-backed now, curated from `/admin/media` (ADMIN-007/008)
 - [x] Video song → console hop (KARAOKE-002)
 - [x] Player opens with track (PLAYER-001)
 - [x] Playback start / pause / resume (PLAYER-003, PLAYER-004)
@@ -170,7 +171,8 @@ Only mark what actually exists in the application.
 ### UX
 
 - [x] Hub sections render for video/music/radio (KARAOKE-001, KARAOKE-005)
-- [ ] Loading/empty states — no empty datasets shipped (N/A)
+- [ ] Loading/empty states — sections hide while unpublished; the all-empty
+  hub branch has no dedicated test yet (gap)
 - [x] Error states: 404 page (ERROR-001)
 - [x] No console errors / failed requests on key pages (ERROR-002/003)
 - [ ] Accessibility beyond basics — not audited (P3 gap)

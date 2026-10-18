@@ -15,6 +15,13 @@
       "when": 1792303703289,
       "tag": "0001_fair_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792307494295,
+      "tag": "0002_chubby_cargill",
+      "breakpoints": true
     }
   ]
 }

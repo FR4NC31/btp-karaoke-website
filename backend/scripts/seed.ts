@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { db, pool } from '../src/db.ts'
-import { service } from '../src/schema.ts'
+import { mediaItem, service } from '../src/schema.ts'
 
 /**
  * Sample service catalog for the booking prototype.
@@ -16,6 +16,12 @@ import { service } from '../src/schema.ts'
  * a row by hand and it comes back; set is_active = false to retire one without
  * losing it (retired services keep their bookings — the FK is ON DELETE
  * restrict).
+ *
+ * It also seeds the ONE media row that maps to a real local file: the karaoke
+ * video master this repo ships (frontend/src/assets/video_local/the-reason.mp4).
+ * The rest of the media hub catalog is administered from /admin/media —
+ * deliberately no mockup rows. Re-running refreshes that row's copy but never
+ * touches isActive or sortOrder: admin curation wins.
  *
  * Safe to run against a database that already has bookings: existing rows keep
  * their ids, and nothing here touches the booking table.
@@ -120,6 +126,22 @@ const catalog = [
   },
 ]
 
+/**
+ * The one media row backed by an actual file in this repo. Everything the hub
+ * shows beyond this was added through /admin/media.
+ */
+const mediaCatalog = [
+  {
+    id: 'med_reason_01',
+    section: 'video',
+    title: 'The Reason',
+    subtitle: 'Hoobastank',
+    tag: 'KTV',
+    duration: '3:54',
+    sortOrder: 1,
+  },
+]
+
 try {
   // One statement, upsert on the stable `code`: inserts the eight on a fresh
   // database, refreshes them on an existing one.
@@ -145,6 +167,30 @@ try {
   console.log(`Seeded ${rows.length} service(s):`)
   for (const row of rows) {
     console.log(`  ${row.code.padEnd(24)} ${row.price} PHP`)
+  }
+
+  // Upsert on the stable id. Only the copy fields refresh — isActive and
+  // sortOrder belong to the admin console once the row exists.
+  await db
+    .insert(mediaItem)
+    .values(mediaCatalog)
+    .onConflictDoUpdate({
+      target: mediaItem.id,
+      set: {
+        title: sql`excluded."title"`,
+        subtitle: sql`excluded."subtitle"`,
+        tag: sql`excluded."tag"`,
+        duration: sql`excluded."duration"`,
+        updatedAt: new Date(),
+      },
+    })
+
+  const mediaRows = await db
+    .select({ section: mediaItem.section, title: mediaItem.title, isActive: mediaItem.isActive })
+    .from(mediaItem)
+  console.log(`Media catalog: ${mediaRows.length} row(s)`)
+  for (const row of mediaRows) {
+    console.log(`  [${row.section}] ${row.title}${row.isActive ? '' : ' (hidden)'}`)
   }
 } catch (err) {
   console.error('\nSeed failed:', err instanceof Error ? err.message : err)
