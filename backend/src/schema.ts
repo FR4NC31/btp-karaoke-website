@@ -52,6 +52,15 @@ export const user = pgTable('user', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   contactNum: text('contact_num').notNull(),
+  /**
+   * Authorization flag: 'user' (default) or 'admin'. Mirrored here so the
+   * column can ride the normal Drizzle migration path (drizzle/0001_*.sql);
+   * Better Auth reads it through `user.additionalFields.role` in src/auth.ts,
+   * which is also what keeps it out of client input — nobody can set their own
+   * role through sign-up or /api/auth/update-user. Promote an account with
+   * `npm run promote-admin -- email@example.com` (scripts/promote-admin.ts).
+   */
+  role: text('role').notNull().default('user'),
 })
 
 /**
@@ -82,8 +91,10 @@ export const service = pgTable('service', {
 })
 
 /**
- * One service, one user, one day. Day-only: there is no time slot or time
- * block column yet — that arrives as its own migration.
+ * One service, one customer, one day. The customer is either a registered
+ * user (`userId`) or, for reservations the admin takes by phone or walk-in,
+ * a free-text `guestName`. Day-only: there is no time slot or time block
+ * column yet — that arrives as its own migration.
  */
 export const booking = pgTable(
   'booking',
@@ -91,9 +102,15 @@ export const booking = pgTable(
     id: text('id').primaryKey(),
     /** Customer-facing code ("BTP-7K2F9A"); safe to read out over the phone. */
     referenceCode: text('referenceCode').notNull().unique(),
-    userId: text('userId')
-      .notNull()
-      .references(() => user.id, { onDelete: 'cascade' }),
+    /**
+     * The customer, when the booking belongs to a registered account.
+     * NULL for a reservation the admin took for a walk-in / phone caller —
+     * those carry `guestName` instead. The check constraint below enforces
+     * that every booking has at least one of the two.
+     */
+    userId: text('userId').references(() => user.id, { onDelete: 'cascade' }),
+    /** Guest (non-account) customer name, admin-created reservations only. */
+    guestName: text('guestName'),
     // onDelete restrict: a service with bookings cannot vanish from under
     // them — deactivate it with isActive = false instead.
     serviceId: text('serviceId')
@@ -118,9 +135,13 @@ export const booking = pgTable(
       'booking_status_check',
       sql`"status" in ('pending', 'confirmed', 'rejected', 'cancelled', 'completed')`,
     ),
+    // Every booking needs an owner: a registered user or a guest name.
+    check('booking_owner_check', sql`"userId" is not null or "guestName" is not null`),
     // One live booking per user, per service, per day. Partial, so a cancelled
     // or rejected row drops out and the customer can withdraw and rebook.
-    // This is what the API turns into a 409.
+    // This is what the API turns into a 409. Guest rows (userId NULL) do not
+    // participate — Postgres unique indexes ignore NULLs — so the admin's own
+    // judgement is the duplicate guard for walk-ins.
     uniqueIndex('booking_active_unique_idx')
       .on(t.userId, t.serviceId, t.bookingDate)
       .where(sql`"status" in ('pending', 'confirmed')`),

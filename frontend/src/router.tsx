@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router"
 import RootLayout from './layouts/RootLayout'
+import RequireAdmin from "./components/RequireAdmin"
 import RequireAuth from "./components/RequireAuth"
 import RequireGuest from "./components/RequireGuest"
 import RouteError from "./components/RouteError"
@@ -15,6 +16,10 @@ import StudioShell from "./pages/studio/StudioShell"
 import StudioHome from "./pages/studio/StudioHome"
 import BookingPage from "./pages/studio/BookingPage"
 import ProfilePage from "./pages/studio/ProfilePage"
+import AdminShell from "./pages/admin/AdminShell"
+import AdminOverview from "./pages/admin/AdminOverview"
+import AdminBookings from "./pages/admin/AdminBookings"
+import AdminNewBooking from "./pages/admin/AdminNewBooking"
 
 export const router = createBrowserRouter([
     {
@@ -75,6 +80,24 @@ export const router = createBrowserRouter([
                     {
                         path: "/signup",
                         element: <SignUp />,
+                    },
+                ]
+            },
+            {
+                // The admin console: sessions with role === 'admin' only.
+                // RequireAdmin is navigation UX — every endpoint the console
+                // calls is gated by `requireAdmin` on the backend, which is
+                // the real boundary.
+                element: <RequireAdmin />,
+                children: [
+                    {
+                        path: "/admin",
+                        element: <AdminShell />,
+                        children: [
+                            { index: true, element: <AdminOverview /> },
+                            { path: "bookings", element: <AdminBookings /> },
+                            { path: "bookings/new", element: <AdminNewBooking /> },
+                        ],
                     },
                 ]
             },

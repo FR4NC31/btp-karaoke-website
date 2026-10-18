@@ -110,6 +110,8 @@ frontend/tests/e2e/
 ├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub, console, player bar, PiP, cross-page sync
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
+├── admin/admin.spec.ts          ADMIN-001…006    console: queue, reservations, booking for others
+├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
@@ -139,6 +141,11 @@ a session cookie, and `/studio` is guarded by `RequireAuth`.
 - Suites that must start signed out — everything in `auth/` — opt out with
   `test.use({ storageState: ANONYMOUS })`. Without this they would inherit a
   session and pass for the wrong reason.
+- `setup/admin.setup.ts` is the admin twin: it ensures
+  `qa-admin@example.com` exists, promotes it if needed
+  (`npm run promote-admin` — promotion is CLI-only, by design),
+  then writes the session to `playwright/.auth/admin.json`. Admin suites opt
+  in with `test.use({ storageState: ADMIN_STORAGE_STATE })`.
 
 If the whole feature suite suddenly redirects to `/signin`, the saved state
 is stale: re-run once (the setup project recreates it) or check that
@@ -153,7 +160,9 @@ OAuth failures redirected back as query params are covered by AUTH-018.
 
 - Controlled fake data only: `qa@example.com`, `juan@example.com`,
   `09171234567` (11-digit dummy), `Secret123!` — defined in
-  `helpers/auth.ts` / `signup.spec.ts`.
+  `helpers/auth.ts` / `signup.spec.ts`. The admin suites use the same
+  contract with `qa-admin@example.com` / `AdminSecret123!` (promoted once;
+  `TEST_ADMIN` in `helpers/auth.ts`).
 - No real users, no production accounts, no production data, no secrets.
 - The backend **does** persist: sign-up/sign-in write rows, and a booking is a
   real row too. Tests stay re-runnable because they clean up what they create,
@@ -200,9 +209,38 @@ there is no time slot or time block yet, and no payment.
 | One live booking per service per day    | Working (partial unique index → 409)      | BOOKING-005         |
 | Entry points (top bar + sidebar)        | Working — both are load-bearing, one is the mobile route | BOOKING-001/002/006 |
 | Signed-out access                       | Blocked by `RequireAuth`                  | BOOKING-007         |
-| Admin confirm / reject                  | **Not implemented** — `status` already carries `pending`/`confirmed`/`rejected`/`completed`, so it needs no schema change | — |
+| Admin confirm / reject                  | Working — the `/admin` queue answers pending reservations | ADMIN-002/003 |
 | Time slots / time blocks                | Not implemented                           | —                   |
 | Payment                                 | Not implemented (no online payment)       | —                   |
+
+## Admin console testing
+
+`/admin` is a separate route tree for sessions with `role = 'admin'`. There is
+one login: the sign-in form routes admins to `/admin`, everyone else to
+`/studio`. The UI guard (`RequireAdmin`) is navigation UX; the real boundary is
+`requireAdmin` on `/api/admin/*`, which answers 401 signed out and 403 for a
+signed-in non-admin — `admin-security.spec.ts` pins that down, including the
+two role self-promotion routes (sign-up, `update-user`), which Better Auth's
+`input: false` closes server-side. Promotion itself is CLI-only
+(`npm run promote-admin` against the database; `SEC-003` is why no HTTP route
+may ever exist for it).
+
+Admin-taken reservations are born **confirmed** — the admin IS the approval
+step — and belong to either a tagged registered customer or a free-text guest
+name (`booking.guestName`; the `booking_owner_check` constraint enforces that
+every reservation has one of the two).
+
+| Feature                                | Status                                   | Tests        |
+| -------------------------------------- | ---------------------------------------- | ------------ |
+| Admin sign-in lands on `/admin`        | Working (role-aware redirect)            | ADMIN-001    |
+| Pending queue confirm / reject         | Working — the console answers the queue  | ADMIN-002/003 |
+| Reservation for a tagged customer      | Working (search an account, tag it)      | ADMIN-005    |
+| Reservation for a guest / walk-in      | Working (free-text name, no account)     | ADMIN-004    |
+| confirmed → completed / cancelled      | Working (`ADMIN_ACTIONS` transitions)    | ADMIN-002/004/005 |
+| Console entry from the studio chrome   | Working — shown to admins only; the top bar link is the mobile path | ADMIN-006 / SEC-004 |
+| `/api/admin/*` 401/403 boundary        | Working — fail-closed sub-app mount      | SEC-001/002  |
+| Role self-promotion                    | Closed — `input: false`; promotion is CLI-only | SEC-003 |
+| User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
 ## API integration
 
@@ -221,8 +259,16 @@ there is no time slot or time block yet, and no payment.
   verified by a direct API probe rather than by Playwright: the form's own
   `min` on the date picker means the browser blocks a past day before the
   request is ever sent, so those branches are unreachable from the UI.
-- **Not yet covered**: direct API-level tests of `/api/auth/*` and `/api/me`
-  (wrong-password 401, protected-route 401) — still the top recommended next
+- The **admin API** (`GET/POST /api/admin/bookings`,
+  `POST /api/admin/bookings/:id/{confirm,reject,complete,cancel}`,
+  `GET /api/admin/users`) is driven end-to-end by ADMIN-001…006, and its
+  boundary is pinned by direct calls: SEC-001 (401 anonymous) and SEC-002
+  (403 for a signed-in non-admin, on every route shape). SEC-003 calls the
+  auth API directly to prove `role` cannot be set at sign-up or through
+  `update-user`.
+- **Not yet covered**: broad direct API-level tests of `/api/auth/*` and
+  `/api/me` (wrong-password 401, protected-route 401) — SEC-003 covers the
+  role-escalation paths only; the rest is still the top recommended next
   suite (see [qa-strategy.md](qa-strategy.md)). Search, favorites and
   profile flows remain client-side only.
 

@@ -7,7 +7,9 @@ import {
   DotIcon,
   DashboardSquare01Icon,
   CalendarCheck01Icon,
+  Shield01Icon,
 } from '@hugeicons/core-free-icons'
+import { useSession } from '../../../lib/auth-client'
 import { sidebarSections, studioTools } from '../data'
 
 /**
@@ -18,6 +20,9 @@ import { sidebarSections, studioTools } from '../data'
  * The sidebar is `hidden md:flex`, so below 768 px none of this renders. Every
  * destination here must therefore also be reachable from StudioTopBar, which
  * is visible at every width — keep the two lists in sync when adding a page.
+ *
+ * Admin Console appears only for `role === 'admin'` — a convenience link, not
+ * a gate: /admin guards itself (RequireAdmin) and the API enforces access.
  */
 
 const deskLinks = [
@@ -27,6 +32,8 @@ const deskLinks = [
 
 export default function StudioSidebar() {
   const [activeSidebar, setActiveSidebar] = useState('Master Collections Vault')
+  const { data } = useSession()
+  const isAdmin = data?.user.role === 'admin'
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
@@ -64,6 +71,23 @@ export default function StudioSidebar() {
                 </NavLink>
               </li>
             ))}
+            {isAdmin && (
+              <li>
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
+                      isActive
+                        ? 'bg-primary-soft text-primary'
+                        : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
+                    }`
+                  }
+                >
+                  <HugeiconsIcon icon={Shield01Icon} size={12} />
+                  <span className="truncate">Admin Console</span>
+                </NavLink>
+              </li>
+            )}
           </ul>
         </div>
 

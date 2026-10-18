@@ -10,6 +10,13 @@ import { expect } from '@playwright/test'
 export const STORAGE_STATE = 'playwright/.auth/user.json'
 
 /**
+ * Same idea as STORAGE_STATE, for the admin console. Written by
+ * setup/admin.setup.ts; suites that open /admin declare
+ * `test.use({ storageState: ADMIN_STORAGE_STATE })`.
+ */
+export const ADMIN_STORAGE_STATE = 'playwright/.auth/admin.json'
+
+/**
  * `test.use({ storageState: ANONYMOUS })` opts a suite out of the shared
  * session above. Required for anything that drives the sign-in or sign-up
  * form itself: starting those tests already authenticated would make them
@@ -33,6 +40,25 @@ export const TEST_USER = {
 }
 
 /**
+ * Controlled admin credentials, same contract as TEST_USER — a real account
+ * with `role = 'admin'` in Aiven, created once and reused.
+ *
+ * Unlike TEST_USER this account cannot be (re)seeded through the sign-up API
+ * alone: the role is server-managed (`input: false`), so promotion is a CLI
+ * step. setup/admin.setup.ts performs both automatically when they are
+ * missing — sign up through the API, then
+ *
+ *   cd backend && npm run promote-admin -- qa-admin@example.com
+ *
+ * The role check is part of the security model (see admin-security.spec.ts,
+ * SEC-003): there is deliberately no HTTP route that can promote anyone.
+ */
+export const TEST_ADMIN = {
+  email: 'qa-admin@example.com',
+  password: 'AdminSecret123!',
+}
+
+/**
  * Signs in through the real UI form and waits for the studio.
  *
  * Clears the context's cookies first. `/signin` is a guest-only route now, so
@@ -53,4 +79,23 @@ export async function signIn(page: Page, credentials: { email: string; password:
   await page.getByLabel('Password', { exact: true }).fill(credentials.password)
   await page.getByRole('button', { name: 'Sign In' }).click()
   await expect(page).toHaveURL('/studio')
+}
+
+/**
+ * The admin twin of `signIn`: same real UI form, but the post-sign-in
+ * destination is /admin. That difference is itself the assertion — the form
+ * routes by role (SignInForm calls `landingPathFor`), so reaching /admin here
+ * proves both the fresh session read and the role-aware redirect.
+ *
+ * Clearing cookies matters even more than in `signIn`: /signin is a guest-only
+ * route, and an inherited *admin* session would bounce straight to /admin and
+ * never show the form.
+ */
+export async function signInAsAdmin(page: Page, credentials = TEST_ADMIN) {
+  await page.context().clearCookies()
+  await page.goto('/signin')
+  await page.getByLabel('Email').fill(credentials.email)
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password)
+  await page.getByRole('button', { name: 'Sign In' }).click()
+  await expect(page).toHaveURL('/admin')
 }

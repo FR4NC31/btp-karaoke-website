@@ -56,6 +56,20 @@ npm run migrate -- --status   # what has been applied
 point at until that table exists. `drizzle/0000_*.sql` has the `CREATE TABLE
 "user"` statement deliberately removed for the same reason.
 
+`user.role` (the admin flag) is the one deliberate exception to the ownership
+table above: the column is declared in `src/schema.ts` and added by
+`drizzle/0001_*.sql`, while Better Auth reads it through
+`user.additionalFields.role` in `src/auth.ts` — that is what makes it
+unsettable from the client. The ALTER is `IF NOT EXISTS` so the fresh-database
+order above still works (Better Auth creates the column first). Promote and
+revoke admins with:
+
+```bash
+npm run promote-admin -- someone@example.com          # grant
+npm run promote-admin -- someone@example.com --revoke # revoke
+npm run promote-admin -- --list                       # who is an admin?
+```
+
 **Never run `drizzle-kit push` against this database.** It reconciles the whole
 database against `src/schema.ts` and would drop the Better Auth tables it cannot
 see. Add a column to `src/schema.ts`, generate, and apply instead.

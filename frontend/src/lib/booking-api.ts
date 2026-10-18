@@ -5,6 +5,10 @@
  * backend — the session cookie rides along without CORS, exactly like the
  * Better Auth client. Errors are normalised into `BookingApiError` so the page
  * can render `err.message` directly instead of digging through a Response.
+ *
+ * `request` and `BookingApiError` are also the base the admin client
+ * (lib/admin-api.ts) builds on — one error shape and one fetch policy for the
+ * whole booking surface.
  */
 
 export interface Service {
@@ -46,7 +50,25 @@ export class BookingApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * One readable message for anything the booking surface can throw. Shared by
+ * the customer desk and the admin console so a session expiry reads the same
+ * in both.
+ */
+export function describeBookingError(err: unknown, fallback: string): string {
+  if (err instanceof BookingApiError) {
+    if (err.status === 401) {
+      return 'Your session has expired. Sign in again to manage bookings.'
+    }
+    if (err.status === 403) {
+      return 'You do not have access to that.'
+    }
+    return err.message
+  }
+  return err instanceof Error ? err.message : fallback
+}
+
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response
   try {
     response = await fetch(path, {

@@ -585,6 +585,108 @@ randomised 400–699 days out so parallel workers cannot collide either.
 
 ---
 
+## Admin console & role security — `frontend/tests/e2e/admin/`
+
+Admins are ordinary accounts with `user.role = 'admin'` — one login, no second
+credential store. The console lives at `/admin` behind `RequireAdmin` (UI only);
+the real boundary is `requireAdmin` on `/api/admin/*`. There is deliberately no
+HTTP route that can grant the role: promotion is
+`npm run promote-admin -- email` against the database (backend/README.md).
+Admin-taken reservations (tagged customer or guest name) are created
+**confirmed** — the admin is the approval step. Cleanup mirrors the booking
+desk: every test-created reservation is driven to a terminal state
+(`completed`/`cancelled`) so it leaves the "one live booking per day" index.
+
+### SEC-001
+
+- **Title:** Every admin endpoint answers 401 without a session
+- **Priority:** P1
+- **Steps:** 1. Signed out, call `GET /api/admin/bookings`, `GET /api/admin/users`, `POST /api/admin/bookings`, `POST /api/admin/bookings/:id/confirm`.
+- **Expected:** Every call is HTTP 401 with body `{"error":"Unauthorized"}` — no data of any kind.
+- **Automation:** Playwright — **Status: Automated**
+
+### SEC-002
+
+- **Title:** A signed-in non-admin gets 403 and no data anywhere
+- **Priority:** P1
+- **Steps:** 1. Signed in as `qa@example.com` (role `user`), call the same four endpoint shapes.
+- **Expected:** Every call is HTTP 403 with body `{"error":"Forbidden"}` — the same shape as the customer's own desk gets does not leak anything about other users.
+- **Automation:** Playwright — **Status: Automated**
+
+### SEC-003
+
+- **Title:** Role cannot be set at sign-up or through update-user
+- **Priority:** P1
+- **Steps:** 1. Sign up with `"role": "admin"` in the body. 2. Read the created user. 3. Call `POST /api/auth/update-user` with `"role": "admin"` (Origin header set, as a browser would). 4. Read the session again.
+- **Expected:** The created user's role is `user`; `update-user` rejects with 400 (field not allowed); the session's role is still `user`. The only way to become an admin is the CLI promotion script.
+- **Automation:** Playwright — **Status: Automated**
+
+### SEC-004
+
+- **Title:** A signed-in non-admin is bounced out of the console UI
+- **Priority:** P2
+- **Steps:** 1. As `qa@example.com`, open `/admin` directly. 2. Inspect the studio chrome.
+- **Expected:** Redirect to `/studio`; the top bar offers no console link, and no console heading is ever shown.
+- **Automation:** Playwright — **Status: Automated**
+
+### SEC-005
+
+- **Title:** A signed-out visitor is sent to sign-in, remembering `/admin`
+- **Priority:** P2
+- **Steps:** 1. Without a session, open `/admin`.
+- **Expected:** Redirect to `/signin?next=%2Fadmin` — the `next` value is what returns an admin to the console after signing in, and it is validated before use (frontend/src/lib/redirects.ts).
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-001
+
+- **Title:** Signing in lands an admin on the console
+- **Priority:** P1
+- **Steps:** 1. Sign out. 2. Sign in as `qa-admin@example.com` through the real form.
+- **Expected:** The form's role-aware redirect lands on `/admin` (not `/studio`); the Overview page renders with the Pending approvals and Today at the studio panels.
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-002
+
+- **Title:** A pending reservation is confirmed from the queue, then completed
+- **Priority:** P1
+- **Steps:** 1. Create a `pending` reservation as the customer (API, `qa@example.com`). 2. Open `/admin`; find the row in the Pending approvals queue. 3. Click **Confirm**. 4. Open Reservations, search the reference, click **Mark completed**.
+- **Expected:** Confirm produces a flash naming the reference and status and the row leaves the queue; the reservations list shows **confirmed**, then **completed** after the second action. Completing is also the cleanup.
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-003
+
+- **Title:** A pending reservation is rejected from the queue
+- **Priority:** P1
+- **Steps:** 1. Create a second `pending` reservation as the customer. 2. Open `/admin`, find it, click **Reject**. 3. Search it in Reservations.
+- **Expected:** A rejection flash names the reference; the row leaves the queue and shows **rejected** on the reservations list. `rejected` is terminal and already outside the unique index, so no cleanup is needed.
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-004
+
+- **Title:** The admin books a day for a guest name
+- **Priority:** P1
+- **Steps:** 1. Open `/admin/bookings/new`, switch to **Guest name**. 2. Type a name, pick a service and a day ~1–2 years out, save. 3. Search the reference in Reservations, then cancel it.
+- **Expected:** The flash carries the reference, the guest name and **confirmed** — no approval step for a reservation the admin just took. The list row shows the Guest marker and the name. Cancelling is cleanup.
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-005
+
+- **Title:** The admin tags a registered customer instead of a guest
+- **Priority:** P1
+- **Steps:** 1. Open `/admin/bookings/new` (default mode: **Registered customer**). 2. Type `qa@example.com`, tag the result. 3. Pick a service and day, save. 4. Search the reference in Reservations, then mark it completed.
+- **Expected:** The flash carries the reference and **confirmed**; the list row shows the customer's email and no Guest marker. Marking completed is cleanup (it releases the day in the unique index).
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-006
+
+- **Title:** The studio chrome exposes the console link, and it works
+- **Priority:** P2
+- **Steps:** 1. As the admin, open `/studio`. 2. Click the **Admin Console** link in the top bar.
+- **Expected:** The link is visible in the studio chrome (the top bar entry is the mobile-width path, since the console link in the sidebar is `hidden md:flex`), and it navigates to `/admin`.
+- **Automation:** Playwright — **Status: Automated**
+
+---
+
 ## Error states & health — `frontend/tests/e2e/errors/errors.spec.ts`
 
 ### ERROR-001
@@ -641,7 +743,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Media loading failure / unavailable song | N/A                 | No media pipeline.                                           |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
-| Booking accept/reject by an admin      | N/A                   | `booking.status` already carries pending / confirmed / rejected / cancelled / completed, so accepting a booking needs no schema change — only an admin role and UI, which do not exist yet. |
+| Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
-| Backend auth API tests                 | **Recommended next**  | `/api/auth/*` + `/api/me` exist (sign-up 200, sign-in 200, wrong password 401) with no automated coverage yet.        |
+| Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |
