@@ -32,7 +32,7 @@ PostgreSQL on Aiven. Two libraries share one connection pool (`src/db.ts`):
 | **Better Auth**  | `user`, `session`, `account`, `verification`     | `better-auth_migrations/` |
 | **Drizzle ORM**  | `service`, `booking`                            | `drizzle/`                |
 
-The split is deliberate: `better-auth migrate` can regenerate its own folder,
+The split is deliberate: `bun x auth@latest migrate` can regenerate its own folder,
 so application tables must never live there or they would be clobbered.
 
 ```bash
@@ -51,7 +51,7 @@ npm run migrate -- --status   # what has been applied
   the eight catalog rows on a fresh database and refreshes them on an existing
   one without touching `booking`.
 
-**Fresh database:** run `better-auth migrate` *before* `npm run migrate`.
+**Fresh database:** run `bun x auth@latest migrate` *before* `npm run migrate`.
 `booking.userId` references Better Auth's `user` table, so the FK has nothing to
 point at until that table exists. `drizzle/0000_*.sql` has the `CREATE TABLE
 "user"` statement deliberately removed for the same reason.

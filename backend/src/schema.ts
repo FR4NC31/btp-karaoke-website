@@ -17,14 +17,14 @@ import {
  *
  * Ownership split, so nobody clobbers anyone:
  *   - Better Auth owns "user" / "session" / "account" / "verification". Those
- *     are created and re-created by `better-auth migrate` from
+ *     are created and re-created by `bun x auth@latest migrate` from
  *     backend/better-auth_migrations/, NOT from here.
  *   - Drizzle owns "service" and "booking" (backend/drizzle/ migrations).
  *
  * `user` is declared below only so `booking.userId` can carry a real database
  * foreign key. Its CREATE is deliberately stripped out of the generated
  * migration — see backend/drizzle/0000_*.sql. On a fresh database, run
- * `better-auth migrate` BEFORE `npm run migrate`, or the booking FK has
+ * `bun x auth@latest migrate` BEFORE `npm run migrate`, or the booking FK has
  * nothing to point at.
  *
  * Never run `drizzle-kit push` against this database: it reconciles the whole

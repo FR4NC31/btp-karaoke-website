@@ -26,14 +26,46 @@ function readCa(): string | undefined {
 
 const ca = readCa()
 
-// `sslmode` in the connection string overrides the `ssl` object below,
-// which silently drops our CA cert and breaks verification. Strip it and
-// configure TLS explicitly instead.
-const connectionString = ca ? databaseUrl.replace(/[?&]sslmode=[^&]*/, '') : databaseUrl
+/**
+ * Removes `sslmode` from the connection string while keeping it well-formed.
+ *
+ * Stripping the parameter with a blind replace that also consumes the leading
+ * `?` leaves a bare `&` behind, so `…?sslmode=require&connect_timeout=10`
+ * becomes `…/defaultdb&connect_timeout=10` — the `&` and the parameter after it
+ * are then read as part of the database name and every connection fails. Strip
+ * the parameter, then repair whichever separator survives.
+ */
+function withoutSslmode(url: string): string {
+  if (!/[?&]sslmode=/.test(url)) return url
+  return (
+    url
+      .replace(/([?&])sslmode=[^&]*/g, '$1')
+      // `?sslmode=x&a=1` -> `?&a=1`; promote the first surviving parameter.
+      .replace(/\?&/, '?')
+      // `?a=1&sslmode=x&b=2` -> `?a=1&&b=2`; close the gap.
+      .replace(/&&/g, '&')
+      // `?sslmode=x` / `?a=1&sslmode=x`; drop the orphan separator.
+      .replace(/[?&]$/, '')
+  )
+}
+
+// `sslmode` in the connection string overrides the `ssl` object below, which
+// silently drops our CA cert and breaks verification. Strip it and configure
+// TLS explicitly instead.
+const connectionString = ca ? withoutSslmode(databaseUrl) : databaseUrl
 
 export const pool = new Pool({
   connectionString,
   ...(ca ? { ssl: { ca, rejectUnauthorized: true } } : {}),
+})
+
+// Aiven closes idle connections. pg-pool re-emits that as an `error` event on
+// the pool, and an EventEmitter with no listener for `error` turns it into an
+// uncaught exception that takes the process down. There is nothing to clean up
+// — pg-pool has already dropped the dead client — so logging is the whole job;
+// the next query simply gets a fresh connection.
+pool.on('error', (err) => {
+  console.error('[db] idle client error:', err.message)
 })
 
 /**

@@ -222,6 +222,16 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     throw new BookingError('Pick a date in YYYY-MM-DD format.', 400)
   }
 
+  // The shape alone accepts days that do not exist — 2027-02-29, 2027-04-31,
+  // 2027-13-01. Those reach Postgres, which rejects them as an out-of-range
+  // `date` and surfaces to the client as an uncaught 500, so reject them here.
+  // `Date` rolls impossible days over (2027-04-31 -> 2027-05-01) rather than
+  // failing, so parsing back and comparing is what actually catches it.
+  const parsedDay = new Date(`${bookingDate}T00:00:00Z`)
+  if (Number.isNaN(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== bookingDate) {
+    throw new BookingError('That is not a real calendar date. Pick a valid day.', 400)
+  }
+
   const today = studioToday()
   if (bookingDate < today) {
     throw new BookingError('That day has already passed. Pick today or a later date.', 400)
