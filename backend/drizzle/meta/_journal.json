@@ -36,6 +36,13 @@
       "when": 1792324210092,
       "tag": "0004_aspiring_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792328122242,
+      "tag": "0005_typical_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

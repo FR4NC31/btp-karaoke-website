@@ -105,9 +105,18 @@ export const mediaItem = pgTable(
     section: text('section').notNull(),
     title: text('title').notNull(),
     subtitle: text('subtitle'),
+    /**
+     * Performer — read from the file's own artist tag or typed by the admin.
+     * Video and music cards show it under the title; radio rows leave it null
+     * (their subtitle carries the genre).
+     */
+    artist: text('artist'),
     /** Chip label on the card ("KTV", "MIX", "On Air"…). */
     tag: text('tag'),
-    /** Video: runtime as shown, e.g. "3:54". */
+    /**
+     * Video/music: runtime as shown, e.g. "3:54". The editor reads it off
+     * the uploaded file (MP4 or MP3) — it is never typed by hand.
+     */
     duration: text('duration'),
     /** Video: display-only play count. */
     plays: integer('plays'),

@@ -36,7 +36,7 @@ export default function VideoSongSection({ items }: { items: MediaItem[] }) {
               tag={song.tag ?? 'KTV'}
               icon={PlayIcon}
               title={song.title}
-              subtitle={song.subtitle ?? ''}
+              subtitle={song.artist ?? song.subtitle ?? ''}
               coverUrl={song.coverUrl}
               to="/studio/player-queue"
               toState={{ autoplay: true, item: song }}

@@ -264,7 +264,7 @@ test.describe('media hub catalog', () => {
     const title = `E2E Session ${Date.now()}`
 
     await page.goto('/admin/media/new')
-    // The editor swaps fields per type: music wants tempo/key, not duration.
+    // The editor swaps fields per type: music wants tempo/key, video plays.
     await page.getByLabel('Type').selectOption('music')
     await page.getByLabel('Title', { exact: true }).fill(title)
     await page.getByLabel('Description').fill('E2E mixdown notes')
@@ -372,8 +372,8 @@ test.describe('media hub catalog', () => {
     await page.getByLabel('Artist').fill('E2E performer')
     await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
     await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
-    // Duration is read off the picked file itself — no manual typing.
-    await expect(page.getByLabel('Duration')).toHaveValue(/^\d+:\d{2}(:\d{2})?$/)
+    // The runtime is read off the picked file itself — no manual typing.
+    await expect(page.getByText('Runtime: 3:54 — read from the file.')).toBeVisible()
 
     await page.getByRole('button', { name: 'Add to the hub' }).click()
     await expect(flashWith(page, title)).toContainText('live on the hub')
@@ -383,8 +383,12 @@ test.describe('media hub catalog', () => {
     const row = page.locator('main li').filter({ hasText: title })
     await expect(row).toContainText('MP4 file')
 
-    // …and the hub card opens the console playing that very upload.
+    // …and the hub card (artist under the title, runtime in its meta strip)
+    // opens the console playing that very upload.
     await page.goto('/studio')
+    const card = page.locator('main article').filter({ hasText: title })
+    await expect(card).toContainText('E2E performer')
+    await expect(card).toContainText('3:54')
     await page.getByRole('link', { name: `Play ${title}` }).click()
     await expect(page).toHaveURL('/studio/player-queue')
 
@@ -392,6 +396,7 @@ test.describe('media hub catalog', () => {
     const src = await video.getAttribute('src')
     expect(src, 'the stage should point at the stored upload').toContain('/api/uploads/media/')
     await expect(page.getByRole('contentinfo')).toContainText(title)
+    await expect(page.getByRole('contentinfo')).toContainText('E2E performer')
     await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
 
     // Stored media answers byte ranges — uploaded videos are seek-ready.
@@ -489,8 +494,12 @@ test.describe('media hub catalog', () => {
 
     // Give the row a title nothing else wears, so reruns stay collision-free.
     await page.getByLabel('Title', { exact: true }).fill(title)
-    await expect(page.getByLabel('Description')).toHaveValue('Anar Software LLC')
+    // The artist tag feeds the Artist box — not the description…
+    await expect(page.getByLabel('Artist')).toHaveValue('Anar Software LLC')
+    await expect(page.getByLabel('Description')).toHaveValue('')
     await expect(page.getByLabel('Album')).toHaveValue('Blank Audio')
+    // …and the runtime reads off the MP3 itself — no manual typing.
+    await expect(page.getByText('Runtime: 0:01 — read from the file.')).toBeVisible()
 
     // The MP3's embedded art becomes the cover automatically…
     await expect(page.getByText("Found in the file's own tags")).toBeVisible()
@@ -505,10 +514,14 @@ test.describe('media hub catalog', () => {
     const listed = await page.request.get('/api/admin/media')
     const items = (await listed.json()).items as Array<{
       title: string
+      artist: string | null
+      duration: string | null
       sourceUrl: string | null
       coverUrl: string | null
     }>
     const stored = items.find((entry) => entry.title === title)
+    expect(stored?.artist, 'the artist tag should be stored on the row').toBe('Anar Software LLC')
+    expect(stored?.duration, 'the runtime should be read off the MP3').toBe('0:01')
     expect(stored?.sourceUrl, 'the MP3 should be attached').toContain('/api/uploads/media/')
     expect(stored?.coverUrl, 'the embedded art should be attached').toMatch(
       /\/api\/uploads\/media\/.+\.webp$/,
@@ -520,12 +533,15 @@ test.describe('media hub catalog', () => {
     await expect(row).toContainText('MP3 file')
     await expect(row).toContainText('Cover')
 
-    // …and the hub card carries the cover, plus the album in its meta strip.
+    // …and the hub card carries the cover, the artist under the title, and
+    // the runtime + album in its meta strip.
     await page.goto('/studio')
     const card = page.locator('main article').filter({ hasText: title })
     const cover = card.locator('img')
     await expect(cover).toBeVisible()
     expect(await cover.getAttribute('src')).toBe(stored!.coverUrl)
+    await expect(card).toContainText('Anar Software LLC')
+    await expect(card).toContainText('0:01')
     await expect(card).toContainText('Blank Audio')
 
     const served = await page.request.get(stored!.coverUrl!)

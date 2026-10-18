@@ -94,6 +94,8 @@ export interface AdminMediaInput {
   section: MediaSection
   title: string
   subtitle?: string
+  /** Performer shown under the title; read from the file's tags. */
+  artist?: string
   tag?: string
   duration?: string
   plays?: number | null
@@ -123,6 +125,7 @@ function mediaPayload(input: AdminMediaInput): Record<string, unknown> {
     section: input.section,
     title: input.title.trim(),
     subtitle: clean(input.subtitle),
+    artist: clean(input.artist),
     tag: clean(input.tag),
     duration: clean(input.duration),
     plays: input.plays ?? undefined,

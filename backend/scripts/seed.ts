@@ -135,7 +135,7 @@ const mediaCatalog = [
     id: 'med_reason_01',
     section: 'video',
     title: 'The Reason',
-    subtitle: 'Hoobastank',
+    artist: 'Hoobastank',
     tag: 'KTV',
     duration: '3:54',
     sortOrder: 1,
@@ -179,6 +179,7 @@ try {
       set: {
         title: sql`excluded."title"`,
         subtitle: sql`excluded."subtitle"`,
+        artist: sql`excluded."artist"`,
         tag: sql`excluded."tag"`,
         duration: sql`excluded."duration"`,
         updatedAt: new Date(),

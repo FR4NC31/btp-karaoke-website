@@ -52,6 +52,7 @@ function metaParts(item: AdminMediaItem): string[] {
     if (item.duration) parts.push(item.duration)
     if (item.plays !== null) parts.push(`${formatCount(item.plays)} plays`)
   } else if (item.section === 'music') {
+    if (item.duration) parts.push(item.duration)
     if (item.tempo) parts.push(item.tempo)
     if (item.songKey) parts.push(`Key ${item.songKey}`)
   } else {
@@ -278,8 +279,12 @@ export default function AdminMedia() {
                                 {item.isActive ? 'Live' : 'Hidden'}
                               </span>
                             </div>
-                            {item.subtitle && (
-                              <p className="mt-1.5 text-sm text-text-secondary">{item.subtitle}</p>
+                            {/* Under the title: the artist, else the
+                                subtitle (music description, radio genre). */}
+                            {(item.artist ?? item.subtitle) && (
+                              <p className="mt-1.5 text-sm text-text-secondary">
+                                {item.artist ?? item.subtitle}
+                              </p>
                             )}
                             {parts.length > 0 && (
                               <p className="mt-1 text-[11px] tracking-widest text-text-muted uppercase">

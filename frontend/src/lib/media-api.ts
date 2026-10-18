@@ -24,8 +24,10 @@ export interface MediaItem {
   section: MediaSection
   title: string
   subtitle: string | null
+  /** Performer — shown under the title on the card/console; null hides it. */
+  artist: string | null
   tag: string | null
-  /** Video: runtime as shown, e.g. "3:54". */
+  /** Video/music: runtime as shown, e.g. "3:54" — read off the uploaded file. */
   duration: string | null
   /** Video: display-only play count. */
   plays: number | null

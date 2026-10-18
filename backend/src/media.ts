@@ -19,7 +19,8 @@ import { isUploadedImageUrl, isUploadedMediaUrl, removeUploadedMedia } from './u
  * music tracks can carry an uploaded MP4/MP3 (`sourceUrl`, stored under
  * backend/uploads by src/uploads.ts) plus a cover image (`coverUrl`) —
  * extracted from the file's own tags, grabbed from the video, or picked by
- * the admin. Removing either file from a row — replace or delete — removes
+ * the admin. Artist names (`artist`) and albums (`album`) ride those same
+ * file tags. Removing either file from a row — replace or delete — removes
  * the stored upload with it.
  */
 
@@ -30,6 +31,8 @@ export interface MediaItem {
   section: MediaSection
   title: string
   subtitle: string | null
+  /** Performer — the file's artist tag or the admin's copy; null hides the line. */
+  artist: string | null
   tag: string | null
   duration: string | null
   plays: number | null
@@ -83,6 +86,7 @@ function toMediaItem(row: MediaRow): MediaItem {
     section: row.section as MediaSection,
     title: row.title,
     subtitle: row.subtitle,
+    artist: row.artist,
     tag: row.tag,
     duration: row.duration,
     plays: row.plays,
@@ -108,6 +112,7 @@ function toPublicMediaItem(item: MediaItem): PublicMediaItem {
     section: item.section,
     title: item.title,
     subtitle: item.subtitle,
+    artist: item.artist,
     tag: item.tag,
     duration: item.duration,
     plays: item.plays,
@@ -246,6 +251,7 @@ interface ValidatedFields {
   section: MediaSection
   title: string
   subtitle: string | null
+  artist: string | null
   tag: string | null
   duration: string | null
   plays: number | null
@@ -270,6 +276,7 @@ function validateFields(input: Record<string, unknown>): ValidatedFields {
     section: cleanSection(input.section),
     title: cleanTitle(input.title),
     subtitle: cleanText(input.subtitle, 'Subtitle'),
+    artist: cleanText(input.artist, 'Artist'),
     tag: cleanText(input.tag, 'Tag', SHORT_TEXT_MAX),
     duration: cleanText(input.duration, 'Duration', SHORT_TEXT_MAX),
     plays: cleanCount(input.plays, 'Plays'),

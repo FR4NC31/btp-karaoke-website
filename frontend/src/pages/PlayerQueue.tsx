@@ -135,7 +135,11 @@ export default function PlayerQueue() {
   const source = item?.sourceUrl ?? onAir?.src ?? localVideo
   const audioMode = (item?.section ?? onAir?.kind) === 'music'
   const trackTitle = item?.title ?? onAir?.title ?? 'The Reason'
-  const trackSubtitle = item ? item.subtitle : onAir ? onAir.subtitle || null : 'Hoobastank'
+  const trackSubtitle = item
+    ? (item.artist ?? item.subtitle)
+    : onAir
+      ? onAir.subtitle || null
+      : 'Hoobastank'
   // Poster: the row's cover / generated thumbnail before the bundled
   // placeholder art — the stage shows a real image while the file loads.
   const coverSrc = item?.coverUrl ?? onAir?.coverUrl ?? null
@@ -170,7 +174,7 @@ export default function PlayerQueue() {
     if (!item) return
     setOnAir({
       title: item.title,
-      subtitle: item.subtitle ?? '',
+      subtitle: item.artist ?? item.subtitle ?? '',
       src: item.sourceUrl ?? localVideo,
       coverUrl: item.coverUrl,
       kind: item.section === 'music' ? 'music' : 'video',

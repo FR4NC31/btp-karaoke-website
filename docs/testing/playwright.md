@@ -242,9 +242,11 @@ stored file is served back with byte ranges and a year-long immutable cache,
 so the hub plays the actual upload — no file means the video card falls back
 to the bundled master and a music card stays visual-only. The editor also
 reads each picked file's own metadata (`music-metadata`: ID3 tags on MP3,
-atoms on MP4) to pre-fill title/artist/album/duration, and every media row
-can carry a cover image: embedded art is applied automatically, a tagless
-video gets a real frame grabbed off it, the admin can pick an image instead,
+atoms on MP4) to pre-fill the blank title/artist/album boxes and to read the
+runtime off the file itself (no duration box — video and audio alike), and
+every media row can carry a cover image: embedded art is applied
+automatically, a tagless video gets a real frame grabbed off it, the admin
+can pick an image instead,
 and covers are shrunk to display size (`browser-image-compression`, WebP)
 before upload. Without one, cards show the default art. Only the one real
 local master ("The Reason") ships seeded — music and radio start empty, so
@@ -263,7 +265,7 @@ their tests create the rows they assert and delete them afterwards.
 | Media catalog add / edit               | Working — rows drive `/studio` immediately | ADMIN-007    |
 | Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
 | Media file upload (MP4/MP3)            | Working — stored with byte ranges + immutable cache; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
-| Tag metadata fill + covers/thumbnails  | Working — tags pre-fill the blank boxes; embedded art, grabbed video frames and picked images become optimized WebP covers | ADMIN-012/013 |
+| Tag metadata fill + covers/thumbnails  | Working — tags pre-fill the blank boxes (Artist/album); the runtime is read off the picked file; embedded art, grabbed video frames and picked images become optimized WebP covers | ADMIN-012/013 |
 | Delete confirmation on media rows      | Working — Delete → Confirm/Cancel pair   | ADMIN-007/009 |
 | User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 

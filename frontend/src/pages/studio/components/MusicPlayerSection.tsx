@@ -1,4 +1,10 @@
-import { Clock01Icon, DiscAlbumIcon, HashtagIcon, MusicNote01Icon } from '@hugeicons/core-free-icons'
+import {
+  Clock01Icon,
+  DashboardSpeed01Icon,
+  DiscAlbumIcon,
+  HashtagIcon,
+  MusicNote01Icon,
+} from '@hugeicons/core-free-icons'
 import MediaCard, { type MediaCardMeta } from './MediaCard'
 import type { MediaItem } from '../../../lib/media-api'
 
@@ -7,7 +13,8 @@ import type { MediaItem } from '../../../lib/media-api'
  * per published row of the admin-managed catalog. A track with an uploaded
  * MP3 opens the console and really plays it (the console doubles as a media
  * stage); rows without audio stay visual-only. Cards carry the row's cover
- * art (default art when it has none) and its album in the meta strip.
+ * art (default art when it has none), its artist under the title, and its
+ * runtime (read off the file), tempo, key and album in the meta strip.
  * Renders nothing while the section has no published tracks.
  */
 export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
@@ -27,7 +34,10 @@ export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {items.map((track) => {
           const meta: MediaCardMeta[] = []
-          if (track.tempo) meta.push({ icon: Clock01Icon, text: track.tempo })
+          // The clock always means runtime (a video card reads the same);
+          // tempo gets the speedometer so the two never read alike.
+          if (track.duration) meta.push({ icon: Clock01Icon, text: track.duration })
+          if (track.tempo) meta.push({ icon: DashboardSpeed01Icon, text: track.tempo })
           if (track.songKey) meta.push({ icon: HashtagIcon, text: track.songKey })
           if (track.album) meta.push({ icon: DiscAlbumIcon, text: track.album })
 
@@ -37,7 +47,7 @@ export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
               tag={track.tag ?? 'MIX'}
               icon={MusicNote01Icon}
               title={track.title}
-              subtitle={track.subtitle ?? ''}
+              subtitle={track.artist ?? track.subtitle ?? ''}
               coverUrl={track.coverUrl}
               to={track.sourceUrl ? '/studio/player-queue' : undefined}
               toState={track.sourceUrl ? { autoplay: true, item: track } : undefined}

@@ -100,11 +100,13 @@ so an uploaded video seeks in the console like the bundled master.
   (music); rows without a cover show the default art.
 - Metadata + covers are prepared in the browser, not the backend: the editor
   reads the file's own tags with `music-metadata` (ID3 on MP3, atoms on MP4)
-  to pre-fill title/artist/album/duration (blank boxes only), takes the
-  embedded cover or grabs a video frame as the default thumbnail, and shrinks
-  picked covers with `browser-image-compression` (WebP, ≤1000px) before
-  upload.
-- Schema: `media_item.sourceUrl` / `sourceName` (`drizzle/0003_*.sql`) and
-  `album` / `coverUrl` / `coverName` (`drizzle/0004_*.sql`).
+  to pre-fill title/artist/album (blank boxes only) and reads the runtime off
+  the picked file — video and audio alike, so there is no duration input —
+  takes the embedded cover or grabs a video frame as the default thumbnail,
+  and shrinks picked covers with `browser-image-compression` (WebP, ≤1000px)
+  before upload.
+- Schema: `media_item.sourceUrl` / `sourceName` (`drizzle/0003_*.sql`),
+  `album` / `coverUrl` / `coverName` (`drizzle/0004_*.sql`), and `artist`
+  (`drizzle/0005_*.sql` — video rows' old subtitle text was backfilled).
   Video rows fall back to `frontend/src/assets/video_local/the-reason.mp4`
   when no file is attached; radio stations carry no file (streams).

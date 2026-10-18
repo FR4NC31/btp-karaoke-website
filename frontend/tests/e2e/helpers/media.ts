@@ -20,6 +20,8 @@ export interface MediaSeedInput {
   section: 'video' | 'music' | 'radio'
   title: string
   subtitle?: string
+  /** Performer under the title (video and music rows). */
+  artist?: string
   tag?: string
   duration?: string
   plays?: number

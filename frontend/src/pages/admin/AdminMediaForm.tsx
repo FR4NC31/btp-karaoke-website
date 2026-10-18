@@ -17,18 +17,20 @@ import { MEDIA_SECTION_LABELS, type AdminMediaItem, type MediaSection } from '..
  * /admin/media/new and /admin/media/:id — the catalog editor.
  *
  * One form for both: the section picker swaps the visible fields (a video
- * song carries duration/plays, a track tempo/key, a station freq/listeners)
- * and the title/subtitle labels, while the payload shape stays flat — exactly
- * what /api/admin/media validates. An update replaces the row, so clearing a
- * box clears the column.
+ * song carries plays, a track tempo/key, a station freq/listeners) and the
+ * shared boxes' labels (Artist / Description / Genre), while the payload
+ * shape stays flat — exactly what /api/admin/media validates. An update
+ * replaces the row, so clearing a box clears the column.
  *
  * Video songs and music tracks can also carry the real file: picking an
  * MP4/MP3 uploads it on save (POST /api/admin/media/upload, raw body) and the
  * console attaches the returned url to the row — replacing or removing a file
  * deletes the old upload. Picking a file reads its own metadata (music-metadata:
- * ID3 tags on MP3, atoms on MP4) and fills the blank boxes — title, artist,
- * album, and for videos the duration; nothing the admin already typed gets
- * clobbered.
+ * ID3 tags on MP3, atoms on MP4) and fills the blank boxes (title, artist,
+ * album); the runtime is read straight off the picked file — video songs and
+ * tracks alike — so there is no manual duration box. Nothing the admin
+ * already typed gets clobbered (the runtime always refreshes: it describes
+ * the picked file).
  *
  * Cover art / thumbnail: the file's embedded cover is applied automatically,
  * a video without one gets a real frame grabbed off it, and the admin can
@@ -44,16 +46,15 @@ const SECTION_COPY: Record<
   {
     titleLabel: string
     titlePlaceholder: string
-    subtitleLabel: string
-    subtitlePlaceholder: string
+    /** Copy for the subtitle box — Description (music) / Genre (radio). */
+    subtitleLabel?: string
+    subtitlePlaceholder?: string
     tagPlaceholder: string
   }
 > = {
   video: {
     titleLabel: 'Title',
     titlePlaceholder: 'Song title',
-    subtitleLabel: 'Artist',
-    subtitlePlaceholder: 'Who performs it',
     tagPlaceholder: 'KTV',
   },
   music: {
@@ -87,7 +88,7 @@ function toCount(raw: string, label: string): number | null {
   return value
 }
 
-/** Seconds → "3:54" (or "1:02:03"), the format the Duration box uses. */
+/** Seconds → "3:54" (or "1:02:03") — how the runtime line shows a file's length. */
 function formatClock(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds))
   const s = total % 60
@@ -97,7 +98,7 @@ function formatClock(seconds: number): string {
   return `${h > 0 ? `${h}:` : ''}${mm}:${String(s).padStart(2, '0')}`
 }
 
-/** Reads duration metadata from a picked file with a throwaway element. */
+/** Reads the runtime off a picked file (MP4 or MP3) with a throwaway element. */
 function probeDuration(file: File): Promise<number | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
@@ -249,6 +250,7 @@ export default function AdminMediaForm() {
   const [section, setSection] = useState<MediaSection>('video')
   const [title, setTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
+  const [artist, setArtist] = useState('')
   const [tag, setTag] = useState('')
   const [duration, setDuration] = useState('')
   const [playsInput, setPlaysInput] = useState('')
@@ -294,6 +296,7 @@ export default function AdminMediaForm() {
         setSection(item.section)
         setTitle(item.title)
         setSubtitle(item.subtitle ?? '')
+        setArtist(item.artist ?? '')
         setTag(item.tag ?? '')
         setDuration(item.duration ?? '')
         setPlaysInput(item.plays === null ? '' : String(item.plays))
@@ -325,6 +328,7 @@ export default function AdminMediaForm() {
     setSaved(null)
     setTitle('')
     setSubtitle('')
+    setArtist('')
     setTag('')
     setDuration('')
     setPlaysInput('')
@@ -377,6 +381,8 @@ export default function AdminMediaForm() {
     clearFileSelection()
     setSourceUrl(null)
     setSourceName(null)
+    // The runtime described that file — a fresh pick reads the next one.
+    setDuration('')
   }
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -389,17 +395,16 @@ export default function AdminMediaForm() {
 
     setScanningFile(true)
     try {
-      const tags = await readFileTags(picked)
+      // Tag scan and runtime probe run together: the probe works for MP4 and
+      // MP3 alike, so video songs and tracks both get their duration read
+      // off the file.
+      const [tags, seconds] = await Promise.all([readFileTags(picked), probeDuration(picked)])
       // Tags only fill blanks — copy the admin already typed always wins.
       if (tags.title) setTitle((current) => (current.trim() ? current : tags.title))
-      if (tags.artist) setSubtitle((current) => (current.trim() ? current : tags.artist))
+      if (tags.artist) setArtist((current) => (current.trim() ? current : tags.artist))
       if (tags.album) setAlbum((current) => (current.trim() ? current : tags.album))
-
-      if (section === 'video') {
-        // Video rows read Duration off the file itself — no manual typing.
-        const seconds = await probeDuration(picked)
-        if (seconds !== null) setDuration(formatClock(seconds))
-      }
+      // The runtime always refreshes — it describes the file just picked.
+      if (seconds !== null) setDuration(formatClock(seconds))
 
       if (tags.cover) {
         setAutoCover(makeAutoCover(tags.cover, 'tags', picked.name))
@@ -468,6 +473,7 @@ export default function AdminMediaForm() {
         section,
         title,
         subtitle,
+        artist,
         tag,
         duration,
         plays,
@@ -635,22 +641,51 @@ export default function AdminMediaForm() {
                   className={INPUT_CLASSES}
                 />
               </div>
-              <div>
-                <label htmlFor="media-subtitle" className={LABEL_CLASSES}>
-                  {copy.subtitleLabel}
-                </label>
-                <input
-                  id="media-subtitle"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder={copy.subtitlePlaceholder}
-                  className={INPUT_CLASSES}
-                />
-              </div>
+              {section === 'radio' ? (
+                <div>
+                  <label htmlFor="media-subtitle" className={LABEL_CLASSES}>
+                    {copy.subtitleLabel}
+                  </label>
+                  <input
+                    id="media-subtitle"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder={copy.subtitlePlaceholder}
+                    className={INPUT_CLASSES}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="media-artist" className={LABEL_CLASSES}>
+                    Artist
+                  </label>
+                  <input
+                    id="media-artist"
+                    value={artist}
+                    onChange={(e) => setArtist(e.target.value)}
+                    placeholder="Who performs it"
+                    className={INPUT_CLASSES}
+                  />
+                </div>
+              )}
             </div>
 
             {(section === 'video' || section === 'music') && (
               <div className="grid gap-4 sm:grid-cols-2">
+                {section === 'music' && (
+                  <div>
+                    <label htmlFor="media-subtitle" className={LABEL_CLASSES}>
+                      {copy.subtitleLabel}
+                    </label>
+                    <input
+                      id="media-subtitle"
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                      placeholder={copy.subtitlePlaceholder}
+                      className={INPUT_CLASSES}
+                    />
+                  </div>
+                )}
                 <div>
                   <label htmlFor="media-album" className={LABEL_CLASSES}>
                     Album
@@ -720,6 +755,11 @@ export default function AdminMediaForm() {
                     Reading the file's metadata…
                   </p>
                 )}
+                {!scanningFile && duration && (file || sourceUrl) && (
+                  <p className="mt-2 text-[11px] text-text-muted">
+                    Runtime: {duration} — read from the file.
+                  </p>
+                )}
               </div>
             )}
 
@@ -786,18 +826,6 @@ export default function AdminMediaForm() {
 
             {section === 'video' && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="media-duration" className={LABEL_CLASSES}>
-                    Duration
-                  </label>
-                  <input
-                    id="media-duration"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="3:54"
-                    className={INPUT_CLASSES}
-                  />
-                </div>
                 <div>
                   <label htmlFor="media-plays" className={LABEL_CLASSES}>
                     Plays
