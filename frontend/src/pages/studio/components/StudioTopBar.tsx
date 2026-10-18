@@ -7,6 +7,7 @@ import {
   HeadphonesIcon,
   Mic01Icon,
   BellIcon,
+  CalendarCheck01Icon,
 } from '@hugeicons/core-free-icons'
 import BrandLogo from '../../../components/BrandLogo'
 import ProfileMenu from './ProfileMenu'
@@ -68,6 +69,21 @@ export default function StudioTopBar() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        {/* The sidebar is hidden below md, so this is the only always-visible
+            route to the booking desk. Label collapses on small screens; the
+            aria-label keeps the accessible name intact. */}
+        <Link
+          to="/studio/bookings"
+          aria-label="Bookings"
+          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
+            pathname.startsWith('/studio/bookings')
+              ? 'border-primary/50 bg-primary-soft text-primary'
+              : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <HugeiconsIcon icon={CalendarCheck01Icon} size={15} />
+          <span className="hidden lg:inline">Bookings</span>
+        </Link>
         <span className="hidden items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary xl:flex">
           <HugeiconsIcon icon={HeadphonesIcon} size={15} />
           Listening Room

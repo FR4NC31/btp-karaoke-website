@@ -1,7 +1,29 @@
 import { useState } from 'react'
+import { NavLink } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { MusicNote03Icon, PlusIcon, DotIcon } from '@hugeicons/core-free-icons'
+import {
+  MusicNote03Icon,
+  PlusIcon,
+  DotIcon,
+  DashboardSquare01Icon,
+  CalendarCheck01Icon,
+} from '@hugeicons/core-free-icons'
 import { sidebarSections, studioTools } from '../data'
+
+/**
+ * Studio sidebar: desk navigation (real routes) on top, then the catalog
+ * stacks (filter selections — still cosmetic, they only set local state) and
+ * the quick tools grid.
+ *
+ * The sidebar is `hidden md:flex`, so below 768 px none of this renders. Every
+ * destination here must therefore also be reachable from StudioTopBar, which
+ * is visible at every width — keep the two lists in sync when adding a page.
+ */
+
+const deskLinks = [
+  { to: '/studio', label: 'Media Hub', icon: DashboardSquare01Icon, end: true },
+  { to: '/studio/bookings', label: 'Bookings', icon: CalendarCheck01Icon, end: false },
+]
 
 export default function StudioSidebar() {
   const [activeSidebar, setActiveSidebar] = useState('Master Collections Vault')
@@ -21,6 +43,30 @@ export default function StudioSidebar() {
       </div>
 
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+        <div>
+          <p className="mb-2 px-1 text-[10px] font-bold tracking-widest text-primary uppercase">Studio Desk</p>
+          <ul className="space-y-1">
+            {deskLinks.map((link) => (
+              <li key={link.to}>
+                <NavLink
+                  to={link.to}
+                  end={link.end}
+                  className={({ isActive }) =>
+                    `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
+                      isActive
+                        ? 'bg-primary-soft text-primary'
+                        : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
+                    }`
+                  }
+                >
+                  <HugeiconsIcon icon={link.icon} size={12} />
+                  <span className="truncate">{link.label}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {sidebarSections.map((section) => (
           <div key={section.label}>
             <div className="mb-2 flex items-center justify-between px-1">

@@ -1,32 +1,11 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
-import { Pool } from 'pg'
-
-const databaseUrl = process.env.DATABASE_URL
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.')
-}
-
-function readCa(): string | undefined {
-  const caFile = process.env.DB_CA_FILE
-  if (!caFile) return undefined
-  return readFileSync(resolve(caFile), 'utf8')
-}
-
-const ca = readCa()
-
-// `sslmode` in the connection string overrides the `ssl` object below,
-// which silently drops our CA cert and breaks verification. Strip it and
-// configure TLS explicitly instead.
-const connectionString = ca ? databaseUrl.replace(/[?&]sslmode=[^&]*/, '') : databaseUrl
+import { pool } from './db.ts'
 
 export const auth = betterAuth({
-  database: new Pool({
-    connectionString,
-    ...(ca ? { ssl: { ca, rejectUnauthorized: true } } : {}),
-  }),
+  // Shared pool (see db.ts) so auth and the booking queries ride the same
+  // connections and TLS setup.
+  database: pool,
   emailAndPassword: {
     enabled: true,
   },

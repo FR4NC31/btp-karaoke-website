@@ -14,7 +14,8 @@ integration tests.
                      │  API calls
                  Backend (Hono, :3000)
                      │
-                  Database   ← none exists yet (see qa-strategy.md)
+                  Database   ← Aiven PostgreSQL
+                               (Better Auth tables + service/booking)
 ```
 
 All test code lives in `frontend/tests/e2e/`, configured by
@@ -49,9 +50,9 @@ Related docs: [qa-strategy.md](qa-strategy.md) ·
 | Package manager  | npm (frontend), npm or bun (backend)                     |
 | Frontend command | `npm run dev`                                            |
 | Backend command  | `npm run dev` (`node --env-file=.env --watch serve.ts`)  |
-| API              | `GET /health`, Better Auth under `/api/auth/*`, protected `GET /api/me` |
+| API              | `GET /health`, Better Auth under `/api/auth/*`, protected `GET /api/me`, public `GET /api/services`, session-scoped `GET/POST /api/bookings` + `POST /api/bookings/:id/cancel` |
 | Auth             | Frontend calls Better Auth through `better-auth/react` (email/password; Google disabled pending OAuth credentials). Sessions are cookies |
-| Database         | Aiven PostgreSQL (used by Better Auth; E2E sign-in/sign-up write real rows, so test accounts accumulate) |
+| Database         | Aiven PostgreSQL — Better Auth owns `user`/`session`/`account`/`verification`; Drizzle owns `service`/`booking`. E2E sign-in/sign-up write real rows, so test accounts accumulate |
 | Browser          | Chromium (only browser installed)                        |
 
 `playwright.config.ts` starts **both** dev servers automatically before the
@@ -108,6 +109,7 @@ frontend/tests/e2e/
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub, console, player bar, PiP, cross-page sync
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
+├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
@@ -153,9 +155,17 @@ OAuth failures redirected back as query params are covered by AUTH-018.
   `09171234567` (11-digit dummy), `Secret123!` — defined in
   `helpers/auth.ts` / `signup.spec.ts`.
 - No real users, no production accounts, no production data, no secrets.
-- There is no backend persistence, so tests are inherently re-runnable.
-  If a test database is added later, use a dedicated **test** database —
-  never production (see [qa-strategy.md](qa-strategy.md#database--environment-safety)).
+- The backend **does** persist: sign-up/sign-in write rows, and a booking is a
+  real row too. Tests stay re-runnable because they clean up what they create,
+  not because the database is stateless. The booking suite cancels every
+  booking it makes — the schema allows only one *live* booking per service per
+  day, so a leaked `pending` row would break the next run.
+- All suites share one account (`qa@example.com`), so booking assertions are
+  pinned to the reference code the test itself just created, never to the size
+  of the list, which sibling tests are mutating in parallel. Booking days are
+  randomised 400–699 days out so workers cannot collide on the unique index.
+- If a dedicated test database is added later, use a separate **test** database
+  — never production (see [qa-strategy.md](qa-strategy.md#database--environment-safety)).
 
 ## Karaoke / player testing
 
@@ -174,6 +184,26 @@ What the product actually implements today (test coverage is limited to this):
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
 | Previous/Next/Shuffle/Repeat     | Repeat cycles off → all → one on the bar (drives the video `loop`); Previous/Next + Shuffle visual only | — (asserted only where visible) |
 
+## Booking desk testing
+
+`/studio/bookings` is the first feature built on **application-owned tables**
+(`service` + `booking`), as opposed to the static data the studio hub renders.
+Day-only by design: a booking claims one whole calendar day of one service —
+there is no time slot or time block yet, and no payment.
+
+| Feature                                 | Status                                    | Tests               |
+| --------------------------------------- | ----------------------------------------- | ------------------- |
+| Service catalog (8 seeded services)     | Working — real rows from `/api/services`  | BOOKING-001/003     |
+| Wing filter                             | Working (client-side filter)              | BOOKING-003         |
+| Create a day booking                    | Working (writes a row, `pending`)         | BOOKING-004         |
+| Cancel a pending booking                | Working (row kept as `cancelled` for audit) | BOOKING-004       |
+| One live booking per service per day    | Working (partial unique index → 409)      | BOOKING-005         |
+| Entry points (top bar + sidebar)        | Working — both are load-bearing, one is the mobile route | BOOKING-001/002/006 |
+| Signed-out access                       | Blocked by `RequireAuth`                  | BOOKING-007         |
+| Admin confirm / reject                  | **Not implemented** — `status` already carries `pending`/`confirmed`/`rejected`/`completed`, so it needs no schema change | — |
+| Time slots / time blocks                | Not implemented                           | —                   |
+| Payment                                 | Not implemented (no online payment)       | —                   |
+
 ## API integration
 
 - Backend probes: `SMOKE-006` (`GET BACKEND_URL/health`) and `ERROR-004`
@@ -184,6 +214,13 @@ What the product actually implements today (test coverage is limited to this):
   sign-in run against the real database, the session is a cookie, and
   `RequireAuth` gates `/studio`. Covered end-to-end by the auth suite
   (AUTH-001…014) plus SMOKE-003/005.
+- The **booking API** (`GET /api/services`, `GET/POST /api/bookings`,
+  `POST /api/bookings/:id/cancel`) is exercised end-to-end through the UI by
+  BOOKING-001…007. Its error branches — 401 anonymous, 400 for a past or
+  malformed day, 404 unknown service, 409 duplicate and double-cancel — are
+  verified by a direct API probe rather than by Playwright: the form's own
+  `min` on the date picker means the browser blocks a past day before the
+  request is ever sent, so those branches are unreachable from the UI.
 - **Not yet covered**: direct API-level tests of `/api/auth/*` and `/api/me`
   (wrong-password 401, protected-route 401) — still the top recommended next
   suite (see [qa-strategy.md](qa-strategy.md)). Search, favorites and

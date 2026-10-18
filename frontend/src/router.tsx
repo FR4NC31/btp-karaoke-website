@@ -13,6 +13,7 @@ import SignIn from "./pages/auth/SignIn"
 import SignUp from "./pages/auth/SignUp"
 import StudioShell from "./pages/studio/StudioShell"
 import StudioHome from "./pages/studio/StudioHome"
+import BookingPage from "./pages/studio/BookingPage"
 import ProfilePage from "./pages/studio/ProfilePage"
 
 export const router = createBrowserRouter([
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
                             { index: true, element: <StudioHome /> },
                             { path: "profile", element: <ProfilePage /> },
                             { path: "player-queue", element: <PlayerQueue /> },
+                            { path: "bookings", element: <BookingPage /> },
                         ],
                     },
                 ]
