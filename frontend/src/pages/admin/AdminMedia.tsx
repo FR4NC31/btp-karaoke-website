@@ -31,9 +31,11 @@ import {
  * Rows are grouped by section in hub order (video → music → radio). Every
  * action is a POST to /api/admin/media/*: hide/show pulls a row from the
  * public feed without deleting it, move swaps it with its neighbour, edit
- * opens the full editor, and delete is permanent. The list reloads after
- * every action — the server owns the order, so the buttons' edge states
- * (first row can't move up, last can't move down) always follow the reload.
+ * opens the full editor, and delete is permanent — so it asks first (the
+ * delete icon turns into a Confirm/Cancel pair; the row's uploaded file is
+ * deleted with it). The list reloads after every action — the server owns
+ * the order, so the buttons' edge states (first row can't move up, last
+ * can't move down) always follow the reload.
  */
 
 const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
@@ -96,6 +98,10 @@ export default function AdminMedia() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
+  // Delete is permanent, so it is a two-step: the icon arms confirmation for
+  // one row at a time, Confirm runs the delete, Cancel (or any other action)
+  // disarms it.
+  const [confirmingId, setConfirmingId] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -129,6 +135,7 @@ export default function AdminMedia() {
   async function handleVisibility(item: AdminMediaItem) {
     if (actingId) return
     setActingId(item.id)
+    setConfirmingId('')
     setFlash('')
     try {
       const { item: updated } = await adminMediaVisibility(item.id, !item.isActive)
@@ -144,6 +151,7 @@ export default function AdminMedia() {
   async function handleMove(item: AdminMediaItem, direction: 'up' | 'down') {
     if (actingId) return
     setActingId(item.id)
+    setConfirmingId('')
     setFlash('')
     try {
       await adminMediaMove(item.id, direction)
@@ -168,6 +176,7 @@ export default function AdminMedia() {
       setLoadError(describeBookingError(err, 'The item could not be removed.'))
     } finally {
       setActingId('')
+      setConfirmingId('')
     }
   }
 
@@ -245,6 +254,14 @@ export default function AdminMedia() {
                                   {item.tag}
                                 </span>
                               )}
+                              {item.sourceUrl && (
+                                <span
+                                  title={item.sourceName ?? undefined}
+                                  className="rounded border border-primary/40 bg-primary-soft px-2 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase"
+                                >
+                                  {item.sourceUrl.endsWith('.mp3') ? 'MP3 file' : 'MP4 file'}
+                                </span>
+                              )}
                               <span
                                 className={`rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${
                                   item.isActive ? STATUS_STYLES.live : STATUS_STYLES.hidden
@@ -296,14 +313,40 @@ export default function AdminMedia() {
                             >
                               <HugeiconsIcon icon={PencilEdit01Icon} size={13} />
                             </Link>
-                            <RowButton
-                              label={`Delete ${item.title}`}
-                              danger
-                              disabled={busy}
-                              onClick={() => handleDelete(item)}
-                            >
-                              <HugeiconsIcon icon={Delete01Icon} size={13} />
-                            </RowButton>
+                            {confirmingId === item.id ? (
+                              <span className="flex flex-wrap items-center gap-2 rounded-lg border border-error/50 bg-error/10 py-1 pr-1 pl-3">
+                                <span className="text-[10px] font-bold tracking-widest text-error uppercase">
+                                  Delete permanently?
+                                </span>
+                                <button
+                                  type="button"
+                                  aria-label={`Confirm delete ${item.title}`}
+                                  disabled={busy}
+                                  onClick={() => handleDelete(item)}
+                                  className="rounded-md bg-error px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-text-primary uppercase transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Cancel delete ${item.title}`}
+                                  disabled={busy}
+                                  onClick={() => setConfirmingId('')}
+                                  className="rounded-md border border-border bg-surface-elevated px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-text-secondary uppercase transition hover:text-text-primary"
+                                >
+                                  Cancel
+                                </button>
+                              </span>
+                            ) : (
+                              <RowButton
+                                label={`Delete ${item.title}`}
+                                danger
+                                disabled={busy}
+                                onClick={() => setConfirmingId(item.id)}
+                              >
+                                <HugeiconsIcon icon={Delete01Icon} size={13} />
+                              </RowButton>
+                            )}
                           </div>
                         </li>
                       )

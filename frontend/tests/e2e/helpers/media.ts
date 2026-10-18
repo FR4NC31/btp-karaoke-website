@@ -27,6 +27,9 @@ export interface MediaSeedInput {
   songKey?: string
   freq?: string
   listeners?: number
+  /** Upload reference from uploadMediaFileAsAdmin (music/video rows). */
+  sourceUrl?: string
+  sourceName?: string
 }
 
 async function withAdminApi<T>(
@@ -72,5 +75,38 @@ export async function deleteMediaItemAsAdmin(
     if (!response.ok() && response.status() !== 404) {
       throw new Error(`media delete failed (${response.status()}): ${await response.text()}`)
     }
+  })
+}
+
+/** What the uploader answers: the stored file, or the rejection message. */
+export interface UploadResult {
+  status: number
+  body: {
+    file?: { url: string; name: string; size: number }
+    error?: string
+  }
+}
+
+/**
+ * Posts one raw upload as the QA admin — the same raw-body contract the
+ * editor uses (`data` as the body, X-File-Name for the display copy). Also
+ * the negative-path probe: bad extensions and type mismatches answer 4xx
+ * without a session ever being needed to clean up.
+ */
+export async function uploadMediaFileAsAdmin(
+  baseURL: string | undefined,
+  file: { name: string; mimeType: string; data: Buffer | string },
+): Promise<UploadResult> {
+  return withAdminApi(baseURL, async (api) => {
+    const response = await api.post('/api/admin/media/upload', {
+      headers: {
+        Origin: baseURL ?? '',
+        'Content-Type': file.mimeType,
+        'X-File-Name': file.name,
+      },
+      data: file.data,
+    })
+    const body = (await response.json().catch(() => ({}))) as UploadResult['body']
+    return { status: response.status(), body }
   })
 }

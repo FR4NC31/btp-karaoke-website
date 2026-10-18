@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { test, expect } from '../fixtures'
-import { createMediaItemAsAdmin, deleteMediaItemAsAdmin } from '../helpers/media'
+import {
+  createMediaItemAsAdmin,
+  deleteMediaItemAsAdmin,
+  uploadMediaFileAsAdmin,
+} from '../helpers/media'
 
 /**
  * KARAOKE — the studio media hub on /studio (video song, music player and
@@ -11,7 +16,9 @@ import { createMediaItemAsAdmin, deleteMediaItemAsAdmin } from '../helpers/media
  * one real local master ("The Reason", seeded) always exists; music and
  * radio rows are created through the admin API by the tests that assert
  * them, then deleted. Sections with no published rows render nothing, so
- * no test may assume another section's presence.
+ * no test may assume another section's presence. Rows can carry an uploaded
+ * MP4/MP3 (ADMIN-009 covers the UI uploader end to end); KARAOKE-012 proves
+ * an uploaded minus-one really plays from the hub.
  *
  * /studio is opened directly: it is guarded by RequireAuth, but the
  * `chromium` project injects the shared session saved by setup/auth.setup.ts,
@@ -66,6 +73,8 @@ test.describe('karaoke discovery', () => {
       await expect(card).toContainText('118 BPM')
       await expect(card).toContainText('Fmaj')
       await expect(card.getByRole('button', { name: `More options for ${title}` })).toBeVisible()
+      // No uploaded file → visual-only: no play link until audio is attached.
+      await expect(card.getByRole('link', { name: `Play ${title}` })).toHaveCount(0)
     } finally {
       await deleteMediaItemAsAdmin(baseURL, id)
     }
@@ -244,5 +253,56 @@ test.describe('karaoke discovery', () => {
     await expect
       .poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime))
       .toBeGreaterThan(videoTime - 0.5)
+  })
+
+  test('KARAOKE-012: an uploaded minus-one really plays from the hub', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const title = `E2E Uploaded Track ${Date.now()}`
+    // A real (silent) MP3 fixture, uploaded through the same raw-body
+    // endpoint the editor uses, then attached to a fresh music row.
+    const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
+    const upload = await uploadMediaFileAsAdmin(baseURL, {
+      name: 'e2e-minus-one.mp3',
+      mimeType: 'audio/mpeg',
+      data: mp3,
+    })
+    expect(upload.status).toBe(201)
+    const sourceUrl = upload.body.file!.url
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'music',
+      title,
+      subtitle: 'E2E upload archive',
+      tag: 'TAPE',
+      tempo: '112 BPM',
+      sourceUrl,
+      sourceName: upload.body.file!.name,
+    })
+
+    try {
+      await page.goto('/studio')
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('112 BPM')
+
+      // With audio attached the card opens the console and plays that file.
+      await card.getByRole('link', { name: `Play ${title}` }).click()
+      await expect(page).toHaveURL('/studio/player-queue')
+
+      const stage = page.locator('main video')
+      await expect(stage).toHaveAttribute('src', sourceUrl)
+      await expect(page.getByRole('contentinfo')).toContainText(title)
+      await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+
+      // Audio mode: the stage says so and there is nothing to float in PiP.
+      await expect(page.getByText('Studio Audio Mode')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Picture in picture' })).toHaveCount(0)
+
+      // Stored media answers byte ranges — seeking an upload is real.
+      const ranged = await page.request.get(sourceUrl, { headers: { Range: 'bytes=10-99' } })
+      expect(ranged.status()).toBe(206)
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+      // Deleting the row takes the stored file with it.
+      const gone = await page.request.get(sourceUrl)
+      expect(gone.status()).toBe(404)
+    }
   })
 })

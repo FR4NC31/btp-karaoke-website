@@ -37,11 +37,19 @@ export interface MediaItem {
   freq: string | null
   /** Radio: display-only listener count. */
   listeners: number | null
+  /**
+   * The uploaded MP4/MP3 this card plays, when the admin attached one
+   * (`/api/uploads/media/...`). Null on video rows plays the bundled local
+   * master; null on music rows means the card carries no player yet.
+   */
+  sourceUrl: string | null
   sortOrder: number
 }
 
 /** The admin console's view — adds the moderation fields. */
 export interface AdminMediaItem extends MediaItem {
+  /** Original filename of the attached upload, for the editor's display. */
+  sourceName: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string

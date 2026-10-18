@@ -23,6 +23,7 @@ import placeholderVideo from '../assets/placeholder-video.svg'
 import placeholderAlbum from '../assets/placeholder-album.svg'
 import localVideo from '../assets/video_local/the-reason.mp4'
 import { useKaraokeVideoControls } from '../lib/karaoke-player'
+import type { MediaItem } from '../lib/media-api'
 
 /**
  * /studio/player-queue: "Karaoke & Studio Audio Console" — karaoke video
@@ -30,15 +31,23 @@ import { useKaraokeVideoControls } from '../lib/karaoke-player'
  * Lounge Queue list, and a catalog quick-search sidebar.
  *
  * Rendered inside StudioShell, so the top bar, sidebar and bottom PlayerBar
- * chrome all come from the shell. This page owns the local karaoke <video>
- * and registers it via the outlet context, so the shared PlayerBar drives it:
+ * chrome all come from the shell. This page owns the console <video> and
+ * registers it via the outlet context, so the shared PlayerBar drives it:
  * play/pause, the top-edge seek bar (click/drag to scrub) and volume. The svg
  * placeholder doubles as the poster frame; a centered play/pause badge
  * mirrors the transport state (auto-hides 2s after playback starts and
  * returns on stage hover; the hardcoded lyric overlay was retired).
  * The PiP button hands the song to the shell's floating mini player
  * (StudioPip) and drops back to the hub — "expand" there returns here.
- * Reached from the video-song cards.
+ * Reached from the video-song cards, and from music cards that carry an
+ * uploaded MP3 (the console is a media stage: the bar reads "Studio master").
+ *
+ * The stage plays the catalog row that sent the user here: card clicks carry
+ * the row in history state, so an uploaded file really plays — a video song
+ * with no upload falls back to the bundled master, and entering via the mini
+ * player's expand keeps whatever the PiP session was playing. The track is
+ * announced to the transport (`setOnAir`), which is what renames the bar and
+ * points the mini at the same source.
  *
  * Everything else is still a static mockup (no handlers): DSP pads, queue
  * rows, quick search, sidebar recommendations. Cover art stays placeholder.
@@ -109,14 +118,24 @@ const recommended = [
 ]
 
 export default function PlayerQueue() {
-  const { attachVideo, enterPip, toggle, playing } = useKaraokeVideoControls()
+  const { attachVideo, enterPip, toggle, playing, onAir, setOnAir } = useKaraokeVideoControls()
   const location = useLocation()
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  // Video-card clicks arrive with `state.autoplay` (see VideoSongSection):
-  // start the song on arrival. If the browser blocks it, the bar's Play
-  // button is still there.
-  const autoplay = Boolean((location.state as { autoplay?: boolean } | null)?.autoplay)
+  // Video-card clicks arrive with `state.autoplay` and the catalog row in
+  // `state.item` (see VideoSongSection / MusicPlayerSection): start the song
+  // on arrival, and play the row's uploaded file when it has one.
+  const routeState = location.state as { autoplay?: boolean; item?: MediaItem } | null
+  const item = routeState?.item
+  const autoplay = Boolean(routeState?.autoplay)
+
+  // What the stage is playing: the clicked row's upload, or the carried PiP
+  // session when expanding from the mini (no card state), or the bundled
+  // master on a deep link.
+  const source = item?.sourceUrl ?? onAir?.src ?? localVideo
+  const audioMode = (item?.section ?? onAir?.kind) === 'music'
+  const trackTitle = item?.title ?? onAir?.title ?? 'The Reason'
+  const trackSubtitle = item ? item.subtitle : onAir ? onAir.subtitle || null : 'Hoobastank'
 
   // Stage badge visibility: while playing it auto-hides after 2s (the timer
   // restarts on every play event) and returns on stage hover; while paused it
@@ -139,6 +158,20 @@ export default function PlayerQueue() {
     }
     setBadgeTimedOut(false)
   }
+
+  // Announce the on-air track to the shell transport: the bar shows its
+  // metadata and the floating mini mirrors its source. A deep link (no card
+  // state) leaves the transport's session alone — that is the expand-from-PiP
+  // path, where the mini already carries the right track.
+  useEffect(() => {
+    if (!item) return
+    setOnAir({
+      title: item.title,
+      subtitle: item.subtitle ?? '',
+      src: item.sourceUrl ?? localVideo,
+      kind: item.section === 'music' ? 'music' : 'video',
+    })
+  }, [item, setOnAir])
 
   // Hand the element to the shell transport (the shared PlayerBar drives it).
   useEffect(() => {
@@ -216,14 +249,15 @@ export default function PlayerQueue() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded border border-primary/60 bg-primary-soft/40 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary uppercase">
-                    Karaoke Video Mode
+                    {audioMode ? 'Studio Audio Mode' : 'Karaoke Video Mode'}
                   </span>
                   <span className="rounded border border-border px-2 py-0.5 text-[9px] font-bold tracking-widest text-text-muted uppercase">
-                    Live Voice
+                    {audioMode ? 'Backing Track' : 'Live Voice'}
                   </span>
                 </div>
                 <h2 className="mt-2 truncate font-heading text-xl font-bold tracking-wide">
-                  <span className="text-primary">The Reason</span> — Hoobastank
+                  <span className="text-primary">{trackTitle}</span>
+                  {trackSubtitle && <span className="text-text-primary"> — {trackSubtitle}</span>}
                 </h2>
               </div>
               <button
@@ -239,13 +273,13 @@ export default function PlayerQueue() {
               onMouseLeave={() => setHovered(false)}
               className="relative mt-3 aspect-[16/9] bg-background sm:aspect-[21/9]"
             >
-              {/* Local karaoke video — the shared bottom PlayerBar is its
+              {/* Console stage — the shared bottom PlayerBar is its
                   transport (play/pause, seek, volume); clicking the stage
-                  toggles play/pause like a regular video player. */}
+                  toggles play/pause like a regular player. */}
               <video
                 ref={videoRef}
-                src={localVideo}
-                poster={placeholderVideo}
+                src={source}
+                poster={audioMode ? placeholderAlbum : placeholderVideo}
                 playsInline
                 preload="metadata"
                 onClick={() => toggle()}
@@ -273,18 +307,22 @@ export default function PlayerQueue() {
               </div>
               {/* In-app PiP: arm the shell's floating mini player and drop
                   back to the hub — the song keeps playing in the corner
-                  (KARAOKE-011); the mini's up-arrow expands back here. */}
-              <button
-                type="button"
-                aria-label="Picture in picture"
-                onClick={() => {
-                  enterPip()
-                  navigate('/studio')
-                }}
-                className="absolute right-3 bottom-3 grid size-9 place-items-center rounded-lg bg-black/50 text-text-primary backdrop-blur transition hover:bg-primary"
-              >
-                <HugeiconsIcon icon={PictureInPictureIcon} size={16} />
-              </button>
+                  (KARAOKE-011); the mini's up-arrow expands back here.
+                  Audio-only tracks skip it: a floating black square is not
+                  a player. */}
+              {!audioMode && (
+                <button
+                  type="button"
+                  aria-label="Picture in picture"
+                  onClick={() => {
+                    enterPip()
+                    navigate('/studio')
+                  }}
+                  className="absolute right-3 bottom-3 grid size-9 place-items-center rounded-lg bg-black/50 text-text-primary backdrop-blur transition hover:bg-primary"
+                >
+                  <HugeiconsIcon icon={PictureInPictureIcon} size={16} />
+                </button>
+              )}
             </div>
           </section>
 

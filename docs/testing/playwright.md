@@ -235,9 +235,14 @@ The console also curates the **media hub catalog** (`/admin/media`): the
 `media_item` rows that `/studio` renders (video songs, minus-one tracks, radio
 stations). New rows append to their section and go live immediately; hide/show
 pulls a row from the public feed without deleting it, move reorders within a
-section, and delete is permanent. Only the one real local master ("The
-Reason") ships seeded — music and radio start empty, so their tests create the
-rows they assert and delete them afterwards.
+section, and delete is permanent — the console asks for confirmation first.
+Video songs and music tracks can also carry a real MP4/MP3: the editor
+uploads it (raw-body `POST /api/admin/media/upload`, 200 MB cap) and the
+stored file is served back with byte ranges, so the hub plays the actual
+upload — no file means the video card falls back to the bundled master and a
+music card stays visual-only. Only the one real local master ("The Reason")
+ships seeded — music and radio start empty, so their tests create the rows
+they assert and delete them afterwards.
 
 | Feature                                | Status                                   | Tests        |
 | -------------------------------------- | ---------------------------------------- | ------------ |
@@ -251,6 +256,8 @@ rows they assert and delete them afterwards.
 | Role self-promotion                    | Closed — `input: false`; promotion is CLI-only | SEC-003 |
 | Media catalog add / edit               | Working — rows drive `/studio` immediately | ADMIN-007    |
 | Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
+| Media file upload (MP4/MP3)            | Working — stored with byte ranges; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
+| Delete confirmation on media rows      | Working — Delete → Confirm/Cancel pair   | ADMIN-007/009 |
 | User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
 ## API integration
@@ -273,11 +280,19 @@ rows they assert and delete them afterwards.
 - The **admin API** (`GET/POST /api/admin/bookings`,
   `POST /api/admin/bookings/:id/{confirm,reject,complete,cancel}`,
   `GET /api/admin/users`, plus the media catalog: `GET/POST /api/admin/media`,
-  `POST /api/admin/media/:id`, `POST /api/admin/media/:id/{visibility,move,delete}`)
-  is driven end-to-end by ADMIN-001…008, and its boundary is pinned by direct
+  `POST /api/admin/media/upload`, `POST /api/admin/media/:id`,
+  `POST /api/admin/media/:id/{visibility,move,delete}`)
+  is driven end-to-end by ADMIN-001…010, and its boundary is pinned by direct
   calls: SEC-001 (401 anonymous) and SEC-002 (403 for a signed-in non-admin,
   on every route shape). SEC-003 calls the auth API directly to prove `role`
   cannot be set at sign-up or through `update-user`.
+- The **media uploader** (`POST /api/admin/media/upload`, raw body +
+  `X-File-Name`) is exercised twice over: ADMIN-009 drives the real editor
+  and the hub playback of the stored file (including byte-range serving at
+  `GET /api/uploads/media/:name`), KARAOKE-012 uploads a committed silent MP3
+  fixture (`tests/e2e/assets/silence.mp3`) through the API helper and proves
+  the hub plays it; ADMIN-010 pins the rejection paths (bad extension, type
+  mismatch, anonymous 401).
 - The **public media API** (`GET /api/media`) serves the active catalog to the
   hub. KARAOKE-003/005 exercise it by creating rows through the admin API
   (`helpers/media.ts`), asserting the cards render them, then deleting them —

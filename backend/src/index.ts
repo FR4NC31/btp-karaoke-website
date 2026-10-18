@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
+import { createReadStream } from 'node:fs'
+import { stat } from 'node:fs/promises'
+import { Readable } from 'node:stream'
 import { auth } from './auth.ts'
 import { requireAdmin, requireSession } from './session-middleware.ts'
 import {
@@ -28,6 +31,12 @@ import {
   updateMediaItem,
   type MediaSection,
 } from './media.ts'
+import {
+  UploadError,
+  mediaContentType,
+  mediaFilePath,
+  storeMediaUpload,
+} from './uploads.ts'
 
 const app = new Hono()
 
@@ -90,6 +99,77 @@ app.get('/api/services', async (c) => {
 app.get('/api/media', async (c) => {
   const items = await listPublicMedia()
   return c.json({ items })
+})
+
+// Uploaded catalog files (MP4/MP3), public like the hub feed itself. Served
+// with byte-range support — browsers request ranges while seeking, and an
+// uploaded video should scrub in the console exactly like the bundled master.
+// Names are the uuid filenames the uploader generated; anything else is 404.
+app.get('/api/uploads/media/:name', async (c) => {
+  const name = c.req.param('name')
+  const filePath = mediaFilePath(name)
+  if (!filePath) {
+    return c.json({ error: 'Not found.' }, 404)
+  }
+
+  let size: number
+  try {
+    const info = await stat(filePath)
+    if (!info.isFile()) {
+      return c.json({ error: 'Not found.' }, 404)
+    }
+    size = info.size
+  } catch {
+    return c.json({ error: 'Not found.' }, 404)
+  }
+
+  const baseHeaders = {
+    'content-type': mediaContentType(name),
+    'accept-ranges': 'bytes',
+    // uuid names are never reused, so the file behind one is immutable.
+    'cache-control': 'public, max-age=31536000, immutable',
+  }
+
+  const range = c.req.header('range')?.trim()
+  if (!range) {
+    const body = Readable.toWeb(createReadStream(filePath)) as unknown as ReadableStream
+    return new Response(body, {
+      headers: { ...baseHeaders, 'content-length': String(size) },
+    })
+  }
+
+  // Single-range requests only ("bytes=a-b", "bytes=a-", "bytes=-n") — which
+  // is all a media element ever sends.
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range)
+  if (match) {
+    const [, rawStart = '', rawEnd = ''] = match
+    let start = rawStart ? Number(rawStart) : 0
+    let end = rawEnd ? Number(rawEnd) : size - 1
+    if (!rawStart && rawEnd) {
+      // Suffix range: the last N bytes.
+      const suffix = Number(rawEnd)
+      start = Math.max(size - suffix, 0)
+      end = size - 1
+    }
+    if (Number.isFinite(start) && Number.isFinite(end) && start <= end && start < size) {
+      end = Math.min(end, size - 1)
+      const body = Readable.toWeb(createReadStream(filePath, { start, end })) as unknown as ReadableStream
+      return new Response(body, {
+        status: 206,
+        headers: {
+          ...baseHeaders,
+          'content-range': `bytes ${start}-${end}/${size}`,
+          'content-length': String(end - start + 1),
+        },
+      })
+    }
+  }
+
+  // Unsatisfiable or unsupported range — answer 416 like a static server.
+  return new Response(null, {
+    status: 416,
+    headers: { ...baseHeaders, 'content-range': `bytes */${size}` },
+  })
 })
 
 // The caller's own bookings only — never another user's.
@@ -297,6 +377,28 @@ adminApi.post('/media', async (c) => {
     return c.json({ item }, 201)
   } catch (err) {
     if (err instanceof MediaError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Upload one MP4/MP3 for a catalog row. Raw-body POST (the editor sends the
+// File itself, with X-File-Name for the display copy) so the bytes stream
+// straight to disk. Registered BEFORE /media/:id below — otherwise that
+// two-segment pattern would swallow /media/upload. Returns { file } and the
+// editor saves its url on the row via create/update.
+adminApi.post('/media/upload', async (c) => {
+  try {
+    const file = await storeMediaUpload({
+      originalName: c.req.header('x-file-name') ?? '',
+      contentType: c.req.header('content-type') ?? '',
+      contentLength: c.req.header('content-length'),
+      body: c.req.raw.body,
+    })
+    return c.json({ file }, 201)
+  } catch (err) {
+    if (err instanceof UploadError) {
       return c.json({ error: err.message }, err.status)
     }
     throw err

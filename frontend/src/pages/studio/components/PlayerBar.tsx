@@ -30,8 +30,9 @@ function formatTime(seconds: number): string {
  * the lobby music <audio> (StudioBgm), in that priority. The bar drives
  * whichever source is active: play/pause, the full-width top-edge seek strip
  * (native slider with a thumb circle — slide it or click the track to scrub;
- * mouse, touch and arrow keys) and volume. Track metadata is static because
- * every current source plays the same local master (The Reason).
+ * mouse, touch and arrow keys) and volume. Track metadata follows the
+ * transport's on-air track (a catalog row's uploaded file, or the bundled
+ * master / lobby default "The Reason" when nothing is on air).
  */
 export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
   const [liked, setLiked] = useState(false)
@@ -43,6 +44,15 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
   const current = formatTime(player.currentTime)
   const duration = formatTime(player.duration)
   const canSeek = player.duration > 0
+
+  const onAir = player.onAir
+  const nowTitle = onAir?.title ?? 'The Reason'
+  const nowSubtitle = onAir ? onAir.subtitle : 'Hoobastank'
+  const nowFormat = onAir
+    ? onAir.kind === 'music'
+      ? 'Studio master · MP3'
+      : 'Karaoke master · MP4'
+    : '24-Bit · WAV · FLAC'
 
   // Repeat cycles off → all → one (RepeatOff / Repeat / RepeatOne01 icons);
   // off and the two repeat modes mirror onto the video's loop flag.
@@ -85,10 +95,10 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-sm font-semibold uppercase">The Reason</p>
-          <p className="truncate text-[11px] text-text-muted">Hoobastank</p>
+          <p className="truncate text-sm font-semibold uppercase">{nowTitle}</p>
+          {nowSubtitle && <p className="truncate text-[11px] text-text-muted">{nowSubtitle}</p>}
           <p className="mt-0.5 hidden text-[9px] font-bold tracking-wider text-primary uppercase sm:block">
-            24-Bit · WAV · FLAC
+            {nowFormat}
           </p>
         </div>
         <button

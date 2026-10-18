@@ -119,6 +119,14 @@ export const mediaItem = pgTable(
     freq: text('freq'),
     /** Radio: display-only listener count. */
     listeners: integer('listeners'),
+    /**
+     * The uploaded MP4/MP3 this row actually plays, as returned by the media
+     * uploader (`/api/uploads/media/<uuid>.<ext>`). NULL means video rows fall
+     * back to the bundled local master and music rows have no audio yet.
+     */
+    sourceUrl: text('sourceUrl'),
+    /** Original filename of the upload, shown in the console editor only. */
+    sourceName: text('sourceName'),
     /** Display order within the section; ties fall back to title. */
     sortOrder: integer('sortOrder').notNull().default(0),
     /** false hides the row from /api/media without deleting it. */

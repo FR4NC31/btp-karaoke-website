@@ -7,7 +7,7 @@ import {
   TEST_USER,
   signInAsAdmin,
 } from '../helpers/auth'
-import { createMediaItemAsAdmin, deleteMediaItemAsAdmin } from '../helpers/media'
+import { createMediaItemAsAdmin, deleteMediaItemAsAdmin, uploadMediaFileAsAdmin } from '../helpers/media'
 
 /**
  * ADMIN — the /admin console itself.
@@ -273,10 +273,19 @@ test.describe('media hub catalog', () => {
     await expect(card).toContainText('E2E mixdown notes')
     await expect(card).toContainText('120 BPM')
 
-    // Cleanup through the console's delete button.
+    // Cleanup through the console's delete button — it asks for
+    // confirmation first, so a stray click can never drop a live row.
     await page.goto('/admin/media')
     const cleanup = page.locator('main li').filter({ hasText: title })
     await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+    await expect(cleanup.getByRole('button', { name: `Confirm delete ${title}` })).toBeVisible()
+    // Cancel leaves the row exactly where it was…
+    await cleanup.getByRole('button', { name: `Cancel delete ${title}` }).click()
+    await expect(cleanup).toContainText('Live')
+    await expect(cleanup.getByRole('button', { name: `Confirm delete ${title}` })).toHaveCount(0)
+    // …confirm removes it for good.
+    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+    await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
     await expect(flashWith(page, `${title} removed.`)).toBeVisible()
     await expect(cleanup).toBeHidden()
   })
@@ -335,6 +344,88 @@ test.describe('media hub catalog', () => {
       // API cleanup: works even if the UI half of the test failed midway.
       await deleteMediaItemAsAdmin(baseURL, alphaItem.id)
       await deleteMediaItemAsAdmin(baseURL, betaItem.id)
+    }
+  })
+
+  test('ADMIN-009: the admin uploads an MP4 and the hub really plays it', { tag: '@p1' }, async ({ page }) => {
+    const title = `E2E Upload ${Date.now()}`
+
+    // The editor takes a real file: the LFS master doubles as the fixture.
+    await page.goto('/admin/media/new')
+    await page.getByLabel('Title', { exact: true }).fill(title)
+    await page.getByLabel('Artist').fill('E2E performer')
+    await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
+    await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
+    // Duration is read off the picked file itself — no manual typing.
+    await expect(page.getByLabel('Duration')).toHaveValue(/^\d+:\d{2}(:\d{2})?$/)
+
+    await page.getByRole('button', { name: 'Add to the hub' }).click()
+    await expect(flashWith(page, title)).toContainText('live on the hub')
+
+    // The console row shows the attached-file badge…
+    await page.goto('/admin/media')
+    const row = page.locator('main li').filter({ hasText: title })
+    await expect(row).toContainText('MP4 file')
+
+    // …and the hub card opens the console playing that very upload.
+    await page.goto('/studio')
+    await page.getByRole('link', { name: `Play ${title}` }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+
+    const video = page.locator('main video')
+    const src = await video.getAttribute('src')
+    expect(src, 'the stage should point at the stored upload').toContain('/api/uploads/media/')
+    await expect(page.getByRole('contentinfo')).toContainText(title)
+    await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+
+    // Stored media answers byte ranges — uploaded videos are seek-ready.
+    const ranged = await page.request.get(src!, { headers: { Range: 'bytes=0-99' } })
+    expect(ranged.status()).toBe(206)
+    expect(ranged.headers()['content-range']).toMatch(/^bytes 0-99\/\d+$/)
+
+    // Cleanup through the confirm flow: the stored file dies with the row.
+    await page.goto('/admin/media')
+    const cleanup = page.locator('main li').filter({ hasText: title })
+    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+    await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
+    await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+    await expect(cleanup).toBeHidden()
+
+    const gone = await page.request.get(src!)
+    expect(gone.status(), 'the uploaded file should be deleted with its row').toBe(404)
+  })
+
+  test('ADMIN-010: the uploader rejects files that are not real MP4/MP3 media', { tag: '@p2' }, async ({ baseURL }) => {
+    // Wrong extension: rejected before a single byte lands on disk.
+    const text = await uploadMediaFileAsAdmin(baseURL, {
+      name: 'notes.txt',
+      mimeType: 'text/plain',
+      data: 'definitely not media',
+    })
+    expect(text.status).toBe(400)
+    expect(text.body.error).toBe('Only MP4 video or MP3 audio files can be uploaded.')
+
+    // Accepted extension, but the content type disagrees — also rejected.
+    const mismatch = await uploadMediaFileAsAdmin(baseURL, {
+      name: 'track.mp3',
+      mimeType: 'video/mp4',
+      data: 'definitely not media',
+    })
+    expect(mismatch.status).toBe(400)
+    expect(mismatch.body.error).toContain('does not match')
+
+    // Anonymous callers never reach the uploader (requireAdmin on the sub-app).
+    // Without the explicit ANONYMOUS state the fresh context would inherit the
+    // suite's admin session and the probe would pass for the wrong reason.
+    const anonymous = await rawRequest.newContext({ baseURL, storageState: ANONYMOUS })
+    try {
+      const response = await anonymous.post('/api/admin/media/upload', {
+        headers: { 'Content-Type': 'audio/mpeg', 'X-File-Name': 'x.mp3' },
+        data: 'x',
+      })
+      expect(response.status()).toBe(401)
+    } finally {
+      await anonymous.dispose()
     }
   })
 })

@@ -101,6 +101,10 @@ export interface AdminMediaInput {
   songKey?: string
   freq?: string
   listeners?: number | null
+  /** Upload reference from uploadAdminMediaFile; null removes the file. */
+  sourceUrl?: string | null
+  /** Original filename of that upload. */
+  sourceName?: string | null
 }
 
 /** Blank text boxes are sent as "missing" so the backend stores null. */
@@ -120,6 +124,10 @@ function mediaPayload(input: AdminMediaInput): Record<string, unknown> {
     songKey: clean(input.songKey),
     freq: clean(input.freq),
     listeners: input.listeners ?? undefined,
+    // Unlike the text columns, an explicit null here is meaningful: it tells
+    // the backend to detach (and delete) the row's uploaded file.
+    sourceUrl: input.sourceUrl ?? null,
+    sourceName: clean(input.sourceName ?? undefined),
   }
 }
 
@@ -168,5 +176,31 @@ export function adminMediaMove(
 export function deleteAdminMediaItem(id: string): Promise<{ item: AdminMediaItem }> {
   return request(`/api/admin/media/${encodeURIComponent(id)}/delete`, {
     method: 'POST',
+  })
+}
+
+/** One stored upload as /api/admin/media/upload answers it. */
+export interface MediaUpload {
+  /** Public URL to attach to a catalog row (`/api/uploads/media/...`). */
+  url: string
+  /** Original filename, kept as the row's display copy. */
+  name: string
+  size: number
+}
+
+/**
+ * Streams one MP4/MP3 to the backend — raw-body POST with the file itself as
+ * the body (X-File-Name carries the display name), so large videos never sit
+ * in memory. The editor calls this first and saves the returned url on the
+ * row; the file is deleted server-side when the row replaces or drops it.
+ */
+export function uploadAdminMediaFile(file: File): Promise<{ file: MediaUpload }> {
+  return request('/api/admin/media/upload', {
+    method: 'POST',
+    body: file,
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      'X-File-Name': file.name,
+    },
   })
 }

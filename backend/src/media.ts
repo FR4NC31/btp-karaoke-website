@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { asc, eq, sql } from 'drizzle-orm'
 import { db } from './db.ts'
 import { mediaItem } from './schema.ts'
+import { isUploadedMediaUrl, removeUploadedMedia } from './uploads.ts'
 
 /**
  * The media hub catalog, on Drizzle.
@@ -14,7 +15,10 @@ import { mediaItem } from './schema.ts'
  * Nothing here is seeded with mockup copy: the catalog holds what the studio
  * actually publishes. A fresh database starts with the one real local master
  * ("The Reason" — frontend/src/assets/video_local/the-reason.mp4); everything
- * else arrives through the admin console.
+ * else arrives through the admin console, files included: video songs and
+ * music tracks can carry an uploaded MP4/MP3 (`sourceUrl`, stored under
+ * backend/uploads by src/uploads.ts), and removing that file from a row —
+ * replace or delete — removes the stored upload with it.
  */
 
 export type MediaSection = 'video' | 'music' | 'radio'
@@ -31,6 +35,10 @@ export interface MediaItem {
   songKey: string | null
   freq: string | null
   listeners: number | null
+  /** Uploaded MP4/MP3 this row plays; null = bundled master (video) / none (music). */
+  sourceUrl: string | null
+  /** Original filename of the upload — admin display only. */
+  sourceName: string | null
   sortOrder: number
   isActive: boolean
   createdAt: string
@@ -38,7 +46,10 @@ export interface MediaItem {
 }
 
 /** The public hub payload — no admin bookkeeping fields. */
-export type PublicMediaItem = Omit<MediaItem, 'isActive' | 'createdAt' | 'updatedAt'>
+export type PublicMediaItem = Omit<
+  MediaItem,
+  'isActive' | 'createdAt' | 'updatedAt' | 'sourceName'
+>
 
 /** Thrown for anything the route should turn into a specific HTTP status. */
 export class MediaError extends Error {
@@ -71,6 +82,8 @@ function toMediaItem(row: MediaRow): MediaItem {
     songKey: row.songKey,
     freq: row.freq,
     listeners: row.listeners,
+    sourceUrl: row.sourceUrl,
+    sourceName: row.sourceName,
     sortOrder: row.sortOrder,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
@@ -91,6 +104,7 @@ function toPublicMediaItem(item: MediaItem): PublicMediaItem {
     songKey: item.songKey,
     freq: item.freq,
     listeners: item.listeners,
+    sourceUrl: item.sourceUrl,
     sortOrder: item.sortOrder,
   }
 }
@@ -179,6 +193,24 @@ function cleanCount(raw: unknown, label: string): number | null {
   return value
 }
 
+/**
+ * Optional upload reference. Only files the media uploader stored may be
+ * attached — a URL the backend does not serve (or would not delete with the
+ * row) has no business on a catalog row.
+ */
+function cleanSourceUrl(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null
+  if (typeof raw !== 'string') {
+    throw new MediaError('Source file must be text.', 400)
+  }
+  const url = raw.trim()
+  if (!url) return null
+  if (!isUploadedMediaUrl(url)) {
+    throw new MediaError('The source file must come from the media uploader.', 400)
+  }
+  return url
+}
+
 interface ValidatedFields {
   section: MediaSection
   title: string
@@ -190,6 +222,8 @@ interface ValidatedFields {
   songKey: string | null
   freq: string | null
   listeners: number | null
+  sourceUrl: string | null
+  sourceName: string | null
 }
 
 /**
@@ -209,6 +243,8 @@ function validateFields(input: Record<string, unknown>): ValidatedFields {
     songKey: cleanText(input.songKey, 'Key', SHORT_TEXT_MAX),
     freq: cleanText(input.freq, 'Frequency', SHORT_TEXT_MAX),
     listeners: cleanCount(input.listeners, 'Listeners'),
+    sourceUrl: cleanSourceUrl(input.sourceUrl),
+    sourceName: cleanText(input.sourceName, 'Source name'),
   }
 }
 
@@ -256,12 +292,18 @@ export async function createMediaItem(input: Record<string, unknown>): Promise<M
 /**
  * Replaces one catalog row's editable fields. Section can change; the row
  * keeps its sortOrder (ordering inside the new section falls back to title
- * until the admin reorders).
+ * until the admin reorders). Replacing or clearing the row's uploaded file
+ * removes the old upload from disk.
  */
 export async function updateMediaItem(
   id: string,
   input: Record<string, unknown>,
 ): Promise<MediaItem> {
+  const existing = await findMediaById(id)
+  if (!existing) {
+    throw new MediaError('That media item does not exist.', 404)
+  }
+
   const fields = validateFields(input)
 
   const updated = await db
@@ -273,6 +315,10 @@ export async function updateMediaItem(
   const row = updated[0]
   if (!row) {
     throw new MediaError('That media item does not exist.', 404)
+  }
+
+  if (existing.sourceUrl && existing.sourceUrl !== row.sourceUrl) {
+    await removeUploadedMedia(existing.sourceUrl)
   }
   return toMediaItem(row)
 }
@@ -361,7 +407,8 @@ export async function moveMediaItem(id: string, direction: unknown): Promise<Med
 
 /**
  * Permanent removal. Prefer `setMediaVisibility(false)` when the row should
- * merely leave the hub — delete is for rows that were a mistake.
+ * merely leave the hub — delete is for rows that were a mistake. The row's
+ * uploaded file goes with it (best-effort).
  */
 export async function deleteMediaItem(id: string): Promise<MediaItem> {
   const removed = await db.delete(mediaItem).where(eq(mediaItem.id, id)).returning()
@@ -370,5 +417,6 @@ export async function deleteMediaItem(id: string): Promise<MediaItem> {
   if (!row) {
     throw new MediaError('That media item does not exist.', 404)
   }
+  await removeUploadedMedia(row.sourceUrl)
   return toMediaItem(row)
 }

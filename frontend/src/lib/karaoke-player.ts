@@ -12,6 +12,12 @@ import { useOutletContext } from 'react-router'
  * loudness, play state), and reclaims it on re-entry. Mirrors the
  * auth-dialog pattern: shell state exposed to pages through the router
  * outlet context.
+ *
+ * The console can play the bundled master or an uploaded catalog file, so the
+ * transport also tracks the on-air track (`onAir`): the bar shows its
+ * metadata and the mini mirrors its source. Position handoffs (console →
+ * mini, console → lobby) are gated on matching sources, so an uploaded song
+ * never jumps the lobby's own timeline.
  */
 export type KaraokeVideoApi = {
   /** True while the in-app PiP mini player holds the session. */
@@ -21,6 +27,11 @@ export type KaraokeVideoApi = {
   duration: number
   volume: number
   /**
+   * What the console currently has on air — null means only the lobby track
+   * is around. Drives the bar's track metadata and the mini player's source.
+   */
+  onAir: OnAirTrack | null
+  /**
    * Attach the console page's <video> element to the shared transport and
    * return the detach cleanup (call from an effect: `return attachVideo(el)`).
    */
@@ -29,6 +40,8 @@ export type KaraokeVideoApi = {
   attachMini: (el: HTMLVideoElement) => () => void
   /** Same contract for the lobby music <audio> (StudioBgm). */
   attachMusic: (el: HTMLAudioElement) => () => void
+  /** Console pages announce their track here (null clears it). */
+  setOnAir: (track: OnAirTrack | null) => void
   /** Console PiP button: arm the mini player, then navigate away. */
   enterPip: () => void
   toggle: () => void
@@ -38,10 +51,24 @@ export type KaraokeVideoApi = {
   setLoop: (loop: boolean) => void
 }
 
+/** The track the console is playing — a catalog row or the bundled master. */
+export interface OnAirTrack {
+  title: string
+  subtitle: string
+  /** Resolved media URL: an uploaded file or the bundled local master. */
+  src: string
+  kind: 'video' | 'music'
+}
+
 type SourceKind = 'video' | 'mini' | 'music'
 
 /** Default loudness for freshly registered videos (keeps the old 2/3 bar). */
 const DEFAULT_VOLUME = 0.7
+
+/** Same resolved media URL — position handoffs only make sense on one file. */
+function sameSource(a: HTMLMediaElement, b: HTMLMediaElement): boolean {
+  return a.src !== '' && a.src === b.src
+}
 
 export function useKaraokeVideo(): KaraokeVideoApi {
   const videoRef = useRef<HTMLMediaElement | null>(null)
@@ -58,6 +85,11 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
+  const [onAir, setOnAirState] = useState<OnAirTrack | null>(null)
+
+  const setOnAir = useCallback((track: OnAirTrack | null) => {
+    setOnAirState(track)
+  }, [])
 
   /** The element the bar controls: console video, then armed PiP, then lobby. */
   const active = () => videoRef.current ?? (pipRef.current ? miniRef.current : null) ?? musicRef.current
@@ -107,9 +139,10 @@ export function useKaraokeVideo(): KaraokeVideoApi {
 
       if (kind === 'video') {
         // Console (re)entry ends any floating session: take the mini
-        // player's position and play state, then disarm it.
+        // player's position and play state, then disarm it. Only when the
+        // mini holds the same source — a fresh song card replaces it.
         const mini = miniRef.current
-        if (pipRef.current && mini) {
+        if (pipRef.current && mini && sameSource(el, mini)) {
           if (mini.currentTime > 1) el.currentTime = mini.currentTime
           if (!mini.paused) void el.play().catch(() => {})
         }
@@ -138,23 +171,29 @@ export function useKaraokeVideo(): KaraokeVideoApi {
         if (kind === 'video') {
           if (videoRef.current === el) videoRef.current = null
           const mini = miniRef.current
-          if (pipRef.current && mini) {
+          if (pipRef.current && mini && sameSource(el, mini)) {
             // PiP armed: the floating player takes the session where the
             // video left it — the lobby stays out of it.
             mini.currentTime = el.currentTime
             mini.volume = el.volume
             if (!el.paused) void mini.play().catch(() => {})
-          } else {
+          } else if (!pipRef.current) {
             // Plain exit → hand the song to the lobby track, synced: a video
             // that made real progress moves its position onto the lobby
             // <audio> (StudioBgm's route effect then resumes it from there).
-            // Dev-only quirk: StrictMode invokes the console's attach effect
-            // twice, so this also fires once right after a (re)entry — it
-            // only nudges the parked, silent lobby track; production mounts
-            // the effect a single time.
+            // Only when both play the same file — an uploaded song keeps its
+            // place instead of jumping the lobby's own timeline. Dev-only
+            // quirk: StrictMode invokes the console's attach effect twice, so
+            // this also fires once right after a (re)entry — it only nudges
+            // the parked, silent lobby track; production mounts once.
             const music = musicRef.current
-            if (music && el.currentTime > 1) music.currentTime = el.currentTime
+            if (music && sameSource(el, music) && el.currentTime > 1) {
+              music.currentTime = el.currentTime
+            }
           }
+          // "Now playing" follows the console's track: a floating PiP keeps
+          // it on air, a plain exit drops back to the lobby master.
+          if (!pipRef.current) setOnAirState(null)
         } else if (kind === 'mini') {
           if (miniRef.current === el) miniRef.current = null
         } else {
@@ -214,9 +253,11 @@ export function useKaraokeVideo(): KaraokeVideoApi {
     currentTime,
     duration,
     volume,
+    onAir,
     attachVideo,
     attachMini,
     attachMusic,
+    setOnAir,
     enterPip,
     toggle,
     seek,

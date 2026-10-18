@@ -432,6 +432,21 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   playing from the carried-over position, and the mini hides.
 - **Automation:** Playwright — **Status: Automated**
 
+### KARAOKE-012
+
+- **Title:** An uploaded minus-one really plays from the hub
+- **Priority:** P1
+- **Preconditions:** Uploads a real (silent) MP3 through the admin API
+  (`helpers/media.ts`) and attaches it to a fresh music row; the row is
+  deleted in `finally` and the stored file is asserted gone with it.
+- **Steps:** 1. Open `/studio` and find the card. 2. Click its play link.
+- **Expected:** The console stage plays **that uploaded file** (`src` is the
+  stored `/api/uploads/media/...` url — not the bundled master), the bar
+  shows the track's title, the stage reads **Studio Audio Mode**, the PiP
+  button is absent (audio-only), and the stored file answers byte ranges
+  (206). Deleting the row removes the stored file (404).
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Player — `frontend/tests/e2e/player/player.spec.ts`
@@ -441,7 +456,7 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Player bar shows the current track
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Inspect the player bar.
-- **Expected:** Track title "The Reason" and artist "Hoobastank" visible — the bar mirrors the real transport (every source plays the one local master).
+- **Expected:** Track title "The Reason" and artist "Hoobastank" visible — the bar mirrors the real transport (the lobby/master default when nothing else is on air; the console's on-air track renames it — see KARAOKE-012).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-003
@@ -699,8 +714,8 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin adds a music track and it reaches the hub
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/media/new`, pick **Music track**. 2. Fill title, description, tempo "120 BPM", key "Am"; save. 3. Check `/admin/media`, then `/studio`. 4. Delete the row from the console.
-- **Expected:** The editor's fields switch per type (music asks tempo/key); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; deleting removes it (cleanup).
+- **Steps:** 1. Open `/admin/media/new`, pick **Music track**. 2. Fill title, description, tempo "120 BPM", key "Am"; save. 3. Check `/admin/media`, then `/studio`. 4. Delete the row from the console — the delete asks for confirmation; cancel once, then confirm.
+- **Expected:** The editor's fields switch per type (music asks tempo/key); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; **Delete** first turns into a "Delete permanently?" Confirm/Cancel pair — Cancel keeps the Live row, Confirm removes it (cleanup).
 - **Automation:** Playwright — **Status: Automated**
 
 ### ADMIN-008
@@ -710,6 +725,22 @@ desk: every test-created reservation is driven to a terminal state
 - **Preconditions:** Creates two video rows through the admin API; both are deleted in `finally`.
 - **Steps:** 1. Hide one in the console, then check `/studio`. 2. Show it again. 3. Move it up. 4. Open its editor, retitle it, save.
 - **Expected:** Hidden rows keep a Hidden chip in the console but vanish from `/studio`; Show restores them; Move swaps one slot earlier; the editor pre-fills and saving shows the Saved flash and the new title in the list. API cleanup runs even if the UI half fails.
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-009
+
+- **Title:** The admin uploads an MP4 and the hub really plays it
+- **Priority:** P1
+- **Steps:** 1. Open `/admin/media/new`. 2. Fill title/artist, pick the repo's real MP4 master in **Video file (MP4)**; save. 3. Check `/admin/media` (MP4 file badge), then click the hub card. 4. Delete the row via the confirm flow.
+- **Expected:** The picker shows "Ready to upload" and auto-fills **Duration** from the file's own metadata; the flash says the item is live; the console row carries the **MP4 file** badge; the card opens the console and the stage plays the stored `/api/uploads/media/...` file (not the bundled master), with the bar showing the row's title; the stored file answers byte ranges (206). Confirmed delete removes the row **and** the stored file (404 on the url).
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-010
+
+- **Title:** The uploader rejects files that are not real MP4/MP3 media
+- **Priority:** P2
+- **Steps:** 1. POST a `.txt` through the admin upload endpoint. 2. POST `track.mp3` with a `video/mp4` content type. 3. POST anonymously.
+- **Expected:** 400 "Only MP4 video or MP3 audio files can be uploaded."; 400 with a "does not match" message; 401 for the anonymous caller (`requireAdmin` on the sub-app). Nothing is written to disk for any of them.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -766,12 +797,12 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Favorites / playlists round-trip       | N/A                   | Not implemented (like button is local state only).           |
 | Database persistence after refresh     | Partial               | Sign-up/sign-in read and write Aiven (AUTH-010, AUTH-001) and the session persists (AUTH-009); favorites/playlists are still local state only. |
 | Song detail / lyrics synchronization   | N/A                   | No detail page or lyrics implementation.                     |
-| Real playback, progress movement, volume | N/A                 | No audio element/media; player is UI state only.             |
-| Media loading failure / unavailable song | N/A                 | No media pipeline.                                           |
+| Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. |
+| Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
-| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008). KARAOKE-003/005 create their rows via the admin API and delete them. |
+| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008), and real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012). KARAOKE-003/005 create their rows via the admin API and delete them. |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |

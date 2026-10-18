@@ -76,3 +76,25 @@ npm run promote-admin -- --list                       # who is an admin?
 **Never run `drizzle-kit push` against this database.** It reconciles the whole
 database against `src/schema.ts` and would drop the Better Auth tables it cannot
 see. Add a column to `src/schema.ts`, generate, and apply instead.
+
+## Uploaded media files
+
+`/admin/media` can attach a real MP4/MP3 to a video song or a music track.
+The editor uploads the file through `POST /api/admin/media/upload`
+(admin-gated, raw body + `X-File-Name` header, 200 MB default cap via
+`MEDIA_UPLOAD_MAX_MB`) and saves the returned url on the row; the file is
+served back at `GET /api/uploads/media/:name` with byte-range support, so an
+uploaded video seeks in the console like the bundled master.
+
+- Storage: local disk, `UPLOADS_DIR` (default `backend/uploads/`, gitignored).
+  Files are named `<uuid>.<ext>`; the original filename is kept as the row's
+  `sourceName` display copy only.
+- Lifecycle: deleting a catalog row, or detaching/replacing its file, deletes
+  the stored upload (best-effort — a stray file never fails a request). The
+  console asks for confirmation before a permanent delete.
+- Accepted types: `.mp4` and `.mp3` only, and the content type must match the
+  extension's family (`video/*` for mp4, `audio/*` for mp3). Rows without a
+  file play the bundled master (video) or nothing (music).
+- Schema: `media_item.sourceUrl` / `sourceName` (`drizzle/0003_*.sql`).
+  Video rows fall back to `frontend/src/assets/video_local/the-reason.mp4`
+  when no file is attached; radio stations carry no file (streams).

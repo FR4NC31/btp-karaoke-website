@@ -27,6 +27,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .cache
 *.tsbuildinfo
 
+# uploaded media files (backend/src/uploads.ts) — real files, not repo content
+uploads/
+
 # IntelliJ based IDEs
 .idea
 

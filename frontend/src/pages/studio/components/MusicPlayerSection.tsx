@@ -4,9 +4,10 @@ import type { MediaItem } from '../../../lib/media-api'
 
 /**
  * Studio home — Section 2: the audio songs (minus-one sets), one media card
- * per published row of the admin-managed catalog. Cards are visual-only for
- * now (the shell player always drives the one local master). Renders nothing
- * while the section has no published tracks.
+ * per published row of the admin-managed catalog. A track with an uploaded
+ * MP3 opens the console and really plays it (the console doubles as a media
+ * stage); rows without audio stay visual-only. Renders nothing while the
+ * section has no published tracks.
  */
 export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
   if (items.length === 0) return null
@@ -35,6 +36,8 @@ export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
               icon={MusicNote01Icon}
               title={track.title}
               subtitle={track.subtitle ?? ''}
+              to={track.sourceUrl ? '/studio/player-queue' : undefined}
+              toState={track.sourceUrl ? { autoplay: true, item: track } : undefined}
               meta={meta}
             />
           )

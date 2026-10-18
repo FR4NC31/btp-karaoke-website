@@ -5,9 +5,10 @@ import { formatCount, type MediaItem } from '../../../lib/media-api'
 /**
  * Studio home — Section 1: the karaoke video songs, one media card per
  * published row of the admin-managed catalog (/admin/media). Every card opens
- * the player-queue console, which drives the one local video master through
- * the shell player bar; the first card's title is the page h1. Renders
- * nothing while the section has no published songs.
+ * the player-queue console carrying its catalog row, so the console plays the
+ * row's uploaded MP4 when it has one (and the bundled local master when it
+ * does not); the first card's title is the page h1. Renders nothing while the
+ * section has no published songs.
  */
 export default function VideoSongSection({ items }: { items: MediaItem[] }) {
   if (items.length === 0) return null
@@ -37,7 +38,7 @@ export default function VideoSongSection({ items }: { items: MediaItem[] }) {
               title={song.title}
               subtitle={song.subtitle ?? ''}
               to="/studio/player-queue"
-              toState={{ autoplay: true }}
+              toState={{ autoplay: true, item: song }}
               titleAs={index === 0 ? 'h1' : undefined}
               meta={meta}
             />
