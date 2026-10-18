@@ -55,6 +55,7 @@ Last updated: October 18, 2026
 
 ### Other Changes
 
+- ﻿feat(media): add artist metadata and auto-read runtimes (aab0c39)
 - ﻿feat(media): upload real MP4/MP3 files and confirm deletes (2879b1a)
 - ﻿fix(backend): repair sslmode strip, pool errors, date validation (6884db3)
 - ﻿feat(booking): day-only booking desk with Drizzle-backed service catalog (d6cf197)
