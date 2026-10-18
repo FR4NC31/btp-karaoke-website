@@ -737,10 +737,10 @@ desk: every test-created reservation is driven to a terminal state
 
 ### ADMIN-010
 
-- **Title:** The uploader rejects files that are not real MP4/MP3 media
+- **Title:** The uploader rejects files that are not real media or cover images
 - **Priority:** P2
-- **Steps:** 1. POST a `.txt` through the admin upload endpoint. 2. POST `track.mp3` with a `video/mp4` content type. 3. POST anonymously.
-- **Expected:** 400 "Only MP4 video or MP3 audio files can be uploaded."; 400 with a "does not match" message; 401 for the anonymous caller (`requireAdmin` on the sub-app). Nothing is written to disk for any of them.
+- **Steps:** 1. POST a `.txt` through the admin upload endpoint. 2. POST `track.mp3` with a `video/mp4` content type. 3. POST `cover.png` with a `video/mp4` content type. 4. Create a row whose `sourceUrl` names an image, and one whose `coverUrl` names an MP4. 5. POST anonymously.
+- **Expected:** 400 "Only MP4 video, MP3 audio or JPG/PNG/WebP image files can be uploaded."; 400 with a "does not match" message for both type/extension mismatches; 400 for the column cross-checks (a cover in `sourceUrl`, media in `coverUrl` — either would dodge the delete/replace cleanup); 401 for the anonymous caller (`requireAdmin` on the sub-app). Nothing is written to disk and no row is created for any of them.
 - **Automation:** Playwright — **Status: Automated**
 
 ### ADMIN-011
@@ -749,6 +749,22 @@ desk: every test-created reservation is driven to a terminal state
 - **Priority:** P1
 - **Steps:** 1. As a signed-in admin, open `/signin` and `/signup`. 2. On the landing page, click **Sign In** (the auth dialog) while already authenticated.
 - **Expected:** Every path lands on `/admin` — the guest-only pages bounce by role (`landingPathFor`), and the landing auth dialog routes the same way instead of hardcoding `/studio`. The dialog never opens a sign-in form for an authenticated user. (Regression: the dialog and the Google OAuth callback used to send any session — admins included — to `/studio`.)
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-012
+
+- **Title:** MP3 tags fill the editor and the embedded cover reaches the hub
+- **Priority:** P1
+- **Steps:** 1. Open `/admin/media/new` as **Music track**. 2. Pick `tests/e2e/assets/silence.mp3` (real ID3 tags + embedded JPEG art) with every box empty, then retitle the row uniquely. 3. Save, check the console row and the hub card, then delete the row.
+- **Expected:** Title/artist(description)/album fill from the file's own tags (via `music-metadata`) — typed copy is never clobbered. The editor shows "Found in the file's own tags" with a blob-URL cover preview; saving uploads the art **optimized to WebP** and the row gains MP3 + Cover chips. The hub card shows the stored cover (`image/webp` from `/api/uploads/media/…`) and the album in its meta strip. Deleting the row 404s both stored files.
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-013
+
+- **Title:** A video thumbnail is grabbed, overridden, removed, and defaulted
+- **Priority:** P1
+- **Steps:** 1. Open `/admin/media/new` as **Video song**. 2. Pick a tagless MP4 (`the-reason.mp4`) → the editor grabs a frame. 3. Pick `tests/e2e/assets/cover.png` over it, save, check the hub card. 4. Edit the row → **Remove cover** → save. 5. Delete the row.
+- **Expected:** The tagless video gets "Grabbed from the video" as its default thumbnail (no striped placeholder); an explicitly picked image overrides it and lands on the card as optimized WebP. After removal the card falls back to the default art and the replaced cover file is 404. Deleting the row takes the stored MP4 with it (404).
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -810,7 +826,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
-| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008), and real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012). KARAOKE-003/005 create their rows via the admin API and delete them. |
+| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 — tag pre-fill, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art). KARAOKE-003/005 create their rows via the admin API and delete them. |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |

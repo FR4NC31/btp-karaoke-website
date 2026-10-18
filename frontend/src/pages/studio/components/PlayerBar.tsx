@@ -93,7 +93,17 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
       </div>
       {/* Track info */}
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
-        <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
+        {onAir?.coverUrl ? (
+          <img
+            src={onAir.coverUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="size-12 shrink-0 rounded-md bg-surface-elevated object-cover"
+          />
+        ) : (
+          <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
+        )}
         <div className="min-w-0 leading-tight">
           <p className="truncate text-sm font-semibold uppercase">{nowTitle}</p>
           {nowSubtitle && <p className="truncate text-[11px] text-text-muted">{nowSubtitle}</p>}

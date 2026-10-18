@@ -136,6 +136,9 @@ export default function PlayerQueue() {
   const audioMode = (item?.section ?? onAir?.kind) === 'music'
   const trackTitle = item?.title ?? onAir?.title ?? 'The Reason'
   const trackSubtitle = item ? item.subtitle : onAir ? onAir.subtitle || null : 'Hoobastank'
+  // Poster: the row's cover / generated thumbnail before the bundled
+  // placeholder art — the stage shows a real image while the file loads.
+  const coverSrc = item?.coverUrl ?? onAir?.coverUrl ?? null
 
   // Stage badge visibility: while playing it auto-hides after 2s (the timer
   // restarts on every play event) and returns on stage hover; while paused it
@@ -169,6 +172,7 @@ export default function PlayerQueue() {
       title: item.title,
       subtitle: item.subtitle ?? '',
       src: item.sourceUrl ?? localVideo,
+      coverUrl: item.coverUrl,
       kind: item.section === 'music' ? 'music' : 'video',
     })
   }, [item, setOnAir])
@@ -279,7 +283,7 @@ export default function PlayerQueue() {
               <video
                 ref={videoRef}
                 src={source}
-                poster={audioMode ? placeholderAlbum : placeholderVideo}
+                poster={coverSrc ?? (audioMode ? placeholderAlbum : placeholderVideo)}
                 playsInline
                 preload="metadata"
                 onClick={() => toggle()}

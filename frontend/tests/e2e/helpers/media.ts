@@ -30,6 +30,11 @@ export interface MediaSeedInput {
   /** Upload reference from uploadMediaFileAsAdmin (music/video rows). */
   sourceUrl?: string
   sourceName?: string
+  /** Album/collection as shown on the hub and in the editor. */
+  album?: string
+  /** Cover-image reference from uploadMediaFileAsAdmin (image upload). */
+  coverUrl?: string
+  coverName?: string
 }
 
 async function withAdminApi<T>(

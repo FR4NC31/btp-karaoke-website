@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { asc, eq, sql } from 'drizzle-orm'
 import { db } from './db.ts'
 import { mediaItem } from './schema.ts'
-import { isUploadedMediaUrl, removeUploadedMedia } from './uploads.ts'
+import { isUploadedImageUrl, isUploadedMediaUrl, removeUploadedMedia } from './uploads.ts'
 
 /**
  * The media hub catalog, on Drizzle.
@@ -17,8 +17,10 @@ import { isUploadedMediaUrl, removeUploadedMedia } from './uploads.ts'
  * ("The Reason" — frontend/src/assets/video_local/the-reason.mp4); everything
  * else arrives through the admin console, files included: video songs and
  * music tracks can carry an uploaded MP4/MP3 (`sourceUrl`, stored under
- * backend/uploads by src/uploads.ts), and removing that file from a row —
- * replace or delete — removes the stored upload with it.
+ * backend/uploads by src/uploads.ts) plus a cover image (`coverUrl`) —
+ * extracted from the file's own tags, grabbed from the video, or picked by
+ * the admin. Removing either file from a row — replace or delete — removes
+ * the stored upload with it.
  */
 
 export type MediaSection = 'video' | 'music' | 'radio'
@@ -39,6 +41,12 @@ export interface MediaItem {
   sourceUrl: string | null
   /** Original filename of the upload — admin display only. */
   sourceName: string | null
+  /** Album/collection as shown on the hub, or null to hide it. */
+  album: string | null
+  /** Uploaded cover image shown on the card/stage; null = default art. */
+  coverUrl: string | null
+  /** Original filename of the cover upload — admin display only. */
+  coverName: string | null
   sortOrder: number
   isActive: boolean
   createdAt: string
@@ -48,7 +56,7 @@ export interface MediaItem {
 /** The public hub payload — no admin bookkeeping fields. */
 export type PublicMediaItem = Omit<
   MediaItem,
-  'isActive' | 'createdAt' | 'updatedAt' | 'sourceName'
+  'isActive' | 'createdAt' | 'updatedAt' | 'sourceName' | 'coverName'
 >
 
 /** Thrown for anything the route should turn into a specific HTTP status. */
@@ -84,6 +92,9 @@ function toMediaItem(row: MediaRow): MediaItem {
     listeners: row.listeners,
     sourceUrl: row.sourceUrl,
     sourceName: row.sourceName,
+    album: row.album,
+    coverUrl: row.coverUrl,
+    coverName: row.coverName,
     sortOrder: row.sortOrder,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
@@ -105,6 +116,8 @@ function toPublicMediaItem(item: MediaItem): PublicMediaItem {
     freq: item.freq,
     listeners: item.listeners,
     sourceUrl: item.sourceUrl,
+    album: item.album,
+    coverUrl: item.coverUrl,
     sortOrder: item.sortOrder,
   }
 }
@@ -211,6 +224,24 @@ function cleanSourceUrl(raw: unknown): string | null {
   return url
 }
 
+/**
+ * Optional cover reference. Same rule as `sourceUrl`, tightened to images:
+ * an MP4/MP3 in the cover column (or a cover URL in the source column) would
+ * survive deletion and break the cleanup guarantee, so neither passes.
+ */
+function cleanCoverUrl(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null
+  if (typeof raw !== 'string') {
+    throw new MediaError('Cover image must be text.', 400)
+  }
+  const url = raw.trim()
+  if (!url) return null
+  if (!isUploadedImageUrl(url)) {
+    throw new MediaError('The cover image must come from the media uploader.', 400)
+  }
+  return url
+}
+
 interface ValidatedFields {
   section: MediaSection
   title: string
@@ -224,6 +255,9 @@ interface ValidatedFields {
   listeners: number | null
   sourceUrl: string | null
   sourceName: string | null
+  album: string | null
+  coverUrl: string | null
+  coverName: string | null
 }
 
 /**
@@ -245,6 +279,9 @@ function validateFields(input: Record<string, unknown>): ValidatedFields {
     listeners: cleanCount(input.listeners, 'Listeners'),
     sourceUrl: cleanSourceUrl(input.sourceUrl),
     sourceName: cleanText(input.sourceName, 'Source name'),
+    album: cleanText(input.album, 'Album'),
+    coverUrl: cleanCoverUrl(input.coverUrl),
+    coverName: cleanText(input.coverName, 'Cover name'),
   }
 }
 
@@ -292,8 +329,8 @@ export async function createMediaItem(input: Record<string, unknown>): Promise<M
 /**
  * Replaces one catalog row's editable fields. Section can change; the row
  * keeps its sortOrder (ordering inside the new section falls back to title
- * until the admin reorders). Replacing or clearing the row's uploaded file
- * removes the old upload from disk.
+ * until the admin reorders). Replacing or clearing the row's uploaded media
+ * or cover removes the old uploads from disk.
  */
 export async function updateMediaItem(
   id: string,
@@ -319,6 +356,9 @@ export async function updateMediaItem(
 
   if (existing.sourceUrl && existing.sourceUrl !== row.sourceUrl) {
     await removeUploadedMedia(existing.sourceUrl)
+  }
+  if (existing.coverUrl && existing.coverUrl !== row.coverUrl) {
+    await removeUploadedMedia(existing.coverUrl)
   }
   return toMediaItem(row)
 }
@@ -408,7 +448,7 @@ export async function moveMediaItem(id: string, direction: unknown): Promise<Med
 /**
  * Permanent removal. Prefer `setMediaVisibility(false)` when the row should
  * merely leave the hub — delete is for rows that were a mistake. The row's
- * uploaded file goes with it (best-effort).
+ * uploaded media and cover go with it (best-effort).
  */
 export async function deleteMediaItem(id: string): Promise<MediaItem> {
   const removed = await db.delete(mediaItem).where(eq(mediaItem.id, id)).returning()
@@ -417,6 +457,6 @@ export async function deleteMediaItem(id: string): Promise<MediaItem> {
   if (!row) {
     throw new MediaError('That media item does not exist.', 404)
   }
-  await removeUploadedMedia(row.sourceUrl)
+  await Promise.all([removeUploadedMedia(row.sourceUrl), removeUploadedMedia(row.coverUrl)])
   return toMediaItem(row)
 }

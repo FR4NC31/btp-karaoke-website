@@ -6,7 +6,8 @@ import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 
 /**
- * Uploaded media files (MP4 video / MP3 audio) behind the media hub.
+ * Uploaded files behind the media hub: the playable media (MP4 video / MP3
+ * audio) and their cover art / thumbnails (JPG / PNG / WebP images).
  *
  * Storage is the local disk — one directory next to the backend process
  * (UPLOADS_DIR, default ./uploads) — served back through
@@ -15,9 +16,9 @@ import { pipeline } from 'node:stream/promises'
  * this project stores only what the studio actually publishes.
  *
  * Files are named `<uuid>.<ext>` — the original filename is kept as display
- * copy (the row's `sourceName`), never as a path. Deleting a catalog row (or
- * replacing its file) removes the old upload; that cleanup is best-effort, so
- * a stray file can never fail an API call.
+ * copy (the row's `sourceName` / `coverName`), never as a path. Deleting a
+ * catalog row (or replacing its file) removes the old uploads; that cleanup
+ * is best-effort, so a stray file can never fail an API call.
  */
 
 /** Where uploads live. The default resolves against the server cwd (backend/). */
@@ -34,13 +35,30 @@ const maxMb = Number(process.env.MEDIA_UPLOAD_MAX_MB)
 export const MEDIA_UPLOAD_MAX_BYTES =
   (Number.isFinite(maxMb) && maxMb > 0 ? maxMb : 200) * 1024 * 1024
 
-/** The only extensions the uploader accepts. */
-const ALLOWED_EXTENSIONS = ['.mp4', '.mp3']
+/** The only extensions the uploader accepts: playable media + cover images. */
+const ALLOWED_EXTENSIONS = ['.mp4', '.mp3', '.jpg', '.jpeg', '.png', '.webp']
+
+/** MIME family each accepted extension belongs to — a declared type must match it. */
+const CONTENT_FAMILIES: Record<string, string> = {
+  '.mp4': 'video/',
+  '.mp3': 'audio/',
+  '.jpg': 'image/',
+  '.jpeg': 'image/',
+  '.png': 'image/',
+  '.webp': 'image/',
+}
 
 /** Names this module generates — safe to join onto the uploads directory. */
-const FILE_NAME_PATTERN = /^[A-Za-z0-9_-]+\.(?:mp4|mp3)$/
+const FILE_NAME_PATTERN = /^[A-Za-z0-9_-]+\.(?:mp4|mp3|jpe?g|png|webp)$/
 
-const UPLOAD_URL_PATTERN = /^\/api\/uploads\/media\/[A-Za-z0-9_-]+\.(?:mp4|mp3)$/
+/** Any stored upload URL, for the delete/replace cleanup path. */
+const ANY_UPLOAD_URL_PATTERN = /^\/api\/uploads\/media\/([A-Za-z0-9_-]+\.(?:mp4|mp3|jpe?g|png|webp))$/
+
+/** Playable media only — what a catalog row's `sourceUrl` may carry. */
+const MEDIA_URL_PATTERN = /^\/api\/uploads\/media\/[A-Za-z0-9_-]+\.(?:mp4|mp3)$/
+
+/** Cover images only — what a catalog row's `coverUrl` may carry. */
+const IMAGE_URL_PATTERN = /^\/api\/uploads\/media\/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/
 
 /** Thrown for anything the routes should turn into a specific HTTP status. */
 export class UploadError extends Error {
@@ -61,7 +79,11 @@ export interface StoredUpload {
 }
 
 export function isUploadedMediaUrl(url: string): boolean {
-  return UPLOAD_URL_PATTERN.test(url)
+  return MEDIA_URL_PATTERN.test(url)
+}
+
+export function isUploadedImageUrl(url: string): boolean {
+  return IMAGE_URL_PATTERN.test(url)
 }
 
 export function isUploadedMediaName(name: string): boolean {
@@ -75,7 +97,11 @@ export function mediaFilePath(name: string): string | null {
 
 /** Response content type for a stored upload. */
 export function mediaContentType(name: string): string {
-  return name.endsWith('.mp3') ? 'audio/mpeg' : 'video/mp4'
+  if (name.endsWith('.mp3')) return 'audio/mpeg'
+  if (name.endsWith('.mp4')) return 'video/mp4'
+  if (name.endsWith('.png')) return 'image/png'
+  if (name.endsWith('.webp')) return 'image/webp'
+  return 'image/jpeg'
 }
 
 function friendlyMaxSize(): string {
@@ -98,7 +124,9 @@ export async function storeMediaUpload(input: {
   const displayName = input.originalName.split(/[\\/]/).pop()?.trim() ?? ''
   const ext = extname(displayName).toLowerCase()
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    throw new UploadError('Only MP4 video or MP3 audio files can be uploaded.')
+    throw new UploadError(
+      'Only MP4 video, MP3 audio or JPG/PNG/WebP image files can be uploaded.',
+    )
   }
 
   const declared = Number(input.contentLength)
@@ -110,8 +138,8 @@ export async function storeMediaUpload(input: {
   // when a real type is present it must match the extension's family.
   const mime = input.contentType.split(';')[0]?.trim().toLowerCase() ?? ''
   if (mime && mime !== 'application/octet-stream') {
-    const family = ext === '.mp4' ? 'video/' : 'audio/'
-    if (!mime.startsWith(family)) {
+    const family = CONTENT_FAMILIES[ext] ?? ''
+    if (family && !mime.startsWith(family)) {
       throw new UploadError(`That file's content type (${mime}) does not match the ${ext} extension.`)
     }
   }
@@ -163,7 +191,7 @@ export async function storeMediaUpload(input: {
  */
 export async function removeUploadedMedia(url: string | null): Promise<void> {
   if (!url) return
-  const match = /^\/api\/uploads\/media\/([A-Za-z0-9_-]+\.(?:mp4|mp3))$/.exec(url)
+  const match = ANY_UPLOAD_URL_PATTERN.exec(url)
   const name = match?.[1]
   if (!name) return
   try {

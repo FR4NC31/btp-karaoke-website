@@ -37,6 +37,7 @@ export default function VideoSongSection({ items }: { items: MediaItem[] }) {
               icon={PlayIcon}
               title={song.title}
               subtitle={song.subtitle ?? ''}
+              coverUrl={song.coverUrl}
               to="/studio/player-queue"
               toState={{ autoplay: true, item: song }}
               titleAs={index === 0 ? 'h1' : undefined}

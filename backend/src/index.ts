@@ -101,10 +101,11 @@ app.get('/api/media', async (c) => {
   return c.json({ items })
 })
 
-// Uploaded catalog files (MP4/MP3), public like the hub feed itself. Served
-// with byte-range support — browsers request ranges while seeking, and an
-// uploaded video should scrub in the console exactly like the bundled master.
-// Names are the uuid filenames the uploader generated; anything else is 404.
+// Uploaded catalog files (MP4/MP3 media and their cover images), public like
+// the hub feed itself. Served with byte-range support — browsers request
+// ranges while seeking, and an uploaded video should scrub in the console
+// exactly like the bundled master. Names are the uuid filenames the uploader
+// generated; anything else is 404.
 app.get('/api/uploads/media/:name', async (c) => {
   const name = c.req.param('name')
   const filePath = mediaFilePath(name)

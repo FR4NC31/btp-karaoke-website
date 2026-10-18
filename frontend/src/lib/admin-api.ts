@@ -105,6 +105,12 @@ export interface AdminMediaInput {
   sourceUrl?: string | null
   /** Original filename of that upload. */
   sourceName?: string | null
+  /** Album/collection as shown on the hub. */
+  album?: string
+  /** Cover image reference from uploadAdminMediaFile; null removes it. */
+  coverUrl?: string | null
+  /** Original filename of the cover upload. */
+  coverName?: string | null
 }
 
 /** Blank text boxes are sent as "missing" so the backend stores null. */
@@ -125,9 +131,13 @@ function mediaPayload(input: AdminMediaInput): Record<string, unknown> {
     freq: clean(input.freq),
     listeners: input.listeners ?? undefined,
     // Unlike the text columns, an explicit null here is meaningful: it tells
-    // the backend to detach (and delete) the row's uploaded file.
+    // the backend to detach (and delete) the row's uploaded file. Same for
+    // the cover below.
     sourceUrl: input.sourceUrl ?? null,
     sourceName: clean(input.sourceName ?? undefined),
+    album: clean(input.album),
+    coverUrl: input.coverUrl ?? null,
+    coverName: clean(input.coverName ?? undefined),
   }
 }
 

@@ -262,6 +262,14 @@ export default function AdminMedia() {
                                   {item.sourceUrl.endsWith('.mp3') ? 'MP3 file' : 'MP4 file'}
                                 </span>
                               )}
+                              {item.coverUrl && (
+                                <span
+                                  title={item.coverName ?? undefined}
+                                  className="rounded border border-primary/40 bg-primary-soft px-2 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase"
+                                >
+                                  Cover
+                                </span>
+                              )}
                               <span
                                 className={`rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${
                                   item.isActive ? STATUS_STYLES.live : STATUS_STYLES.hidden

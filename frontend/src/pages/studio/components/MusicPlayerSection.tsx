@@ -1,4 +1,4 @@
-import { Clock01Icon, HashtagIcon, MusicNote01Icon } from '@hugeicons/core-free-icons'
+import { Clock01Icon, DiscAlbumIcon, HashtagIcon, MusicNote01Icon } from '@hugeicons/core-free-icons'
 import MediaCard, { type MediaCardMeta } from './MediaCard'
 import type { MediaItem } from '../../../lib/media-api'
 
@@ -6,8 +6,9 @@ import type { MediaItem } from '../../../lib/media-api'
  * Studio home — Section 2: the audio songs (minus-one sets), one media card
  * per published row of the admin-managed catalog. A track with an uploaded
  * MP3 opens the console and really plays it (the console doubles as a media
- * stage); rows without audio stay visual-only. Renders nothing while the
- * section has no published tracks.
+ * stage); rows without audio stay visual-only. Cards carry the row's cover
+ * art (default art when it has none) and its album in the meta strip.
+ * Renders nothing while the section has no published tracks.
  */
 export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
   if (items.length === 0) return null
@@ -28,6 +29,7 @@ export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
           const meta: MediaCardMeta[] = []
           if (track.tempo) meta.push({ icon: Clock01Icon, text: track.tempo })
           if (track.songKey) meta.push({ icon: HashtagIcon, text: track.songKey })
+          if (track.album) meta.push({ icon: DiscAlbumIcon, text: track.album })
 
           return (
             <MediaCard
@@ -36,6 +38,7 @@ export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
               icon={MusicNote01Icon}
               title={track.title}
               subtitle={track.subtitle ?? ''}
+              coverUrl={track.coverUrl}
               to={track.sourceUrl ? '/studio/player-queue' : undefined}
               toState={track.sourceUrl ? { autoplay: true, item: track } : undefined}
               meta={meta}

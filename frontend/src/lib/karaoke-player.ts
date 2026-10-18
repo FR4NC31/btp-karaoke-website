@@ -57,6 +57,8 @@ export interface OnAirTrack {
   subtitle: string
   /** Resolved media URL: an uploaded file or the bundled local master. */
   src: string
+  /** Cover/thumbnail the player bar shows; null = the default art. */
+  coverUrl: string | null
   kind: 'video' | 'music'
 }
 

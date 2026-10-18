@@ -127,6 +127,19 @@ export const mediaItem = pgTable(
     sourceUrl: text('sourceUrl'),
     /** Original filename of the upload, shown in the console editor only. */
     sourceName: text('sourceName'),
+    /**
+     * Album / collection, read from the file's tags or typed by the admin.
+     * Music cards show it in the meta strip.
+     */
+    album: text('album'),
+    /**
+     * Cover art / thumbnail behind the hub card, the console stage poster
+     * and the player bar — an uploaded image (`/api/uploads/media/<uuid>.<ext>`
+     * returned by the media uploader). NULL = the default art.
+     */
+    coverUrl: text('coverUrl'),
+    /** Original filename of the cover upload, console display only. */
+    coverName: text('coverName'),
     /** Display order within the section; ties fall back to title. */
     sortOrder: integer('sortOrder').notNull().default(0),
     /** false hides the row from /api/media without deleting it. */

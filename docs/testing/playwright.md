@@ -238,11 +238,17 @@ pulls a row from the public feed without deleting it, move reorders within a
 section, and delete is permanent — the console asks for confirmation first.
 Video songs and music tracks can also carry a real MP4/MP3: the editor
 uploads it (raw-body `POST /api/admin/media/upload`, 200 MB cap) and the
-stored file is served back with byte ranges, so the hub plays the actual
-upload — no file means the video card falls back to the bundled master and a
-music card stays visual-only. Only the one real local master ("The Reason")
-ships seeded — music and radio start empty, so their tests create the rows
-they assert and delete them afterwards.
+stored file is served back with byte ranges and a year-long immutable cache,
+so the hub plays the actual upload — no file means the video card falls back
+to the bundled master and a music card stays visual-only. The editor also
+reads each picked file's own metadata (`music-metadata`: ID3 tags on MP3,
+atoms on MP4) to pre-fill title/artist/album/duration, and every media row
+can carry a cover image: embedded art is applied automatically, a tagless
+video gets a real frame grabbed off it, the admin can pick an image instead,
+and covers are shrunk to display size (`browser-image-compression`, WebP)
+before upload. Without one, cards show the default art. Only the one real
+local master ("The Reason") ships seeded — music and radio start empty, so
+their tests create the rows they assert and delete them afterwards.
 
 | Feature                                | Status                                   | Tests        |
 | -------------------------------------- | ---------------------------------------- | ------------ |
@@ -256,7 +262,8 @@ they assert and delete them afterwards.
 | Role self-promotion                    | Closed — `input: false`; promotion is CLI-only | SEC-003 |
 | Media catalog add / edit               | Working — rows drive `/studio` immediately | ADMIN-007    |
 | Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
-| Media file upload (MP4/MP3)            | Working — stored with byte ranges; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
+| Media file upload (MP4/MP3)            | Working — stored with byte ranges + immutable cache; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
+| Tag metadata fill + covers/thumbnails  | Working — tags pre-fill the blank boxes; embedded art, grabbed video frames and picked images become optimized WebP covers | ADMIN-012/013 |
 | Delete confirmation on media rows      | Working — Delete → Confirm/Cancel pair   | ADMIN-007/009 |
 | User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
@@ -282,7 +289,7 @@ they assert and delete them afterwards.
   `GET /api/admin/users`, plus the media catalog: `GET/POST /api/admin/media`,
   `POST /api/admin/media/upload`, `POST /api/admin/media/:id`,
   `POST /api/admin/media/:id/{visibility,move,delete}`)
-  is driven end-to-end by ADMIN-001…010, and its boundary is pinned by direct
+  is driven end-to-end by ADMIN-001…013, and its boundary is pinned by direct
   calls: SEC-001 (401 anonymous) and SEC-002 (403 for a signed-in non-admin,
   on every route shape). SEC-003 calls the auth API directly to prove `role`
   cannot be set at sign-up or through `update-user`.
@@ -292,7 +299,11 @@ they assert and delete them afterwards.
   `GET /api/uploads/media/:name`), KARAOKE-012 uploads a committed silent MP3
   fixture (`tests/e2e/assets/silence.mp3`) through the API helper and proves
   the hub plays it; ADMIN-010 pins the rejection paths (bad extension, type
-  mismatch, anonymous 401).
+  mismatch, cover-in-source / media-in-cover column cross-checks, anonymous
+  401). ADMIN-012/013 cover the editor's metadata and art pipeline: tag
+  pre-fill and embedded covers from a real tagged MP3, frame-grabbed video
+  thumbnails, explicit image picks, and the Remove-cover → default-art path —
+  all asserted through the stored WebP files the hub serves.
 - The **public media API** (`GET /api/media`) serves the active catalog to the
   hub. KARAOKE-003/005 exercise it by creating rows through the admin API
   (`helpers/media.ts`), asserting the cards render them, then deleting them —

@@ -25,8 +25,16 @@ import { MEDIA_SECTION_LABELS, type AdminMediaItem, type MediaSection } from '..
  * Video songs and music tracks can also carry the real file: picking an
  * MP4/MP3 uploads it on save (POST /api/admin/media/upload, raw body) and the
  * console attaches the returned url to the row — replacing or removing a file
- * deletes the old upload. Picking a video auto-fills Duration from the file's
- * own metadata, so the card never has to guess.
+ * deletes the old upload. Picking a file reads its own metadata (music-metadata:
+ * ID3 tags on MP3, atoms on MP4) and fills the blank boxes — title, artist,
+ * album, and for videos the duration; nothing the admin already typed gets
+ * clobbered.
+ *
+ * Cover art / thumbnail: the file's embedded cover is applied automatically,
+ * a video without one gets a real frame grabbed off it, and the admin can
+ * always pick an image instead. Every cover is shrunk to display size
+ * (browser-image-compression, WebP) before upload so the hub loads fast;
+ * without any cover the hub shows the default art.
  */
 
 const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
@@ -113,6 +121,121 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+/** A cover the picked file brought along — embedded art, or a grabbed frame. */
+interface AutoCover {
+  blob: Blob
+  /** Where it came from: the file's tags, or a frame off the video. */
+  origin: 'tags' | 'frame'
+  /** Object URL for the preview; revoked as soon as the cover is replaced. */
+  preview: string
+  /** Filename the uploader sends with (X-File-Name, the display copy). */
+  name: string
+}
+
+/** "song.mp4" → "song". */
+function fileStem(name: string): string {
+  const dot = name.lastIndexOf('.')
+  return dot > 0 ? name.slice(0, dot) : name
+}
+
+/** Wraps a cover blob with its preview URL and upload filename. */
+function makeAutoCover(blob: Blob, origin: AutoCover['origin'], sourceName: string): AutoCover {
+  const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg'
+  return {
+    blob,
+    origin,
+    preview: URL.createObjectURL(blob),
+    name: `${fileStem(sourceName)} - cover.${ext}`,
+  }
+}
+
+/**
+ * Reads a picked file's own metadata — ID3 tags on MP3, atoms on MP4 —
+ * through music-metadata, loaded on demand so the parser only weighs on the
+ * uploader. Any failure (or a tagless file) resolves to blanks.
+ */
+async function readFileTags(file: File): Promise<{
+  title: string
+  artist: string
+  album: string
+  cover: Blob | null
+}> {
+  try {
+    const { parseBlob } = await import('music-metadata')
+    const { common } = await parseBlob(file)
+    const picture = common.picture?.[0]
+    return {
+      title: common.title?.trim() ?? '',
+      artist: (common.artist ?? common.albumartist)?.trim() ?? '',
+      album: common.album?.trim() ?? '',
+      cover: picture ? new Blob([new Uint8Array(picture.data)], { type: picture.format }) : null,
+    }
+  } catch {
+    return { title: '', artist: '', album: '', cover: null }
+  }
+}
+
+/**
+ * Grabs one frame (about a second in) off a picked video as a WebP blob —
+ * the automatic thumbnail, so a video without embedded art still gets a real
+ * preview instead of the striped placeholder.
+ */
+function grabVideoFrame(file: File): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const probe = document.createElement('video')
+    probe.muted = true
+    probe.playsInline = true
+    probe.preload = 'metadata'
+
+    const finish = (frame: Blob | null) => {
+      URL.revokeObjectURL(url)
+      resolve(frame)
+    }
+
+    probe.onloadedmetadata = () => {
+      // Seek a moment in so the poster is not a black lead-in frame.
+      probe.currentTime = Math.min(1, (probe.duration || 1) / 2)
+    }
+    probe.onseeked = () => {
+      const scale = Math.min(1, 960 / probe.videoWidth)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(probe.videoWidth * scale))
+      canvas.height = Math.max(1, Math.round(probe.videoHeight * scale))
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        finish(null)
+        return
+      }
+      ctx.drawImage(probe, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((frame) => finish(frame), 'image/webp', 0.85)
+    }
+    probe.onerror = () => finish(null)
+    probe.src = url
+  })
+}
+
+/**
+ * Shrinks a cover to at most 1000px on its long edge and re-encodes it as
+ * WebP (browser-image-compression, off the main thread), so the hub only
+ * stores display-sized art and cards load fast. Any failure falls back to
+ * the picked file — a big cover still beats no cover.
+ */
+async function optimizeCover(file: File): Promise<File> {
+  try {
+    const { default: imageCompression } = await import('browser-image-compression')
+    const compressed = await imageCompression(file, {
+      maxWidthOrHeight: 1000,
+      initialQuality: 0.82,
+      useWebWorker: true,
+      fileType: 'image/webp',
+    })
+    return new File([compressed], `${fileStem(file.name)}.webp`, { type: 'image/webp' })
+  } catch {
+    return file
+  }
+}
+
 export default function AdminMediaForm() {
   const { id } = useParams()
   const editing = Boolean(id)
@@ -139,6 +262,18 @@ export default function AdminMediaForm() {
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const [album, setAlbum] = useState('')
+  // Covers split like the file: the stored upload is server truth, a picked
+  // image overrides it, and `autoCover` is whatever the source file itself
+  // carried (embedded art, or a frame grabbed off the video).
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [coverName, setCoverName] = useState<string | null>(null)
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverFilePreview, setCoverFilePreview] = useState<string | null>(null)
+  const [autoCover, setAutoCoverState] = useState<AutoCover | null>(null)
+  const [scanningFile, setScanningFile] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement | null>(null)
 
   // Edit mode: load the row and prefill. All state lands in the async
   // callback, so nothing here runs synchronously inside the effect body.
@@ -168,6 +303,9 @@ export default function AdminMediaForm() {
         setListenersInput(item.listeners === null ? '' : String(item.listeners))
         setSourceUrl(item.sourceUrl)
         setSourceName(item.sourceName)
+        setAlbum(item.album ?? '')
+        setCoverUrl(item.coverUrl)
+        setCoverName(item.coverName)
         setLoadError('')
       } catch (err) {
         if (!alive) return
@@ -197,12 +335,42 @@ export default function AdminMediaForm() {
     clearFileSelection()
     setSourceUrl(null)
     setSourceName(null)
+    setAlbum('')
+    clearCoverSelection()
+    setCoverUrl(null)
+    setCoverName(null)
   }
 
   /** Drops the picked file (the stored one, if any, is untouched). */
   function clearFileSelection() {
     setFile(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  /** Drops every *picked* cover (the stored one, if any, is untouched). */
+  function clearCoverSelection() {
+    setCoverFile(null)
+    setCoverFilePreview((current) => {
+      if (current) URL.revokeObjectURL(current)
+      return null
+    })
+    setAutoCover(null)
+    if (coverInputRef.current) coverInputRef.current.value = ''
+  }
+
+  /** (Re)places the auto cover, revoking the previous preview URL. */
+  function setAutoCover(next: AutoCover | null) {
+    setAutoCoverState((current) => {
+      if (current) URL.revokeObjectURL(current.preview)
+      return next
+    })
+  }
+
+  /** "Remove cover" — stored, picked and file-carried covers all drop. */
+  function removeCover() {
+    clearCoverSelection()
+    setCoverUrl(null)
+    setCoverName(null)
   }
 
   function removeStoredFile() {
@@ -215,11 +383,45 @@ export default function AdminMediaForm() {
     const picked = event.target.files?.[0] ?? null
     setFile(picked)
     setFieldError('')
-    // Video rows read Duration off the file itself — no manual typing.
-    if (picked && section === 'video') {
-      const seconds = await probeDuration(picked)
-      if (seconds !== null) setDuration(formatClock(seconds))
+    // A previous file's own cover does not belong to this one.
+    setAutoCover(null)
+    if (!picked) return
+
+    setScanningFile(true)
+    try {
+      const tags = await readFileTags(picked)
+      // Tags only fill blanks — copy the admin already typed always wins.
+      if (tags.title) setTitle((current) => (current.trim() ? current : tags.title))
+      if (tags.artist) setSubtitle((current) => (current.trim() ? current : tags.artist))
+      if (tags.album) setAlbum((current) => (current.trim() ? current : tags.album))
+
+      if (section === 'video') {
+        // Video rows read Duration off the file itself — no manual typing.
+        const seconds = await probeDuration(picked)
+        if (seconds !== null) setDuration(formatClock(seconds))
+      }
+
+      if (tags.cover) {
+        setAutoCover(makeAutoCover(tags.cover, 'tags', picked.name))
+      } else if (section === 'video') {
+        // No embedded art: a real frame beats the striped placeholder.
+        const frame = await grabVideoFrame(picked)
+        if (frame) setAutoCover(makeAutoCover(frame, 'frame', picked.name))
+      }
+    } finally {
+      setScanningFile(false)
     }
+  }
+
+  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
+    const picked = event.target.files?.[0] ?? null
+    if (!picked) return
+    setFieldError('')
+    setCoverFile(picked)
+    setCoverFilePreview((current) => {
+      if (current) URL.revokeObjectURL(current)
+      return URL.createObjectURL(picked)
+    })
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -248,6 +450,20 @@ export default function AdminMediaForm() {
         nextSourceName = stored.name
       }
 
+      // Cover priority: the picked image, else whatever the source file
+      // carried (embedded art / grabbed frame). Both upload optimized; with
+      // neither, the stored cover (or none) stays.
+      let nextCoverUrl = coverUrl
+      let nextCoverName = coverName
+      const coverSource =
+        coverFile ??
+        (autoCover ? new File([autoCover.blob], autoCover.name, { type: autoCover.blob.type }) : null)
+      if (coverSource) {
+        const { file: stored } = await uploadAdminMediaFile(await optimizeCover(coverSource))
+        nextCoverUrl = stored.url
+        nextCoverName = stored.name
+      }
+
       const input: AdminMediaInput = {
         section,
         title,
@@ -261,16 +477,23 @@ export default function AdminMediaForm() {
         listeners,
         sourceUrl: nextSourceUrl,
         sourceName: nextSourceName,
+        album,
+        coverUrl: nextCoverUrl,
+        coverName: nextCoverName,
       }
 
       const { item } = editing
         ? await updateAdminMediaItem(id!, input)
         : await createAdminMediaItem(input)
       setSaved(item)
-      // Re-sync the file block from the server's row and clear the picker.
+      // Re-sync the file/cover blocks from the server's row and clear the
+      // pickers.
       setSourceUrl(item.sourceUrl)
       setSourceName(item.sourceName)
+      setCoverUrl(item.coverUrl)
+      setCoverName(item.coverName)
       clearFileSelection()
+      clearCoverSelection()
     } catch (err) {
       setFieldError(describeBookingError(err, 'The item could not be saved.'))
     } finally {
@@ -279,6 +502,9 @@ export default function AdminMediaForm() {
   }
 
   const copy = SECTION_COPY[section]
+  // What the cover block previews: the fresh pick, the file's own cover, or
+  // the stored one — null means the default art shows.
+  const coverPreview = coverFilePreview ?? autoCover?.preview ?? coverUrl
 
   return (
     <div className="space-y-6">
@@ -367,8 +593,10 @@ export default function AdminMediaForm() {
                   onChange={(e) => {
                     setSection(e.target.value as MediaSection)
                     // The picker's accept changes with the section: drop a
-                    // stale pick so the wrong file type can never be attached.
+                    // stale pick (and the cover it brought) so the wrong
+                    // file type can never be attached.
                     clearFileSelection()
+                    setAutoCover(null)
                   }}
                   className={INPUT_CLASSES}
                 >
@@ -422,6 +650,23 @@ export default function AdminMediaForm() {
             </div>
 
             {(section === 'video' || section === 'music') && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="media-album" className={LABEL_CLASSES}>
+                    Album
+                  </label>
+                  <input
+                    id="media-album"
+                    value={album}
+                    onChange={(e) => setAlbum(e.target.value)}
+                    placeholder="From the file's tags, or type one"
+                    className={INPUT_CLASSES}
+                  />
+                </div>
+              </div>
+            )}
+
+            {(section === 'video' || section === 'music') && (
               <div className="rounded-lg border border-border bg-background p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className={LABEL_CLASSES}>Media file</span>
@@ -470,6 +715,72 @@ export default function AdminMediaForm() {
                     Current file: {sourceName} — pick a new one to replace it.
                   </p>
                 ) : null}
+                {scanningFile && (
+                  <p role="status" className="mt-2 text-[11px] text-text-muted">
+                    Reading the file's metadata…
+                  </p>
+                )}
+              </div>
+            )}
+
+            {(section === 'video' || section === 'music') && (
+              <div className="rounded-lg border border-border bg-background p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className={LABEL_CLASSES}>
+                    {section === 'video' ? 'Thumbnail' : 'Cover art'}
+                  </span>
+                  {(coverUrl || coverFile || autoCover) && (
+                    <button
+                      type="button"
+                      onClick={removeCover}
+                      className="text-[11px] font-bold tracking-widest text-text-secondary uppercase underline-offset-4 transition hover:text-error hover:underline"
+                    >
+                      Remove cover
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] text-text-muted">
+                  Shown on the hub card, the console stage and the player bar. Images are
+                  optimized (WebP, up to 1000px) before upload; without one the hub shows the
+                  default art.
+                </p>
+                <div className="mt-2.5 flex flex-wrap items-center gap-3">
+                  {coverPreview ? (
+                    <img
+                      src={coverPreview}
+                      alt="Cover preview"
+                      className="size-16 shrink-0 rounded-md border border-border bg-surface-elevated object-cover"
+                    />
+                  ) : (
+                    <span className="grid size-16 shrink-0 place-items-center rounded-md border border-dashed border-border text-[9px] font-bold tracking-widest text-text-muted uppercase">
+                      Default
+                    </span>
+                  )}
+                  <input
+                    ref={coverInputRef}
+                    id="media-cover"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/*"
+                    onChange={handleCoverChange}
+                    className="block w-full max-w-xs cursor-pointer text-xs text-text-secondary file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-text-primary file:transition hover:file:bg-primary-hover"
+                  />
+                </div>
+                <label htmlFor="media-cover" className="sr-only">
+                  {section === 'video'
+                    ? 'Thumbnail image (JPG, PNG or WebP)'
+                    : 'Cover image (JPG, PNG or WebP)'}
+                </label>
+                <p className="mt-2 text-[11px] text-text-muted">
+                  {coverFile
+                    ? `Chosen image: ${coverFile.name} — optimized and applied on save.`
+                    : autoCover
+                      ? autoCover.origin === 'tags'
+                        ? "Found in the file's own tags — applied unless you pick your own."
+                        : 'Grabbed from the video — applied unless you pick your own.'
+                      : coverUrl
+                        ? `Current cover: ${coverName ?? 'uploaded image'} — pick an image to replace it.`
+                        : 'No cover yet — pick an image, or let the file supply one.'}
+                </p>
               </div>
             )}
 
@@ -575,7 +886,7 @@ export default function AdminMediaForm() {
                 className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting
-                  ? file
+                  ? file || coverFile || autoCover
                     ? 'Uploading and saving…'
                     : 'Saving…'
                   : editing

@@ -411,7 +411,7 @@ test.describe('media hub catalog', () => {
     expect(gone.status(), 'the uploaded file should be deleted with its row').toBe(404)
   })
 
-  test('ADMIN-010: the uploader rejects files that are not real MP4/MP3 media', { tag: '@p2' }, async ({ baseURL }) => {
+  test('ADMIN-010: the uploader rejects files that are not real media or cover images', { tag: '@p2' }, async ({ request, baseURL }) => {
     // Wrong extension: rejected before a single byte lands on disk.
     const text = await uploadMediaFileAsAdmin(baseURL, {
       name: 'notes.txt',
@@ -419,7 +419,9 @@ test.describe('media hub catalog', () => {
       data: 'definitely not media',
     })
     expect(text.status).toBe(400)
-    expect(text.body.error).toBe('Only MP4 video or MP3 audio files can be uploaded.')
+    expect(text.body.error).toBe(
+      'Only MP4 video, MP3 audio or JPG/PNG/WebP image files can be uploaded.',
+    )
 
     // Accepted extension, but the content type disagrees — also rejected.
     const mismatch = await uploadMediaFileAsAdmin(baseURL, {
@@ -429,6 +431,37 @@ test.describe('media hub catalog', () => {
     })
     expect(mismatch.status).toBe(400)
     expect(mismatch.body.error).toContain('does not match')
+
+    // The image family is checked just as tightly.
+    const imageMismatch = await uploadMediaFileAsAdmin(baseURL, {
+      name: 'cover.png',
+      mimeType: 'video/mp4',
+      data: 'definitely not an image',
+    })
+    expect(imageMismatch.status).toBe(400)
+    expect(imageMismatch.body.error).toContain('does not match')
+
+    // A cover image in the `sourceUrl` column (or media in `coverUrl`) would
+    // dodge the delete/replace cleanup — both directions are rejected.
+    const badSource = await request.post('/api/admin/media', {
+      data: {
+        section: 'video',
+        title: `E2E bad source ${Date.now()}`,
+        sourceUrl: '/api/uploads/media/probe.png',
+      },
+    })
+    expect(badSource.status()).toBe(400)
+    expect((await badSource.json()).error).toContain('source file')
+
+    const badCover = await request.post('/api/admin/media', {
+      data: {
+        section: 'music',
+        title: `E2E bad cover ${Date.now()}`,
+        coverUrl: '/api/uploads/media/probe.mp4',
+      },
+    })
+    expect(badCover.status()).toBe(400)
+    expect((await badCover.json()).error).toContain('cover image')
 
     // Anonymous callers never reach the uploader (requireAdmin on the sub-app).
     // Without the explicit ANONYMOUS state the fresh context would inherit the
@@ -443,5 +476,136 @@ test.describe('media hub catalog', () => {
     } finally {
       await anonymous.dispose()
     }
+  })
+
+  test('ADMIN-012: MP3 tags fill the editor and the embedded cover reaches the hub', { tag: '@p1' }, async ({ page }) => {
+    const title = `E2E Tagged ${Date.now()}`
+
+    await page.goto('/admin/media/new')
+    await page.getByLabel('Type').selectOption('music')
+    // No typing first: the boxes below should fill from the file's own tags.
+    await page.getByLabel('Audio file (MP3)').setInputFiles('tests/e2e/assets/silence.mp3')
+    await expect(page.getByLabel('Title', { exact: true })).toHaveValue('1 Second of Silence')
+
+    // Give the row a title nothing else wears, so reruns stay collision-free.
+    await page.getByLabel('Title', { exact: true }).fill(title)
+    await expect(page.getByLabel('Description')).toHaveValue('Anar Software LLC')
+    await expect(page.getByLabel('Album')).toHaveValue('Blank Audio')
+
+    // The MP3's embedded art becomes the cover automatically…
+    await expect(page.getByText("Found in the file's own tags")).toBeVisible()
+    await expect(page.getByAltText('Cover preview')).toHaveAttribute('src', /^blob:/)
+
+    // …and saving stores it (optimized to WebP) on the row.
+    await page.getByRole('button', { name: 'Add to the hub' }).click()
+    await expect(flashWith(page, title)).toContainText('live on the hub')
+
+    // Capture the stored references via the admin API: the console rows only
+    // show display copy, and the 404 probe below needs the real URLs.
+    const listed = await page.request.get('/api/admin/media')
+    const items = (await listed.json()).items as Array<{
+      title: string
+      sourceUrl: string | null
+      coverUrl: string | null
+    }>
+    const stored = items.find((entry) => entry.title === title)
+    expect(stored?.sourceUrl, 'the MP3 should be attached').toContain('/api/uploads/media/')
+    expect(stored?.coverUrl, 'the embedded art should be attached').toMatch(
+      /\/api\/uploads\/media\/.+\.webp$/,
+    )
+
+    // The console row shows both attachments…
+    await page.goto('/admin/media')
+    const row = page.locator('main li').filter({ hasText: title })
+    await expect(row).toContainText('MP3 file')
+    await expect(row).toContainText('Cover')
+
+    // …and the hub card carries the cover, plus the album in its meta strip.
+    await page.goto('/studio')
+    const card = page.locator('main article').filter({ hasText: title })
+    const cover = card.locator('img')
+    await expect(cover).toBeVisible()
+    expect(await cover.getAttribute('src')).toBe(stored!.coverUrl)
+    await expect(card).toContainText('Blank Audio')
+
+    const served = await page.request.get(stored!.coverUrl!)
+    expect(served.status()).toBe(200)
+    expect(served.headers()['content-type']).toContain('image/webp')
+
+    // Cleanup through the console: the row takes its media and cover along.
+    await page.goto('/admin/media')
+    const cleanup = page.locator('main li').filter({ hasText: title })
+    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+    await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
+    await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+
+    expect((await page.request.get(stored!.sourceUrl!)).status()).toBe(404)
+    expect((await page.request.get(stored!.coverUrl!)).status()).toBe(404)
+  })
+
+  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page }) => {
+    const title = `E2E Thumb ${Date.now()}`
+
+    await page.goto('/admin/media/new')
+    await page.getByLabel('Title', { exact: true }).fill(title)
+    await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
+    await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
+
+    // The master carries no tags: the editor grabs a real frame instead of
+    // leaving the card on the striped default art.
+    await expect(page.getByText('Grabbed from the video')).toBeVisible()
+
+    // Picking an image overrides the grabbed frame…
+    await page.getByLabel('Thumbnail image (JPG, PNG or WebP)').setInputFiles('tests/e2e/assets/cover.png')
+    await expect(page.getByText(/Chosen image: cover\.png/)).toBeVisible()
+    await expect(page.getByAltText('Cover preview')).toHaveAttribute('src', /^blob:/)
+
+    await page.getByRole('button', { name: 'Add to the hub' }).click()
+    await expect(flashWith(page, title)).toContainText('live on the hub')
+
+    // …and the hub card shows the stored thumbnail, optimized to WebP.
+    await page.goto('/studio')
+    const card = page.locator('main article').filter({ hasText: title })
+    const coverSrc = await card.locator('img').getAttribute('src')
+    expect(coverSrc).toMatch(/\/api\/uploads\/media\/.+\.webp$/)
+    const served = await page.request.get(coverSrc!)
+    expect(served.status()).toBe(200)
+    expect(served.headers()['content-type']).toContain('image/webp')
+
+    // Editing exposes the stored cover; Remove cover drops it — the card
+    // falls back to the default art and the replaced file is deleted.
+    await page.goto('/admin/media')
+    const row = page.locator('main li').filter({ hasText: title })
+    await expect(row).toContainText('Cover')
+    await row.getByRole('link', { name: `Edit ${title}` }).click()
+    await expect(page.getByText(/Current cover:/)).toBeVisible()
+    await page.getByRole('button', { name: 'Remove cover' }).click()
+    await expect(page.getByText(/No cover yet/)).toBeVisible()
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await expect(flashWith(page, 'Saved')).toBeVisible()
+    expect((await page.request.get(coverSrc!)).status()).toBe(404)
+
+    await page.goto('/studio')
+    await expect(page.locator('main article').filter({ hasText: title }).locator('img')).toHaveCount(0)
+
+    // Capture the stored MP4, then clean up through the console: the file
+    // dies with the row.
+    const listed = await page.request.get('/api/admin/media')
+    const items = (await listed.json()).items as Array<{
+      title: string
+      sourceUrl: string | null
+      coverUrl: string | null
+    }>
+    const stored = items.find((entry) => entry.title === title)
+    expect(stored?.coverUrl, 'the removed cover should be null again').toBeNull()
+    const sourceUrl = stored!.sourceUrl!
+
+    await page.goto('/admin/media')
+    const cleanup = page.locator('main li').filter({ hasText: title })
+    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+    await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
+    await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+
+    expect((await page.request.get(sourceUrl)).status()).toBe(404)
   })
 })
