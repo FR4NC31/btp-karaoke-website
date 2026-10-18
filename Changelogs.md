@@ -28,6 +28,7 @@ Last updated: October 18, 2026
 
 ### Bug Fixes
 
+- fix(auth): route signed-in users to their own dashboard (58d4591)
 - fix(studio): real track metadata, logout bounce gate, LFS video (a363aeb)
 - fix(frontend): fall back to home from 404 when history is empty (747f5f9)
 - fix(frontend): tighten Contact layout to fit without scrollbar (9c7dcf2)
