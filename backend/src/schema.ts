@@ -1,0 +1,128 @@
+import { sql } from 'drizzle-orm'
+import {
+  boolean,
+  check,
+  date,
+  index,
+  integer,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core'
+
+/**
+ * Drizzle schema — the tables THIS APPLICATION owns.
+ *
+ * Ownership split, so nobody clobbers anyone:
+ *   - Better Auth owns "user" / "session" / "account" / "verification". Those
+ *     are created and re-created by `better-auth migrate` from
+ *     backend/better-auth_migrations/, NOT from here.
+ *   - Drizzle owns "service" and "booking" (backend/drizzle/ migrations).
+ *
+ * `user` is declared below only so `booking.userId` can carry a real database
+ * foreign key. Its CREATE is deliberately stripped out of the generated
+ * migration — see backend/drizzle/0000_*.sql. On a fresh database, run
+ * `better-auth migrate` BEFORE `npm run migrate`, or the booking FK has
+ * nothing to point at.
+ *
+ * Never run `drizzle-kit push` against this database: it reconciles the whole
+ * database against this file and would happily drop the Better Auth tables it
+ * cannot see.
+ */
+
+export const BOOKING_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled', 'completed'] as const
+
+export type BookingStatus = (typeof BOOKING_STATUSES)[number]
+
+/**
+ * Reference target for booking.userId — NOT owned by Drizzle.
+ * Columns mirror better-auth_migrations/2026-10-08T10-52-54.722Z.sql plus the
+ * additionalFields in src/auth.ts, so the snapshot stays honest.
+ */
+export const user = pgTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('emailVerified').notNull(),
+  image: text('image'),
+  createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  contactNum: text('contact_num').notNull(),
+})
+
+/**
+ * Bookable catalog. Eight rows mirror the service wings on /services.
+ * A service never references a user — the booking row is that join.
+ */
+export const service = pgTable('service', {
+  id: text('id').primaryKey(),
+  /** Stable human-readable key, e.g. "STUDIO-TRACKING". Seed upserts on this. */
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  /** Service wing: create | promote | learn | protect */
+  wing: text('wing').notNull(),
+  description: text('description').notNull(),
+  /** Billing unit as shown on /services, e.g. "Per Composition". */
+  unit: text('unit').notNull(),
+  /**
+   * Sample PHP price. numeric keeps money exact; node-postgres hands numerics
+   * back as strings, so the API layer converts once (src/bookings.ts).
+   */
+  pricePhp: numeric('price_php', { precision: 12, scale: 2 }).notNull(),
+  /** Turnaround metadata for the future time-block work — not a day claim. */
+  durationDays: integer('duration_days').notNull().default(1),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+})
+
+/**
+ * One service, one user, one day. Day-only: there is no time slot or time
+ * block column yet — that arrives as its own migration.
+ */
+export const booking = pgTable(
+  'booking',
+  {
+    id: text('id').primaryKey(),
+    /** Customer-facing code ("BTP-7K2F9A"); safe to read out over the phone. */
+    referenceCode: text('referenceCode').notNull().unique(),
+    userId: text('userId')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // onDelete restrict: a service with bookings cannot vanish from under
+    // them — deactivate it with isActive = false instead.
+    serviceId: text('serviceId')
+      .notNull()
+      .references(() => service.id, { onDelete: 'restrict' }),
+    /** Whole day, ISO `YYYY-MM-DD`. No time component yet. */
+    bookingDate: date('bookingDate', { mode: 'string' }).notNull(),
+    /**
+     * pending is what an admin later acts on: confirmed | rejected.
+     * cancelled is the customer withdrawing; completed follows the session.
+     */
+    status: text('status').$type<BookingStatus>().notNull().default('pending'),
+    notes: text('notes'),
+    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('booking_userId_idx').on(t.userId),
+    index('booking_serviceId_idx').on(t.serviceId),
+    index('booking_bookingDate_idx').on(t.bookingDate),
+    check(
+      'booking_status_check',
+      sql`"status" in ('pending', 'confirmed', 'rejected', 'cancelled', 'completed')`,
+    ),
+    // One live booking per user, per service, per day. Partial, so a cancelled
+    // or rejected row drops out and the customer can withdraw and rebook.
+    // This is what the API turns into a 409.
+    uniqueIndex('booking_active_unique_idx')
+      .on(t.userId, t.serviceId, t.bookingDate)
+      .where(sql`"status" in ('pending', 'confirmed')`),
+  ],
+)

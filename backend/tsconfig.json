@@ -20,6 +20,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    // Node runs these .ts files directly through native type stripping, which
+    // rejects syntax that must be *emitted* rather than erased: parameter
+    // properties, enums, namespaces. This flag makes tsc reject that syntax
+    // too, so a crash-at-startup is caught here instead.
+    "erasableSyntaxOnly": true,
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,

@@ -496,6 +496,95 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ---
 
+## Booking desk — `frontend/tests/e2e/booking/booking.spec.ts`
+
+Day-only prototype: a booking claims one whole calendar day of one service.
+There are no time slots or time blocks yet, so no case here may assert on a
+time of day. Every booking created is cancelled again by the same test — the
+database allows only one *live* booking per service per day, and all suites
+share one account, so a leaked `pending` row would break the next run. Days are
+randomised 400–699 days out so parallel workers cannot collide either.
+
+### BOOKING-001
+
+- **Title:** The top bar opens the desk and the catalog renders
+- **Priority:** P1
+- **Steps:** 1. Open `/studio`. 2. Click **Bookings** in the top bar.
+- **Expected:** `/studio/bookings` loads with h1 "Booking Desk"; eight service
+  cards render from `/api/services`; the Karaoke MV card prices at 55,000.00;
+  the "My bookings" panel is present.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-002
+
+- **Title:** The sidebar opens the desk on desktop
+- **Priority:** P2
+- **Steps:** 1. Open `/studio` at desktop width. 2. Click **Bookings** in the
+  catalog sidebar.
+- **Expected:** `/studio/bookings` loads with h1 "Booking Desk".
+- **Notes:** The sidebar is `hidden md:flex`, so this case only applies at
+  ≥768 px — BOOKING-006 covers the width where it is gone.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-003
+
+- **Title:** The wing filter narrows the catalog
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/bookings`. 2. Click **Protect**. 3. Click
+  **All services**.
+- **Expected:** 8 cards → 2 cards (the FILSCAP pair) → 8 cards, with
+  `aria-pressed="true"` on the selected wing.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-004
+
+- **Title:** A day booking is created, listed as pending, then cancelled
+- **Priority:** P1
+- **Steps:** 1. Open the desk. 2. On the Karaoke MV card click **Book this
+  service**. 3. Confirm the pre-filled day equals the picker's `min`
+  boundary. 4. Choose a day ~1–2 years out, add notes, **Confirm booking**.
+  5. Cancel the new row.
+- **Expected:** A confirmation flash carries a `BTP-XXXXXX` reference; the row
+  appears in "My bookings" as **pending** with the notes text; cancelling flips
+  it to **cancelled** and removes the cancel action.
+- **Notes:** The booking day is rendered human-readable, so the exact day is
+  asserted at the API level rather than here. Cancelling is also the test's
+  own cleanup.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-005
+
+- **Title:** The same service on the same day cannot be booked twice
+- **Priority:** P2
+- **Steps:** 1. Book a service ~1–2 years out. 2. Re-open the same service on
+  the same day and submit again. 3. Cancel the live booking.
+- **Expected:** The form shows an alert containing "already have a booking"
+  instead of silently doing nothing — the partial unique index is surfaced as a
+  plain-language conflict, not a raw database error.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-006
+
+- **Title:** The top bar still reaches the desk when the sidebar is hidden
+- **Priority:** P2 (mobile viewport 390×844)
+- **Steps:** 1. Open `/studio/bookings` at 390×844.
+- **Expected:** The catalog sidebar is not rendered, the top-bar **Bookings**
+  link is still visible and named, and all 8 cards render.
+- **Regression guard:** the desk is reachable from two places precisely so
+  that hiding the sidebar below `md` cannot strand it; removing either entry
+  point fails this case.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-007
+
+- **Title:** A signed-out visitor is bounced to sign-in
+- **Priority:** P2
+- **Steps:** 1. Without a session, open `/studio/bookings` directly.
+- **Expected:** Redirect to `/signin`; no "Booking Desk" content is ever shown.
+- **Automation:** Playwright — **Status: Automated**
+
+---
+
 ## Error states & health — `frontend/tests/e2e/errors/errors.spec.ts`
 
 ### ERROR-001
@@ -551,4 +640,8 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Real playback, progress movement, volume | N/A                 | No audio element/media; player is UI state only.             |
 | Media loading failure / unavailable song | N/A                 | No media pipeline.                                           |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
+| Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
+| Booking accept/reject by an admin      | N/A                   | `booking.status` already carries pending / confirmed / rejected / cancelled / completed, so accepting a booking needs no schema change — only an admin role and UI, which do not exist yet. |
+| Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
+| Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | **Recommended next**  | `/api/auth/*` + `/api/me` exist (sign-up 200, sign-in 200, wrong password 401) with no automated coverage yet.        |
