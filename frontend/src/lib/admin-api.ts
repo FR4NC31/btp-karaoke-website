@@ -209,6 +209,10 @@ export interface MediaUpload {
  * the body (X-File-Name carries the display name), so large videos never sit
  * in memory. The editor calls this first and saves the returned url on the
  * row; the file is deleted server-side when the row replaces or drops it.
+ *
+ * X-File-Name is percent-encoded: header values are byte strings, so raw
+ * characters above U+00FF (curly quotes, en dashes, CJK, emoji) make fetch
+ * reject the header before sending. The backend decodes it.
  */
 export function uploadAdminMediaFile(file: File): Promise<{ file: MediaUpload }> {
   return request('/api/admin/media/upload', {
@@ -216,7 +220,24 @@ export function uploadAdminMediaFile(file: File): Promise<{ file: MediaUpload }>
     body: file,
     headers: {
       'Content-Type': file.type || 'application/octet-stream',
-      'X-File-Name': file.name,
+      'X-File-Name': encodeURIComponent(file.name),
     },
   })
+}
+
+/**
+ * Best-effort cleanup for an upload the editor made but then could not save
+ * on a row, so a failed save does not leak the file. The backend refuses to
+ * delete an upload some row still references, which makes a lost response
+ * safe. Failure here is swallowed: a leaked file beats hiding the save error.
+ */
+export async function discardAdminMediaUpload(url: string): Promise<void> {
+  try {
+    await request('/api/admin/media/upload/discard', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    })
+  } catch {
+    // Orphaned file; the next successful save replaces it anyway.
+  }
 }
