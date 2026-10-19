@@ -47,7 +47,8 @@ test.describe('smoke', () => {
     await page.goto('/studio')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
     await expect(page.getByRole('link', { name: 'Play The Reason' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
+    // No Radio assertion here: sections render only while the admin-managed
+    // catalog has published rows, and radio ships empty.
   })
 
   test('SMOKE-005: critical karaoke flow works', { tag: '@p0' }, async ({ page }) => {

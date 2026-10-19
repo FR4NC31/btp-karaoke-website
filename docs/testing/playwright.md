@@ -102,14 +102,17 @@ frontend/tests/e2e/
 ├── fixtures.ts                  shared evidence fixture (console/network)
 ├── helpers/
 │   ├── auth.ts                  signIn() + controlled TEST_USER
+│   ├── media.ts                 admin API helpers: create/delete one catalog row (KARAOKE-003/005 create their own)
 │   └── env.ts                   BACKEND_URL (no hard-coded hosts)
 ├── smoke/smoke.spec.ts          SMOKE-001…006   P0 "can a user use the site?"
 ├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub, console, player bar, PiP, cross-page sync
+├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub (DB-backed catalog), console, player bar, PiP, cross-page sync
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
+├── admin/admin.spec.ts          ADMIN-001…008    console: queue, reservations, booking for others, media catalog
+├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
@@ -139,6 +142,11 @@ a session cookie, and `/studio` is guarded by `RequireAuth`.
 - Suites that must start signed out — everything in `auth/` — opt out with
   `test.use({ storageState: ANONYMOUS })`. Without this they would inherit a
   session and pass for the wrong reason.
+- `setup/admin.setup.ts` is the admin twin: it ensures
+  `qa-admin@example.com` exists, promotes it if needed
+  (`npm run promote-admin` — promotion is CLI-only, by design),
+  then writes the session to `playwright/.auth/admin.json`. Admin suites opt
+  in with `test.use({ storageState: ADMIN_STORAGE_STATE })`.
 
 If the whole feature suite suddenly redirects to `/signin`, the saved state
 is stale: re-run once (the setup project recreates it) or check that
@@ -153,7 +161,9 @@ OAuth failures redirected back as query params are covered by AUTH-018.
 
 - Controlled fake data only: `qa@example.com`, `juan@example.com`,
   `09171234567` (11-digit dummy), `Secret123!` — defined in
-  `helpers/auth.ts` / `signup.spec.ts`.
+  `helpers/auth.ts` / `signup.spec.ts`. The admin suites use the same
+  contract with `qa-admin@example.com` / `AdminSecret123!` (promoted once;
+  `TEST_ADMIN` in `helpers/auth.ts`).
 - No real users, no production accounts, no production data, no secrets.
 - The backend **does** persist: sign-up/sign-in write rows, and a booking is a
   real row too. Tests stay re-runnable because they clean up what they create,
@@ -173,7 +183,7 @@ What the product actually implements today (test coverage is limited to this):
 
 | Feature                          | Status                | Tests                     |
 | -------------------------------- | --------------------- | ------------------------- |
-| Media hub sections (video/music/radio) | Working (static data) | KARAOKE-001/003/005, SMOKE-004 |
+| Media hub sections (video/music/radio) | Working — DB-backed catalog curated from `/admin/media`; empty sections render nothing | KARAOKE-001/003/005, SMOKE-004 |
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
 | Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
@@ -186,8 +196,8 @@ What the product actually implements today (test coverage is limited to this):
 
 ## Booking desk testing
 
-`/studio/bookings` is the first feature built on **application-owned tables**
-(`service` + `booking`), as opposed to the static data the studio hub renders.
+`/studio/bookings` is built on **application-owned tables** (`service` +
+`booking`), like the media hub catalog behind `/studio` (`media_item`).
 Day-only by design: a booking claims one whole calendar day of one service —
 there is no time slot or time block yet, and no payment.
 
@@ -200,9 +210,64 @@ there is no time slot or time block yet, and no payment.
 | One live booking per service per day    | Working (partial unique index → 409)      | BOOKING-005         |
 | Entry points (top bar + sidebar)        | Working — both are load-bearing, one is the mobile route | BOOKING-001/002/006 |
 | Signed-out access                       | Blocked by `RequireAuth`                  | BOOKING-007         |
-| Admin confirm / reject                  | **Not implemented** — `status` already carries `pending`/`confirmed`/`rejected`/`completed`, so it needs no schema change | — |
+| Admin confirm / reject                  | Working — the `/admin` queue answers pending reservations | ADMIN-002/003 |
 | Time slots / time blocks                | Not implemented                           | —                   |
 | Payment                                 | Not implemented (no online payment)       | —                   |
+
+## Admin console testing
+
+`/admin` is a separate route tree for sessions with `role = 'admin'`. There is
+one login: the sign-in form routes admins to `/admin`, everyone else to
+`/studio`. The UI guard (`RequireAdmin`) is navigation UX; the real boundary is
+`requireAdmin` on `/api/admin/*`, which answers 401 signed out and 403 for a
+signed-in non-admin — `admin-security.spec.ts` pins that down, including the
+two role self-promotion routes (sign-up, `update-user`), which Better Auth's
+`input: false` closes server-side. Promotion itself is CLI-only
+(`npm run promote-admin` against the database; `SEC-003` is why no HTTP route
+may ever exist for it).
+
+Admin-taken reservations are born **confirmed** — the admin IS the approval
+step — and belong to either a tagged registered customer or a free-text guest
+name (`booking.guestName`; the `booking_owner_check` constraint enforces that
+every reservation has one of the two).
+
+The console also curates the **media hub catalog** (`/admin/media`): the
+`media_item` rows that `/studio` renders (video songs, minus-one tracks, radio
+stations). New rows append to their section and go live immediately; hide/show
+pulls a row from the public feed without deleting it, move reorders within a
+section, and delete is permanent — the console asks for confirmation first.
+Video songs and music tracks can also carry a real MP4/MP3: the editor
+uploads it (raw-body `POST /api/admin/media/upload`, 200 MB cap) and the
+stored file is served back with byte ranges and a year-long immutable cache,
+so the hub plays the actual upload — no file means the video card falls back
+to the bundled master and a music card stays visual-only. The editor also
+reads each picked file's own metadata (`music-metadata`: ID3 tags on MP3,
+atoms on MP4) to pre-fill the blank title/artist/album boxes and to read the
+runtime off the file itself (no duration box — video and audio alike), and
+every media row can carry a cover image: embedded art is applied
+automatically, a tagless video gets a real frame grabbed off it, the admin
+can pick an image instead,
+and covers are shrunk to display size (`browser-image-compression`, WebP)
+before upload. Without one, cards show the default art. Only the one real
+local master ("The Reason") ships seeded — music and radio start empty, so
+their tests create the rows they assert and delete them afterwards.
+
+| Feature                                | Status                                   | Tests        |
+| -------------------------------------- | ---------------------------------------- | ------------ |
+| Admin sign-in lands on `/admin`        | Working (role-aware redirect)            | ADMIN-001    |
+| Pending queue confirm / reject         | Working — the console answers the queue  | ADMIN-002/003 |
+| Reservation for a tagged customer      | Working (search an account, tag it)      | ADMIN-005    |
+| Reservation for a guest / walk-in      | Working (free-text name, no account)     | ADMIN-004    |
+| confirmed → completed / cancelled      | Working (`ADMIN_ACTIONS` transitions)    | ADMIN-002/004/005 |
+| Console entry from the studio chrome   | Working — shown to admins only; the top bar link is the mobile path | ADMIN-006 / SEC-004 |
+| `/api/admin/*` 401/403 boundary        | Working — fail-closed sub-app mount      | SEC-001/002  |
+| Role self-promotion                    | Closed — `input: false`; promotion is CLI-only | SEC-003 |
+| Media catalog add / edit               | Working — rows drive `/studio` immediately | ADMIN-007    |
+| Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
+| Media file upload (MP4/MP3)            | Working — stored with byte ranges + immutable cache; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
+| Tag metadata fill + covers/thumbnails  | Working — tags pre-fill the blank boxes (Artist/album); the runtime is read off the picked file; embedded art, grabbed video frames and picked images become optimized WebP covers | ADMIN-012/013 |
+| Delete confirmation on media rows      | Working — Delete → Confirm/Cancel pair   | ADMIN-007/009 |
+| User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
 ## API integration
 
@@ -221,8 +286,33 @@ there is no time slot or time block yet, and no payment.
   verified by a direct API probe rather than by Playwright: the form's own
   `min` on the date picker means the browser blocks a past day before the
   request is ever sent, so those branches are unreachable from the UI.
-- **Not yet covered**: direct API-level tests of `/api/auth/*` and `/api/me`
-  (wrong-password 401, protected-route 401) — still the top recommended next
+- The **admin API** (`GET/POST /api/admin/bookings`,
+  `POST /api/admin/bookings/:id/{confirm,reject,complete,cancel}`,
+  `GET /api/admin/users`, plus the media catalog: `GET/POST /api/admin/media`,
+  `POST /api/admin/media/upload`, `POST /api/admin/media/:id`,
+  `POST /api/admin/media/:id/{visibility,move,delete}`)
+  is driven end-to-end by ADMIN-001…013, and its boundary is pinned by direct
+  calls: SEC-001 (401 anonymous) and SEC-002 (403 for a signed-in non-admin,
+  on every route shape). SEC-003 calls the auth API directly to prove `role`
+  cannot be set at sign-up or through `update-user`.
+- The **media uploader** (`POST /api/admin/media/upload`, raw body +
+  `X-File-Name`) is exercised twice over: ADMIN-009 drives the real editor
+  and the hub playback of the stored file (including byte-range serving at
+  `GET /api/uploads/media/:name`), KARAOKE-012 uploads a committed silent MP3
+  fixture (`tests/e2e/assets/silence.mp3`) through the API helper and proves
+  the hub plays it; ADMIN-010 pins the rejection paths (bad extension, type
+  mismatch, cover-in-source / media-in-cover column cross-checks, anonymous
+  401). ADMIN-012/013 cover the editor's metadata and art pipeline: tag
+  pre-fill and embedded covers from a real tagged MP3, frame-grabbed video
+  thumbnails, explicit image picks, and the Remove-cover → default-art path —
+  all asserted through the stored WebP files the hub serves.
+- The **public media API** (`GET /api/media`) serves the active catalog to the
+  hub. KARAOKE-003/005 exercise it by creating rows through the admin API
+  (`helpers/media.ts`), asserting the cards render them, then deleting them —
+  the hub's sections exist only while rows are published.
+- **Not yet covered**: broad direct API-level tests of `/api/auth/*` and
+  `/api/me` (wrong-password 401, protected-route 401) — SEC-003 covers the
+  role-escalation paths only; the rest is still the top recommended next
   suite (see [qa-strategy.md](qa-strategy.md)). Search, favorites and
   profile flows remain client-side only.
 

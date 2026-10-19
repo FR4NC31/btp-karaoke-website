@@ -43,7 +43,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
-  timeout: 30_000,
+  // 60 s: the media editor flows upload real files, read tags, grab video
+  // frames and walk several pages — well past 30 s under two parallel workers.
+  timeout: 60_000,
   // 10 s: the studio opens behind a session check against the remote Aiven
   // database plus a ~3.5 s skeleton, and both slow down under parallel workers.
   expect: { timeout: 10_000 },

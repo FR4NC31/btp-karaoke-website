@@ -71,6 +71,19 @@ export const auth = betterAuth({
         type: 'string',
         required: true,
       },
+      // Authorization flag. `input: false` + `defaultValue` is the whole
+      // security story here: Better Auth overwrites any role a client sends
+      // during sign-up with the default, and rejects the field outright on
+      // update — so no request can promote its own account. Promotion happens
+      // only through scripts/promote-admin.ts, straight to the database.
+      // Admin API routes check this field via `requireAdmin`
+      // (src/session-middleware.ts); see src/schema.ts for the column.
+      role: {
+        type: 'string',
+        required: false,
+        defaultValue: 'user',
+        input: false,
+      },
     },
   },
   trustedOrigins: [

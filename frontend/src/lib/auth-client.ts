@@ -19,6 +19,10 @@ export const authClient = createAuthClient({
         first_name: { type: 'string', required: true },
         last_name: { type: 'string', required: true },
         contact_num: { type: 'string', required: true },
+        // Server-managed (`input: false` in backend/src/auth.ts) — clients can
+        // only read it. Drives UI only: the admin console link and the
+        // post-sign-in destination. The API enforces access on its own.
+        role: { type: 'string', required: false },
       },
     }),
   ],

@@ -8,8 +8,10 @@ import {
   Mic01Icon,
   BellIcon,
   CalendarCheck01Icon,
+  Shield01Icon,
 } from '@hugeicons/core-free-icons'
 import BrandLogo from '../../../components/BrandLogo'
+import { useSession } from '../../../lib/auth-client'
 import ProfileMenu from './ProfileMenu'
 
 export default function StudioTopBar() {
@@ -17,6 +19,11 @@ export default function StudioTopBar() {
   // Back to the hub from any page that is not the hub itself (console,
   // profile) — the sidebar selection is cosmetic, so this is the way back.
   const showBack = pathname !== '/studio'
+  // The sidebar is hidden below md, so the Admin Console link lives here too;
+  // shown only for admins (see StudioSidebar for why this is convenience, not
+  // a gate).
+  const { data } = useSession()
+  const isAdmin = data?.user.role === 'admin'
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
@@ -84,6 +91,16 @@ export default function StudioTopBar() {
           <HugeiconsIcon icon={CalendarCheck01Icon} size={15} />
           <span className="hidden lg:inline">Bookings</span>
         </Link>
+        {isAdmin && (
+          <Link
+            to="/admin"
+            aria-label="Admin Console"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-text-primary lg:px-3"
+          >
+            <HugeiconsIcon icon={Shield01Icon} size={15} />
+            <span className="hidden lg:inline">Admin</span>
+          </Link>
+        )}
         <span className="hidden items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary xl:flex">
           <HugeiconsIcon icon={HeadphonesIcon} size={15} />
           Listening Room

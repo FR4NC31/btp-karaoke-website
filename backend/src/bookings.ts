@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { db } from './db.ts'
-import { booking, service, type BookingStatus } from './schema.ts'
+import { booking, service, user, type BookingStatus } from './schema.ts'
 
 /**
  * Service catalog + day bookings, on Drizzle.
@@ -208,15 +208,13 @@ export interface CreateBookingInput {
 }
 
 /**
- * Books one service for one day for one user.
- *
- * Validates the day locally (format, not past, not absurdly far), confirms the
- * service is real and active, then relies on `booking_active_unique_idx` to
- * reject a duplicate live booking for the same service on the same day —
- * surfacing it as a friendly 409 rather than a raw constraint error.
+ * Shared day validation for both booking paths (customer self-service and
+ * admin reservations): format, real calendar day, not in the past, not
+ * absurdly far ahead. Returns the trimmed day so callers cannot accidentally
+ * keep the raw input.
  */
-export async function createBooking(input: CreateBookingInput): Promise<Booking> {
-  const bookingDate = input.bookingDate?.trim() ?? ''
+function validateBookingDay(raw: unknown): string {
+  const bookingDate = typeof raw === 'string' ? raw.trim() : ''
 
   if (!ISO_DATE.test(bookingDate)) {
     throw new BookingError('Pick a date in YYYY-MM-DD format.', 400)
@@ -240,20 +238,46 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     throw new BookingError('That date is too far ahead. Pick something within two years.', 400)
   }
 
-  const notes = input.notes?.trim() || null
+  return bookingDate
+}
+
+/** Shared notes validation. Returns the trimmed text, or null when empty. */
+function validateNotes(raw: unknown): string | null {
+  const notes = typeof raw === 'string' ? raw.trim() || null : null
   if (notes && notes.length > NOTES_MAX) {
     throw new BookingError(`Notes must be ${NOTES_MAX} characters or fewer.`, 400)
   }
+  return notes
+}
 
+/** Confirms the service exists and is bookable, or throws a 404. */
+async function assertServiceAvailable(serviceId: string): Promise<void> {
   const available = await db
     .select({ id: service.id })
     .from(service)
-    .where(and(eq(service.id, input.serviceId), eq(service.isActive, true)))
+    .where(and(eq(service.id, serviceId), eq(service.isActive, true)))
     .limit(1)
 
   if (available.length === 0) {
     throw new BookingError('That service is not available.', 404)
   }
+}
+
+/**
+ * Books one service for one day for one user — the signed-in customer
+ * creating their own booking. Created `pending`, which is the state the admin
+ * queue acts on.
+ *
+ * Validates the day locally (format, not past, not absurdly far), confirms the
+ * service is real and active, then relies on `booking_active_unique_idx` to
+ * reject a duplicate live booking for the same service on the same day —
+ * surfacing it as a friendly 409 rather than a raw constraint error.
+ */
+export async function createBooking(input: CreateBookingInput): Promise<Booking> {
+  const bookingDate = validateBookingDay(input.bookingDate)
+  const notes = validateNotes(input.notes)
+
+  await assertServiceAvailable(input.serviceId)
 
   try {
     const inserted = await db
@@ -319,4 +343,299 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
     throw new BookingError('The booking could not be read back after cancelling.', 400)
   }
   return cancelled
+}
+
+// ---------------------------------------------------------------------------
+// Admin operations
+//
+// Everything below is behind `requireAdmin` (src/session-middleware.ts) — the
+// routes in src/index.ts mount this as a sub-app with that middleware
+// registered once, so no admin route can forget it. These functions
+// themselves read from the same tables the customer path uses; the only
+// difference is scope (all customers, not one).
+// ---------------------------------------------------------------------------
+
+/** A booking as the admin queue sees it: owner, contact and service joined. */
+export interface AdminBooking extends Booking {
+  /** Registered customer's id — null for a walk-in guest reservation. */
+  userId: string | null
+  /** Guest name for walk-ins — null for registered customers. */
+  guestName: string | null
+  /** Display name: the account name, or the guest name. Never empty. */
+  customerName: string
+  customerEmail: string | null
+  customerContact: string | null
+}
+
+export type AdminBookingAction = 'confirm' | 'reject' | 'complete' | 'cancel'
+
+/**
+ * The only status moves an admin can make, and the states they are legal
+ * from. Enforced in the UPDATE itself, so a stale queue tab cannot
+ * double-apply an action.
+ */
+const ADMIN_ACTIONS: Record<AdminBookingAction, { from: BookingStatus[]; to: BookingStatus }> = {
+  confirm: { from: ['pending'], to: 'confirmed' },
+  reject: { from: ['pending'], to: 'rejected' },
+  complete: { from: ['confirmed'], to: 'completed' },
+  cancel: { from: ['pending', 'confirmed'], to: 'cancelled' },
+}
+
+const ACTION_PAST: Record<AdminBookingAction, BookingStatus> = {
+  confirm: 'confirmed',
+  reject: 'rejected',
+  complete: 'completed',
+  cancel: 'cancelled',
+}
+
+const GUEST_NAME_MAX = 120
+const TAG_USERS_LIMIT = 20
+
+const adminBookingColumns = {
+  ...bookingColumns,
+  userId: booking.userId,
+  guestName: booking.guestName,
+  customerName: user.name,
+  customerEmail: user.email,
+  customerContact: user.contactNum,
+}
+
+type AdminBookingRow = BookingRow & {
+  userId: string | null
+  guestName: string | null
+  customerName: string | null
+  customerEmail: string | null
+  customerContact: string | null
+}
+
+function toAdminBooking(row: AdminBookingRow): AdminBooking {
+  return {
+    ...toBooking(row),
+    userId: row.userId,
+    guestName: row.guestName,
+    customerName: row.guestName ?? row.customerName ?? 'Walk-in guest',
+    customerEmail: row.customerEmail,
+    customerContact: row.customerContact,
+  }
+}
+
+async function findBookingByIdForAdmin(bookingId: string): Promise<AdminBooking | null> {
+  const rows = await db
+    .select(adminBookingColumns)
+    .from(booking)
+    .innerJoin(service, eq(service.id, booking.serviceId))
+    .leftJoin(user, eq(user.id, booking.userId))
+    .where(eq(booking.id, bookingId))
+    .limit(1)
+
+  const row = rows[0]
+  return row ? toAdminBooking(row) : null
+}
+
+export interface ListBookingsFilter {
+  status?: BookingStatus
+  /** Exact day, `YYYY-MM-DD`. */
+  date?: string
+  /** Free-text match on reference code, customer name or email. */
+  query?: string
+}
+
+/**
+ * Every customer's bookings, oldest upcoming day first, pending ones on top —
+ * the order the admin queue works through. Filters are applied in SQL so the
+ * page never has to pull the whole table to narrow it.
+ */
+export async function listAllBookings(filter: ListBookingsFilter = {}): Promise<AdminBooking[]> {
+  const conditions = []
+
+  if (filter.status) {
+    conditions.push(eq(booking.status, filter.status))
+  }
+  if (filter.date && ISO_DATE.test(filter.date)) {
+    conditions.push(eq(booking.bookingDate, filter.date))
+  }
+  const query = filter.query?.trim()
+  if (query) {
+    const like = `%${query}%`
+    conditions.push(
+      or(
+        ilike(booking.referenceCode, like),
+        ilike(booking.guestName, like),
+        ilike(user.name, like),
+        ilike(user.email, like),
+      ),
+    )
+  }
+
+  const rows = await db
+    .select(adminBookingColumns)
+    .from(booking)
+    .innerJoin(service, eq(service.id, booking.serviceId))
+    .leftJoin(user, eq(user.id, booking.userId))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(
+      // Pending first (the queue), then earliest day, then newest request.
+      sql`case when ${booking.status} = 'pending' then 0 else 1 end`,
+      asc(booking.bookingDate),
+      desc(booking.createdAt),
+    )
+
+  return rows.map(toAdminBooking)
+}
+
+export interface CreateBookingForOthersInput {
+  /** Registered customer to book for — null when it's a guest reservation. */
+  userId?: string | null
+  /** Guest (walk-in / phone caller) name. Required when there's no userId. */
+  guestName?: string
+  serviceId: string
+  bookingDate: string
+  notes?: string
+}
+
+/**
+ * Books a day for someone who is not behind the keyboard: either a tagged
+ * registered customer (`userId`) or a guest name typed in by the admin
+ * (`guestName`). One of the two is required — the booking_owner_check
+ * constraint enforces the same rule in the database.
+ *
+ * Created `confirmed` rather than `pending`: the admin taking the
+ * reservation IS the approval step, so sending it back to the queue it came
+ * from would be circular.
+ */
+export async function createBookingForOthers(
+  input: CreateBookingForOthersInput,
+): Promise<AdminBooking> {
+  const bookingDate = validateBookingDay(input.bookingDate)
+  const notes = validateNotes(input.notes)
+
+  const userId = input.userId?.trim() || null
+  const guestName = input.guestName?.trim() || ''
+
+  if (userId && guestName) {
+    throw new BookingError(
+      'Pick either a registered customer or a guest name — not both.',
+      400,
+    )
+  }
+  if (!userId && !guestName) {
+    throw new BookingError('Pick a registered customer or type a guest name.', 400)
+  }
+  if (guestName.length > GUEST_NAME_MAX) {
+    throw new BookingError(`Guest name must be ${GUEST_NAME_MAX} characters or fewer.`, 400)
+  }
+
+  if (userId) {
+    const existing = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1)
+
+    if (existing.length === 0) {
+      throw new BookingError('That customer account does not exist.', 404)
+    }
+  }
+
+  await assertServiceAvailable(input.serviceId)
+
+  try {
+    const inserted = await db
+      .insert(booking)
+      .values({
+        id: randomUUID(),
+        referenceCode: makeReferenceCode(),
+        userId,
+        guestName: userId ? null : guestName,
+        serviceId: input.serviceId,
+        bookingDate,
+        status: 'confirmed',
+        notes,
+      })
+      .returning({ id: booking.id })
+
+    const insertedRow = inserted[0]
+    if (!insertedRow) {
+      throw new BookingError('The reservation could not be saved.', 400)
+    }
+
+    const created = await findBookingByIdForAdmin(insertedRow.id)
+    if (!created) {
+      throw new BookingError('The reservation could not be read back after saving.', 400)
+    }
+    return created
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      // Only booking_active_unique_idx applies to a tagged user; guest rows
+      // never enter it, so this fires only for the registered-customer path.
+      throw new BookingError(
+        'That customer already has a live booking for this service on that day.',
+        409,
+      )
+    }
+    throw err
+  }
+}
+
+/**
+ * Moves one reservation through an admin transition (confirm / reject /
+ * complete / cancel).
+ *
+ * The legal source states live in ADMIN_ACTIONS and are part of the UPDATE's
+ * WHERE clause, so two admins acting on the same row cannot both win — the
+ * loser gets a 409 that says which state blocked it. A zero-row result is
+ * re-read to tell "does not exist" (404) apart from "already moved" (409).
+ */
+export async function adminSetBookingStatus(
+  bookingId: string,
+  action: AdminBookingAction,
+): Promise<AdminBooking> {
+  const transition = ADMIN_ACTIONS[action]
+
+  const updated = await db
+    .update(booking)
+    .set({ status: transition.to, updatedAt: new Date() })
+    .where(and(eq(booking.id, bookingId), inArray(booking.status, transition.from)))
+    .returning({ id: booking.id })
+
+  if (updated.length === 0) {
+    const existing = await findBookingByIdForAdmin(bookingId)
+    if (!existing) {
+      throw new BookingError('That reservation does not exist.', 404)
+    }
+    throw new BookingError(
+      `A ${existing.status} reservation cannot be ${ACTION_PAST[action]}.`,
+      409,
+    )
+  }
+
+  const result = await findBookingByIdForAdmin(bookingId)
+  if (!result) {
+    throw new BookingError('The reservation could not be read back after updating.', 400)
+  }
+  return result
+}
+
+/** Minimal identity for the "tag a customer" picker. */
+export interface TagUser {
+  id: string
+  name: string
+  email: string
+}
+
+/**
+ * Registered accounts matching `query` (name or email), for the admin's
+ * customer tag picker. Deliberately minimal — id, name, email — so the admin
+ * UI never receives more account data than it displays.
+ */
+export async function listUsersForTagging(query?: string): Promise<TagUser[]> {
+  const q = query?.trim()
+  const like = q ? `%${q}%` : null
+
+  return db
+    .select({ id: user.id, name: user.name, email: user.email })
+    .from(user)
+    .where(like ? or(ilike(user.name, like), ilike(user.email, like)) : undefined)
+    .orderBy(asc(user.name))
+    .limit(TAG_USERS_LIMIT)
 }

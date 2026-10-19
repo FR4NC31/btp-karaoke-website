@@ -8,6 +8,41 @@
       "when": 1792295088524,
       "tag": "0000_small_ser_duncan",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792303703289,
+      "tag": "0001_fair_masked_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792307494295,
+      "tag": "0002_chubby_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792309585841,
+      "tag": "0003_left_wolf_cub",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792324210092,
+      "tag": "0004_aspiring_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792328122242,
+      "tag": "0005_typical_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

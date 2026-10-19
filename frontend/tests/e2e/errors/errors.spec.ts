@@ -11,6 +11,10 @@ test.describe('error states and app health', () => {
   })
 
   test('ERROR-002: key pages load without console or page errors', { tag: '@p1' }, async ({ page, appEvidence }) => {
+    // Five cold page loads against the dev server: give this smoke test
+    // triple budget so full-suite load can never flake it.
+    test.slow()
+
     for (const path of KEY_PAGES) {
       await page.goto(path)
       await expect(page.locator('#root')).not.toBeEmpty()
@@ -20,6 +24,9 @@ test.describe('error states and app health', () => {
   })
 
   test('ERROR-003: key pages load without failed or 4xx/5xx requests', { tag: '@p1' }, async ({ page, appEvidence }) => {
+    // Same cold-load budget as ERROR-002 — see the note there.
+    test.slow()
+
     for (const path of KEY_PAGES) {
       await page.goto(path)
       await expect(page.locator('#root')).not.toBeEmpty()

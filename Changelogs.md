@@ -6,6 +6,9 @@ Last updated: October 18, 2026
 
 ### Features
 
+- feat(media): read file tags and carry covers through the hub (0c4c631)
+- feat(media): move the hub onto a managed catalog (1d9d13f)
+- feat(admin): add admin role and booking console (3043d92)
 - feat: Add local and functional video player (764f437)
 - feat: Add Services UI in navbar and page (12d5188)
 - feat(frontend): add Go Back button to 404 page (4034966)
@@ -26,6 +29,7 @@ Last updated: October 18, 2026
 
 ### Bug Fixes
 
+- fix(auth): route signed-in users to their own dashboard (58d4591)
 - fix(studio): real track metadata, logout bounce gate, LFS video (a363aeb)
 - fix(frontend): fall back to home from 404 when history is empty (747f5f9)
 - fix(frontend): tighten Contact layout to fit without scrollbar (9c7dcf2)
@@ -51,6 +55,8 @@ Last updated: October 18, 2026
 
 ### Other Changes
 
+- ﻿feat(media): add artist metadata and auto-read runtimes (aab0c39)
+- ﻿feat(media): upload real MP4/MP3 files and confirm deletes (2879b1a)
 - ﻿fix(backend): repair sslmode strip, pool errors, date validation (6884db3)
 - ﻿feat(booking): day-only booking desk with Drizzle-backed service catalog (d6cf197)
 - Merge pull request #12 from FR4NC31/feat/player-queue (5fcca18)

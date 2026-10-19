@@ -1,4 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { test, expect } from '../fixtures'
+import {
+  createMediaItemAsAdmin,
+  deleteMediaItemAsAdmin,
+  uploadMediaFileAsAdmin,
+} from '../helpers/media'
 
 /**
  * KARAOKE — the studio media hub on /studio (video song, music player and
@@ -6,21 +12,27 @@ import { test, expect } from '../fixtures'
  * filter / collections grid / telemetry table were retired with the media
  * hub restructure.
  *
+ * The catalog is database-backed now, curated from /admin/media. Only the
+ * one real local master ("The Reason", seeded) always exists; music and
+ * radio rows are created through the admin API by the tests that assert
+ * them, then deleted. Sections with no published rows render nothing, so
+ * no test may assume another section's presence. Rows can carry an uploaded
+ * MP4/MP3 (ADMIN-009 covers the UI uploader end to end); KARAOKE-012 proves
+ * an uploaded minus-one really plays from the hub.
+ *
  * /studio is opened directly: it is guarded by RequireAuth, but the
  * `chromium` project injects the shared session saved by setup/auth.setup.ts,
  * so a UI sign-in here would only add time. The full sign-in → console
  * journey is covered by SMOKE-005.
  */
 test.describe('karaoke discovery', () => {
-  test('KARAOKE-001: studio hub opens with video song, music player and radio', { tag: '@p0' }, async ({ page }) => {
+  test('KARAOKE-001: studio hub opens with the published video song', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/studio')
     await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    // The seeded local master is the first video row and carries the h1.
     await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
     await expect(page.getByRole('heading', { name: 'Video Song' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Music Player' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
-    // 4 video + 5 music + 4 radio cards.
-    await expect(page.locator('main article')).toHaveCount(13)
+    await expect(page.getByRole('link', { name: 'Play The Reason' })).toBeVisible()
     // Retired with the restructure.
     await expect(page.getByText('Active Stem & Track Telemetry')).toHaveCount(0)
   })
@@ -40,15 +52,32 @@ test.describe('karaoke discovery', () => {
       .toBe(false)
   })
 
-  test('KARAOKE-003: music player lists the minus-one sets', { tag: '@p1' }, async ({ page }) => {
-    await page.goto('/studio')
-    await expect(page.getByText('Viewing 5 of 5 tracks')).toBeVisible()
+  test('KARAOKE-003: music player renders published catalog tracks', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const title = `E2E Minus-One ${Date.now()}`
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'music',
+      title,
+      subtitle: 'E2E session archive',
+      tag: 'TAPE',
+      tempo: '118 BPM',
+      songKey: 'Fmaj',
+    })
 
-    const card = page.locator('main article').filter({ hasText: 'Afternoon Drive' })
-    await expect(card).toContainText('Mastered by Frankie Dev')
-    await expect(card).toContainText('118 BPM')
-    await expect(card).toContainText('Fmaj')
-    await expect(card.getByRole('button', { name: 'More options for Afternoon Drive' })).toBeVisible()
+    try {
+      await page.goto('/studio')
+      await expect(page.getByRole('heading', { name: 'Music Player' })).toBeVisible()
+      await expect(page.getByText(/Viewing \d+ of \d+ tracks/)).toBeVisible()
+
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('E2E session archive')
+      await expect(card).toContainText('118 BPM')
+      await expect(card).toContainText('Fmaj')
+      await expect(card.getByRole('button', { name: `More options for ${title}` })).toBeVisible()
+      // No uploaded file → visual-only: no play link until audio is attached.
+      await expect(card.getByRole('link', { name: `Play ${title}` })).toHaveCount(0)
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+    }
   })
 
   test('KARAOKE-004: sidebar session browsing highlights selection', { tag: '@p2' }, async ({ page }) => {
@@ -65,15 +94,30 @@ test.describe('karaoke discovery', () => {
     await expect(defaultItem).not.toHaveClass(/bg-primary-soft/)
   })
 
-  test('KARAOKE-005: radio section shows on-air stations', { tag: '@p2' }, async ({ page }) => {
-    await page.goto('/studio')
-    await expect(page.getByText('Viewing 4 of 4 stations')).toBeVisible()
-    await expect(page.getByText('On Air', { exact: true })).toHaveCount(4)
+  test('KARAOKE-005: radio section renders published stations', { tag: '@p2' }, async ({ page, baseURL }) => {
+    const title = `E2E Station ${Date.now()}`
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'radio',
+      title,
+      subtitle: 'E2E genre',
+      freq: 'FM 88.3',
+      listeners: 1234,
+    })
 
-    const card = page.locator('main article').filter({ hasText: 'BTP Lounge Radio' })
-    await expect(card).toContainText('OPM & Lounge')
-    await expect(card).toContainText('FM 91.5')
-    await expect(card.getByRole('button', { name: 'More options for BTP Lounge Radio' })).toBeVisible()
+    try {
+      await page.goto('/studio')
+      await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
+      await expect(page.getByText(/Viewing \d+ of \d+ stations/)).toBeVisible()
+
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('E2E genre')
+      await expect(card).toContainText('FM 88.3')
+      await expect(card).toContainText('1.2K') // 1234 → compact form
+      await expect(card).toContainText('On Air') // default tag when none is set
+      await expect(card.getByRole('button', { name: `More options for ${title}` })).toBeVisible()
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+    }
   })
 
   test('KARAOKE-006: shell player bar plays the local video on the console', { tag: '@p2' }, async ({ page }) => {
@@ -209,5 +253,56 @@ test.describe('karaoke discovery', () => {
     await expect
       .poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime))
       .toBeGreaterThan(videoTime - 0.5)
+  })
+
+  test('KARAOKE-012: an uploaded minus-one really plays from the hub', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const title = `E2E Uploaded Track ${Date.now()}`
+    // A real (silent) MP3 fixture, uploaded through the same raw-body
+    // endpoint the editor uses, then attached to a fresh music row.
+    const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
+    const upload = await uploadMediaFileAsAdmin(baseURL, {
+      name: 'e2e-minus-one.mp3',
+      mimeType: 'audio/mpeg',
+      data: mp3,
+    })
+    expect(upload.status).toBe(201)
+    const sourceUrl = upload.body.file!.url
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'music',
+      title,
+      subtitle: 'E2E upload archive',
+      tag: 'TAPE',
+      tempo: '112 BPM',
+      sourceUrl,
+      sourceName: upload.body.file!.name,
+    })
+
+    try {
+      await page.goto('/studio')
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('112 BPM')
+
+      // With audio attached the card opens the console and plays that file.
+      await card.getByRole('link', { name: `Play ${title}` }).click()
+      await expect(page).toHaveURL('/studio/player-queue')
+
+      const stage = page.locator('main video')
+      await expect(stage).toHaveAttribute('src', sourceUrl)
+      await expect(page.getByRole('contentinfo')).toContainText(title)
+      await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+
+      // Audio mode: the stage says so and there is nothing to float in PiP.
+      await expect(page.getByText('Studio Audio Mode')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Picture in picture' })).toHaveCount(0)
+
+      // Stored media answers byte ranges — seeking an upload is real.
+      const ranged = await page.request.get(sourceUrl, { headers: { Range: 'bytes=10-99' } })
+      expect(ranged.status()).toBe(206)
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+      // Deleting the row takes the stored file with it.
+      const gone = await page.request.get(sourceUrl)
+      expect(gone.status()).toBe(404)
+    }
   })
 })

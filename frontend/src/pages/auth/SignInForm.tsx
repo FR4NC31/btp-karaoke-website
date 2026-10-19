@@ -4,7 +4,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
 import googleIcon from '../../assets/icons/googleIcon.svg'
-import { signIn } from '../../lib/auth-client'
+import { authClient, signIn } from '../../lib/auth-client'
+import { landingPathFor } from '../../lib/redirects'
 import { oauthError, readableError, unexpectedError } from '../../lib/auth-errors'
 import type { AuthMode } from '../../lib/auth-dialog'
 
@@ -61,11 +62,24 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
+      // Route by role: admins to the console, everyone else to the studio —
+      // unless one of the guards parked a `?next=` target here, which wins
+      // (validated in landingPathFor; it rides in a URL). The fresh session
+      // read is what carries `role`; a failed read degrades to /studio,
+      // which is always a safe landing.
+      //
       // Nothing to settle first: RequireAuth revalidates before it will
       // redirect, so it can never act on the pre-login session value the
       // atom still holds here.
+      let role: string | undefined
+      try {
+        const { data: freshSession } = await authClient.getSession()
+        role = freshSession?.user.role ?? undefined
+      } catch {
+        // Fall through with no role — land in the studio.
+      }
       onSuccess?.()
-      navigate('/studio')
+      navigate(landingPathFor(role, searchParams.get('next')))
     } catch (err) {
       setError(unexpectedError('sign-in', err))
     } finally {
@@ -84,10 +98,15 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
       // backend (`BETTER_AUTH_URL`/api/auth/callback/google), and Better Auth
       // then 302s to `callbackURL` verbatim — a relative "/studio" would
       // resolve against localhost:3000 and hit the API, not the SPA.
+      //
+      // Success lands on /signin, not /studio: RequireGuest owns the
+      // guest-only route and bounces the finished session to its landing
+      // page by role (admins → /admin, everyone else → /studio). Jumping
+      // straight to /studio dropped admin sign-ins into the customer view.
       const origin = window.location.origin
       const { error: socialError } = await signIn.social({
         provider: 'google',
-        callbackURL: `${origin}/studio`,
+        callbackURL: `${origin}/signin`,
         errorCallbackURL: `${origin}/signin`,
       })
 

@@ -150,13 +150,16 @@ Only mark what actually exists in the application.
 
 ### Karaoke
 
-- [x] Studio media hub sections (KARAOKE-001, KARAOKE-003, KARAOKE-005)
+- [x] Studio media hub sections (KARAOKE-001, KARAOKE-003, KARAOKE-005) —
+  catalog is DB-backed now, curated from `/admin/media` (ADMIN-007/008),
+  including real MP4/MP3 uploads with tag-extracted metadata, embedded-cover
+  extraction and video thumbnails (ADMIN-009…013, KARAOKE-012)
 - [x] Video song → console hop (KARAOKE-002)
 - [x] Player opens with track (PLAYER-001)
 - [x] Playback start / pause / resume (PLAYER-003, PLAYER-004)
 - [x] Like toggle (PLAYER-008)
-- [x] Song loads real media — local karaoke video via shell player bar (KARAOKE-006)
-- [ ] Player error / media failure handling — N/A
+- [x] Song loads real media — uploaded files or the bundled master via shell player bar (KARAOKE-006/012)
+- [ ] Player error / media failure handling — N/A (write-time validation rejects broken sources; no UI error state for out-of-band deletions)
 
 ### Backend
 
@@ -170,7 +173,8 @@ Only mark what actually exists in the application.
 ### UX
 
 - [x] Hub sections render for video/music/radio (KARAOKE-001, KARAOKE-005)
-- [ ] Loading/empty states — no empty datasets shipped (N/A)
+- [ ] Loading/empty states — sections hide while unpublished; the all-empty
+  hub branch has no dedicated test yet (gap)
 - [x] Error states: 404 page (ERROR-001)
 - [x] No console errors / failed requests on key pages (ERROR-002/003)
 - [ ] Accessibility beyond basics — not audited (P3 gap)

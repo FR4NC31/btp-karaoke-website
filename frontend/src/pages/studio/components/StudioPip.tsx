@@ -11,11 +11,13 @@ import type { KaraokeVideoApi } from '../../../lib/karaoke-player'
  * The console's PiP button arms `player.pip` and returns to the hub; the
  * console video hands its session to this element (position, loudness and
  * play state — the transport's detach handoff), so the song keeps playing
- * in the corner across studio pages while the lobby track stays silent.
- * Hovering reveals a Play/Pause overlay (hidden while playing, shown on
- * hover or while paused — same rules as the console stage badge). The
- * up-arrow expands back to /studio/player-queue, where the console
- * reclaims the session at the carried-over position and the mini hides.
+ * in the corner across studio pages while the lobby track stays silent. Its
+ * source mirrors the console's on-air track (an uploaded file, or the
+ * bundled master), so the mini plays exactly what the console had. Hovering
+ * reveals a Play/Pause overlay (hidden while playing, shown on hover or
+ * while paused — same rules as the console stage badge). The up-arrow
+ * expands back to /studio/player-queue, where the console reclaims the
+ * session at the carried-over position and the mini hides.
  *
  * The <video> stays mounted (merely hidden) when PiP is off so the session
  * survives — the transport owns its state, not the DOM.
@@ -25,7 +27,7 @@ export default function StudioPip({ player }: { player: KaraokeVideoApi }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const onConsole = pathname === '/studio/player-queue'
-  const { attachMini, pip, playing, toggle } = player
+  const { attachMini, pip, playing, toggle, onAir } = player
 
   const visible = pip && !onConsole
 
@@ -58,7 +60,7 @@ export default function StudioPip({ player }: { player: KaraokeVideoApi }) {
       <div className="group relative">
         <video
           ref={videoRef}
-          src={localVideo}
+          src={onAir?.src ?? localVideo}
           playsInline
           preload="metadata"
           onClick={toggle}
