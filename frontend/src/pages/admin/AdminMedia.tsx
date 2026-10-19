@@ -69,6 +69,7 @@ function metaParts(item: AdminMediaItem): string[] {
     if (item.duration) parts.push(item.duration)
     if (item.plays !== null) parts.push(`${formatCount(item.plays)} plays`)
   } else if (item.section === 'music') {
+    if (item.album) parts.push(item.album)
     if (item.duration) parts.push(item.duration)
     if (item.tempo) parts.push(item.tempo)
     if (item.songKey) parts.push(`Key ${item.songKey}`)
@@ -162,52 +163,64 @@ export default function AdminMedia() {
     setItems(result.items)
   }
 
-  async function handleVisibility(item: AdminMediaItem) {
+  /**
+   * Runs one row action, then reloads either way: a failed action may still
+   * have changed server state (a 409 means another tab acted first), and a
+   * successful one needs the server's order. The action's own error wins when
+   * both the action and the reload fail.
+   */
+  async function runAction(item: AdminMediaItem, action: () => Promise<void>, fallback: string) {
     if (actingId) return
     setActingId(item.id)
     setConfirmingId('')
     setFlash('')
+    setLoadError('')
+    let failure = ''
     try {
-      const { item: updated } = await adminMediaVisibility(item.id, !item.isActive)
-      setFlash(`${updated.title} is now ${updated.isActive ? 'live' : 'hidden'}.`)
+      await action()
+    } catch (err) {
+      failure = describeBookingError(err, fallback)
+    }
+    try {
       await reload()
     } catch (err) {
-      setLoadError(describeBookingError(err, 'The item could not be updated.'))
-    } finally {
-      setActingId('')
+      if (!failure) failure = describeBookingError(err, 'Could not refresh the catalog.')
     }
+    if (failure) setLoadError(failure)
+    setActingId('')
   }
 
-  async function handleMove(item: AdminMediaItem, direction: 'up' | 'down') {
-    if (actingId) return
-    setActingId(item.id)
-    setConfirmingId('')
-    setFlash('')
-    try {
-      await adminMediaMove(item.id, direction)
-      setFlash(`${item.title} moved ${direction}.`)
-      await reload()
-    } catch (err) {
-      setLoadError(describeBookingError(err, 'The item could not be moved.'))
-    } finally {
-      setActingId('')
-    }
+  function handleVisibility(item: AdminMediaItem) {
+    return runAction(
+      item,
+      async () => {
+        const { item: updated } = await adminMediaVisibility(item.id, !item.isActive)
+        setFlash(`${updated.title} is now ${updated.isActive ? 'live' : 'hidden'}.`)
+      },
+      'The item could not be updated.',
+    )
   }
 
-  async function handleDelete(item: AdminMediaItem) {
-    if (actingId) return
-    setActingId(item.id)
-    setFlash('')
-    try {
-      await deleteAdminMediaItem(item.id)
-      setFlash(`${item.title} removed.`)
-      await reload()
-    } catch (err) {
-      setLoadError(describeBookingError(err, 'The item could not be removed.'))
-    } finally {
-      setActingId('')
-      setConfirmingId('')
-    }
+  function handleMove(item: AdminMediaItem, direction: 'up' | 'down') {
+    return runAction(
+      item,
+      async () => {
+        await adminMediaMove(item.id, direction)
+        setFlash(`${item.title} moved ${direction}.`)
+      },
+      'The item could not be moved.',
+    )
+  }
+
+  function handleDelete(item: AdminMediaItem) {
+    return runAction(
+      item,
+      async () => {
+        await deleteAdminMediaItem(item.id)
+        setFlash(`${item.title} removed.`)
+      },
+      'The item could not be removed.',
+    )
   }
 
   return (
@@ -263,7 +276,9 @@ export default function AdminMedia() {
                 </div>
 
                 {sectionItems.length === 0 ? (
-                  <p className="text-sm text-text-muted">No items in this section yet.</p>
+                  // A load failure already shows its alert; "none yet" would
+                  // falsely claim the catalog is empty.
+                  !loadError && <p className="text-sm text-text-muted">No items in this section yet.</p>
                 ) : (
                   <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {sectionItems.map((item, index) => {

@@ -15,6 +15,8 @@ import { ANONYMOUS } from '../helpers/auth'
  *   SEC-003  self-promotion    -> impossible through sign-up or update-user
  *   SEC-004/005  the /admin UI guard is UX only — these assert it still
  *            behaves, but the API tests above are the real boundary
+ *   SEC-006/007  `?next=` is attacker-controllable, so the post-sign-in
+ *            destination is pinned to our own origin
  *
  * If any of these fail, the console is not "locked to admins", full stop.
  * See backend/src/session-middleware.ts (requireAdmin) and
@@ -137,5 +139,70 @@ test.describe('admin console route guard (UI)', () => {
       // (frontend/src/lib/redirects.ts).
       await expect(page).toHaveURL(/\/signin\?next=%2Fadmin/)
     })
+  })
+})
+
+/**
+ * `?next=` is attacker-controllable, so the destination it produces is pinned
+ * to our own origin (frontend/src/lib/redirects.ts).
+ *
+ * What the bug actually is, because the obvious guess is wrong: React Router 8
+ * already refuses external targets itself — `validateNavigationTarget`, called
+ * by both `<Navigate>` and `useNavigate` — so this was *never* an open
+ * redirect. It threw instead, and the throw lands in the route error boundary.
+ * A link to `/signin?next=%2F%0A%2F%2Fevil.example` therefore left a visitor
+ * looking at "Something went wrong / External navigation is not allowed"
+ * immediately after a *successful* sign-in, on our own domain, with Reload as
+ * the only way forward. A crash any URL can trigger is still a bug, and it is
+ * the kind that reads as "the site is broken" to whoever hits it.
+ *
+ * The engine room, since none of the prefix tests can see it coming: browsers
+ * strip ASCII tab/newline out of a URL *before* parsing it, so
+ * `/<LF>//evil.example` normalises to `///evil.example`, whose run of slashes
+ * the URL parser skips and then reads `evil.example` as an authority — i.e.
+ * http://evil.example/. React Router percent-decodes `next`, so `%0A` arrives
+ * as a real newline, and neither the `//` nor the `/\` test matches because
+ * there is only one slash so far. `safeNextPath` is the layer that should
+ * refuse it; leaving it to the router means depending on a version-specific
+ * internal, and paying for it with a broken page rather than a safe landing.
+ *
+ * Both tests below assert observable behaviour — a successful navigation and
+ * the absence of uncaught page errors — rather than React Router's error text,
+ * so they keep their teeth if that message ever changes.
+ */
+test.describe('post-sign-in redirect target', () => {
+  const craftedNextTargets: Array<[string, string]> = [
+    ['%2F%0A%2F%2Fevil.example', 'the reported payload: "/" LF "//evil"'],
+    ['%2F%0A%2Fevil.example', 'a single slash after the LF'],
+    ['%2F%0D%2Fevil.example', 'CR instead of LF'],
+    ['%2F%09%2Fevil.example', 'TAB instead of LF'],
+    ['%2F%00%2Fevil.example', 'NUL'],
+    ['%2F%2Fevil.example', 'plain protocol-relative'],
+    ['%2F%5Cevil.example', 'backslash'],
+  ]
+
+  test('SEC-006: a crafted ?next= lands safely instead of breaking the page', { tag: '@p1' }, async ({ page }) => {
+    // Pre-fix, every payload below threw "External navigation is not allowed"
+    // into the route error boundary, so both assertions here failed.
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    for (const [payload, label] of craftedNextTargets) {
+      pageErrors.length = 0
+      await page.goto(`/signin?next=${payload}`)
+
+      // toHaveURL resolves the expectation against baseURL, so this fails if we
+      // ended up anywhere other than the studio.
+      await expect(page, `${label}: did not land on the studio`).toHaveURL('/studio')
+      expect(pageErrors, `${label}: the route threw instead of navigating`).toEqual([])
+    }
+  })
+
+  test('SEC-007: a legitimate ?next= still lands where it asked', { tag: '@p2' }, async ({ page }) => {
+    // Refusing the crafted targets must not break the feature the parameter
+    // exists for.
+    await page.goto('/signin?next=%2Fstudio%2Fbookings')
+
+    await expect(page).toHaveURL('/studio/bookings')
   })
 })

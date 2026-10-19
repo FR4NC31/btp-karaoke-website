@@ -1,4 +1,14 @@
+import { existsSync } from 'node:fs'
 import { defineConfig, devices, type ReporterDescription } from '@playwright/test'
+
+/**
+ * Local-only values (the QA admin credentials the setup project signs in
+ * with) come from frontend/.env.local, which is gitignored. CI supplies the
+ * same variables through the workflow instead. loadEnvFile never overwrites
+ * variables that are already set, so an explicit env always wins.
+ */
+const localEnvFile = new URL('.env.local', import.meta.url)
+if (existsSync(localEnvFile)) process.loadEnvFile(localEnvFile)
 
 /**
  * Playwright QA / E2E configuration for the BTP Karaoke website.
@@ -6,7 +16,8 @@ import { defineConfig, devices, type ReporterDescription } from '@playwright/tes
  * Starts both local development servers automatically (frontend on 5173,
  * backend on 3000) unless a server is already running.
  *
- * Environment variables (never put secrets here):
+ * Environment variables (never commit secrets; locally they live in
+ * frontend/.env.local):
  *   PLAYWRIGHT_BASE_URL        Frontend origin. Defaults to the local Vite
  *                              dev server (http://localhost:5173). A
  *                              non-local origin additionally requires
@@ -15,6 +26,9 @@ import { defineConfig, devices, type ReporterDescription } from '@playwright/tes
  *   PLAYWRIGHT_ALLOW_EXTERNAL  Set to 1 to allow a non-local base URL.
  *   BACKEND_BASE_URL           Backend origin. Defaults to
  *                              http://localhost:3000 (used by API probes).
+ *   TEST_ADMIN_EMAIL           QA admin account the admin setup signs in as.
+ *   TEST_ADMIN_PASSWORD        Its password — repo secret in CI, local
+ *                              .env.local elsewhere (see helpers/auth.ts).
  */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173'
 const backendURL = process.env.BACKEND_BASE_URL || 'http://localhost:3000'

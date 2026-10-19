@@ -90,12 +90,24 @@ function addDays(isoDate: string, days: number): string {
   return shifted.toISOString().slice(0, 10)
 }
 
-/** 23505 is unique_violation. Drizzle rethrows the driver error, but a wrapped
- * cause is checked too so this keeps working if that ever changes. */
-function isUniqueViolation(err: unknown): boolean {
-  const codeOf = (value: unknown) =>
-    typeof value === 'object' && value !== null ? (value as { code?: string }).code : undefined
-  return codeOf(err) === '23505' || codeOf((err as { cause?: unknown })?.cause) === '23505'
+/**
+ * The constraint name behind a 23505 (unique_violation), or null when `err`
+ * is not one. `booking` carries two unique constraints and they mean very
+ * different things: `booking_active_unique_idx` is the caller's duplicate
+ * booking, while `booking_referenceCode_unique` is a random code collision
+ * that has nothing to do with the request. Drizzle rethrows the driver
+ * error, but a wrapped cause is checked too so this keeps working if that
+ * ever changes.
+ */
+function uniqueViolationConstraint(err: unknown): string | null {
+  const infoOf = (value: unknown) =>
+    typeof value === 'object' && value !== null
+      ? (value as { code?: string; constraint?: string })
+      : undefined
+  const direct = infoOf(err)
+  const cause = infoOf((err as { cause?: unknown })?.cause)
+  const violation = direct?.code === '23505' ? direct : cause?.code === '23505' ? cause : undefined
+  return violation?.constraint ?? null
 }
 
 /** Columns the API exposes for a booking, joined with its service. */
@@ -200,6 +212,39 @@ function makeReferenceCode(): string {
   return `BTP-${code}`
 }
 
+/** How many times an insert retries when the random reference code collided. */
+const REFERENCE_CODE_ATTEMPTS = 3
+
+/**
+ * Inserts one booking row, regenerating the reference code if the
+ * (vanishingly unlikely) random collision trips its unique constraint.
+ * Anything else — including the duplicate-booking index — is rethrown for
+ * the caller to classify.
+ */
+async function insertBookingRow(
+  values: Omit<typeof booking.$inferInsert, 'id' | 'referenceCode'>,
+): Promise<string> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const inserted = await db
+        .insert(booking)
+        .values({ id: randomUUID(), referenceCode: makeReferenceCode(), ...values })
+        .returning({ id: booking.id })
+
+      const row = inserted[0]
+      // An insert without a returning row is a server-side inconsistency, not
+      // caller input — a plain Error surfaces as a 500.
+      if (!row) throw new Error('The booking insert returned no row.')
+      return row.id
+    } catch (err) {
+      const retryable =
+        uniqueViolationConstraint(err) === 'booking_referenceCode_unique' &&
+        attempt < REFERENCE_CODE_ATTEMPTS - 1
+      if (!retryable) throw err
+    }
+  }
+}
+
 export interface CreateBookingInput {
   userId: string
   serviceId: string
@@ -213,6 +258,22 @@ export interface CreateBookingInput {
  * absurdly far ahead. Returns the trimmed day so callers cannot accidentally
  * keep the raw input.
  */
+/**
+ * True when `day` is a `YYYY-MM-DD` string naming a day that actually exists.
+ *
+ * The shape test alone accepts days that do not exist — 2027-02-29,
+ * 2027-04-31, 2027-13-01 — and those reach Postgres, which rejects them as an
+ * out-of-range `date`. `Date` rolls impossible days over (2027-04-31 ->
+ * 2027-05-01) rather than failing, so parsing back and comparing is what
+ * actually catches it. Shared by the booking writers and the admin date
+ * filter, which must not hand Postgres a day it cannot parse.
+ */
+function isRealCalendarDay(day: string): boolean {
+  if (!ISO_DATE.test(day)) return false
+  const parsed = new Date(`${day}T00:00:00Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day
+}
+
 function validateBookingDay(raw: unknown): string {
   const bookingDate = typeof raw === 'string' ? raw.trim() : ''
 
@@ -220,13 +281,7 @@ function validateBookingDay(raw: unknown): string {
     throw new BookingError('Pick a date in YYYY-MM-DD format.', 400)
   }
 
-  // The shape alone accepts days that do not exist — 2027-02-29, 2027-04-31,
-  // 2027-13-01. Those reach Postgres, which rejects them as an out-of-range
-  // `date` and surfaces to the client as an uncaught 500, so reject them here.
-  // `Date` rolls impossible days over (2027-04-31 -> 2027-05-01) rather than
-  // failing, so parsing back and comparing is what actually catches it.
-  const parsedDay = new Date(`${bookingDate}T00:00:00Z`)
-  if (Number.isNaN(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== bookingDate) {
+  if (!isRealCalendarDay(bookingDate)) {
     throw new BookingError('That is not a real calendar date. Pick a valid day.', 400)
   }
 
@@ -280,33 +335,25 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   await assertServiceAvailable(input.serviceId)
 
   try {
-    const inserted = await db
-      .insert(booking)
-      .values({
-        id: randomUUID(),
-        referenceCode: makeReferenceCode(),
-        userId: input.userId,
-        serviceId: input.serviceId,
-        bookingDate,
-        status: 'pending',
-        notes,
-      })
-      .returning({ id: booking.id })
+    const bookingId = await insertBookingRow({
+      userId: input.userId,
+      serviceId: input.serviceId,
+      bookingDate,
+      status: 'pending',
+      notes,
+    })
 
-    const insertedRow = inserted[0]
-    if (!insertedRow) {
-      throw new BookingError('The booking could not be saved.', 400)
-    }
-
-    const created = await findBookingForUser(insertedRow.id, input.userId)
+    const created = await findBookingForUser(bookingId, input.userId)
     if (!created) {
-      throw new BookingError('The booking could not be read back after saving.', 400)
+      // A row that vanished between insert and read-back is our fault, not the
+      // caller's — a plain Error surfaces as a 500.
+      throw new Error('The booking could not be read back after saving.')
     }
     return created
   } catch (err) {
-    // The only unique index a user can trip here is booking_active_unique_idx,
-    // so the message can be specific.
-    if (isUniqueViolation(err)) {
+    // Only booking_active_unique_idx means "duplicate booking"; a reference
+    // code collision was already retried by insertBookingRow.
+    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
       throw new BookingError('You already have a booking for that service on that day.', 409)
     }
     throw err
@@ -340,7 +387,7 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
 
   const cancelled = await findBookingForUser(bookingId, userId)
   if (!cancelled) {
-    throw new BookingError('The booking could not be read back after cancelling.', 400)
+    throw new Error('The booking could not be read back after cancelling.')
   }
   return cancelled
 }
@@ -367,7 +414,14 @@ export interface AdminBooking extends Booking {
   customerContact: string | null
 }
 
-export type AdminBookingAction = 'confirm' | 'reject' | 'complete' | 'cancel'
+/**
+ * The admin status moves, in the order the console offers them. Exported so the
+ * route handler validates the URL segment against the same list the transition
+ * table is built from — the two drifted silently before.
+ */
+export const ADMIN_ACTION_NAMES = ['confirm', 'reject', 'complete', 'cancel'] as const
+
+export type AdminBookingAction = (typeof ADMIN_ACTION_NAMES)[number]
 
 /**
  * The only status moves an admin can make, and the states they are legal
@@ -441,6 +495,15 @@ export interface ListBookingsFilter {
 }
 
 /**
+ * Escapes the wildcards in a user-supplied ILIKE pattern, so searching for
+ * `50%` matches that literal text instead of every row. Postgres treats a
+ * backslash as the default escape character inside a LIKE pattern.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&')
+}
+
+/**
  * Every customer's bookings, oldest upcoming day first, pending ones on top —
  * the order the admin queue works through. Filters are applied in SQL so the
  * page never has to pull the whole table to narrow it.
@@ -451,12 +514,16 @@ export async function listAllBookings(filter: ListBookingsFilter = {}): Promise<
   if (filter.status) {
     conditions.push(eq(booking.status, filter.status))
   }
-  if (filter.date && ISO_DATE.test(filter.date)) {
-    conditions.push(eq(booking.bookingDate, filter.date))
+  const date = filter.date?.trim()
+  // An impossible day (2027-02-30, 2027-13-01) would reach Postgres and fail as
+  // an uncaught 500. Like any other unusable filter value, it is ignored — the
+  // admin simply sees the unfiltered queue rather than an error page.
+  if (date && isRealCalendarDay(date)) {
+    conditions.push(eq(booking.bookingDate, date))
   }
   const query = filter.query?.trim()
   if (query) {
-    const like = `%${query}%`
+    const like = `%${escapeLike(query)}%`
     conditions.push(
       or(
         ilike(booking.referenceCode, like),
@@ -540,32 +607,22 @@ export async function createBookingForOthers(
   await assertServiceAvailable(input.serviceId)
 
   try {
-    const inserted = await db
-      .insert(booking)
-      .values({
-        id: randomUUID(),
-        referenceCode: makeReferenceCode(),
-        userId,
-        guestName: userId ? null : guestName,
-        serviceId: input.serviceId,
-        bookingDate,
-        status: 'confirmed',
-        notes,
-      })
-      .returning({ id: booking.id })
+    const bookingId = await insertBookingRow({
+      userId,
+      guestName: userId ? null : guestName,
+      serviceId: input.serviceId,
+      bookingDate,
+      status: 'confirmed',
+      notes,
+    })
 
-    const insertedRow = inserted[0]
-    if (!insertedRow) {
-      throw new BookingError('The reservation could not be saved.', 400)
-    }
-
-    const created = await findBookingByIdForAdmin(insertedRow.id)
+    const created = await findBookingByIdForAdmin(bookingId)
     if (!created) {
-      throw new BookingError('The reservation could not be read back after saving.', 400)
+      throw new Error('The reservation could not be read back after saving.')
     }
     return created
   } catch (err) {
-    if (isUniqueViolation(err)) {
+    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
       // Only booking_active_unique_idx applies to a tagged user; guest rows
       // never enter it, so this fires only for the registered-customer path.
       throw new BookingError(
@@ -611,7 +668,7 @@ export async function adminSetBookingStatus(
 
   const result = await findBookingByIdForAdmin(bookingId)
   if (!result) {
-    throw new BookingError('The reservation could not be read back after updating.', 400)
+    throw new Error('The reservation could not be read back after updating.')
   }
   return result
 }
@@ -630,7 +687,7 @@ export interface TagUser {
  */
 export async function listUsersForTagging(query?: string): Promise<TagUser[]> {
   const q = query?.trim()
-  const like = q ? `%${q}%` : null
+  const like = q ? `%${escapeLike(q)}%` : null
 
   return db
     .select({ id: user.id, name: user.name, email: user.email })

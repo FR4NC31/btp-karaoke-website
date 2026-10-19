@@ -62,9 +62,9 @@ const IMAGE_URL_PATTERN = /^\/api\/uploads\/media\/[A-Za-z0-9_-]+\.(?:jpe?g|png|
 
 /** Thrown for anything the routes should turn into a specific HTTP status. */
 export class UploadError extends Error {
-  readonly status: 400 | 413
+  readonly status: 400 | 413 | 500
 
-  constructor(message: string, status: 400 | 413 = 400) {
+  constructor(message: string, status: 400 | 413 | 500 = 400) {
     super(message)
     this.name = 'UploadError'
     this.status = status
@@ -173,7 +173,9 @@ export async function storeMediaUpload(input: {
   } catch (err) {
     await rm(target, { force: true }).catch(() => {})
     if (err instanceof UploadError) throw err
-    throw new UploadError('The file could not be stored. Try again.')
+    // A disk failure is ours, not the caller's: 500 tells the client to
+    // report it rather than to retry with different input.
+    throw new UploadError('The file could not be stored. Try again.', 500)
   }
 
   if (bytes === 0) {

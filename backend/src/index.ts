@@ -7,6 +7,7 @@ import { Readable } from 'node:stream'
 import { auth } from './auth.ts'
 import { requireAdmin, requireSession } from './session-middleware.ts'
 import {
+  ADMIN_ACTION_NAMES,
   BookingError,
   adminSetBookingStatus,
   cancelBooking,
@@ -24,6 +25,7 @@ import {
   MediaError,
   createMediaItem,
   deleteMediaItem,
+  discardUpload,
   listMediaForAdmin,
   listPublicMedia,
   moveMediaItem,
@@ -31,6 +33,7 @@ import {
   updateMediaItem,
   type MediaSection,
 } from './media.ts'
+import { BOOKING_STATUSES } from './schema.ts'
 import {
   UploadError,
   mediaContentType,
@@ -200,6 +203,11 @@ app.post('/api/bookings', requireSession, async (c) => {
   if (typeof serviceId !== 'string' || typeof bookingDate !== 'string') {
     return c.json({ error: 'serviceId and bookingDate are required.' }, 400)
   }
+  // Silently dropping a non-string `notes` would answer 201 while discarding
+  // what the caller sent, so an unusable shape is rejected instead.
+  if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+    return c.json({ error: 'notes must be a string when provided.' }, 400)
+  }
 
   try {
     const booking = await createBooking({
@@ -245,14 +253,6 @@ app.post('/api/bookings/:id/cancel', requireSession, async (c) => {
 // (ids, names, days) — the role was already verified against the database.
 // ---------------------------------------------------------------------------
 
-const VALID_STATUSES: BookingStatus[] = [
-  'pending',
-  'confirmed',
-  'rejected',
-  'cancelled',
-  'completed',
-]
-
 const adminApi = new Hono()
 
 adminApi.use('*', requireAdmin)
@@ -260,8 +260,10 @@ adminApi.use('*', requireAdmin)
 // Every customer's reservations. Optional filters: ?status=, ?date=, ?query=.
 adminApi.get('/bookings', async (c) => {
   const statusParam = c.req.query('status')
+  // Validated against the schema's own list rather than a copy of it: a
+  // duplicated literal here would silently drop a status the database accepts.
   const status =
-    statusParam && (VALID_STATUSES as string[]).includes(statusParam)
+    statusParam && (BOOKING_STATUSES as readonly string[]).includes(statusParam)
       ? (statusParam as BookingStatus)
       : undefined
 
@@ -296,6 +298,11 @@ adminApi.post('/bookings', async (c) => {
   if (guestName !== undefined && typeof guestName !== 'string') {
     return c.json({ error: 'guestName must be a string when provided.' }, 400)
   }
+  // Same rule as the customer path: reject a shape we cannot store rather than
+  // answering 201 and dropping it.
+  if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+    return c.json({ error: 'notes must be a string when provided.' }, 400)
+  }
 
   try {
     const booking = await createBookingForOthers({
@@ -318,8 +325,9 @@ adminApi.post('/bookings', async (c) => {
 // ADMIN_ACTIONS (bookings.ts) and are enforced in the UPDATE itself.
 adminApi.post('/bookings/:id/:action', async (c) => {
   const action = c.req.param('action')
-  const actions: AdminBookingAction[] = ['confirm', 'reject', 'complete', 'cancel']
-  if (!(actions as string[]).includes(action)) {
+  // Same list the transition table is built from (bookings.ts), so an action
+  // can never be routable here without a legal move defined for it.
+  if (!(ADMIN_ACTION_NAMES as readonly string[]).includes(action)) {
     return c.json({ error: 'Unknown action.' }, 404)
   }
 
@@ -391,8 +399,19 @@ adminApi.post('/media', async (c) => {
 // editor saves its url on the row via create/update.
 adminApi.post('/media/upload', async (c) => {
   try {
+    // The editor percent-encodes X-File-Name: raw characters above U+00FF
+    // (curly quotes, CJK, emoji) make fetch reject the header before it is
+    // sent. Decode best-effort — a value that is not valid percent-encoding
+    // passes through untouched.
+    const headerName = c.req.header('x-file-name') ?? ''
+    let originalName = headerName
+    try {
+      originalName = decodeURIComponent(headerName)
+    } catch {
+      originalName = headerName
+    }
     const file = await storeMediaUpload({
-      originalName: c.req.header('x-file-name') ?? '',
+      originalName,
       contentType: c.req.header('content-type') ?? '',
       contentLength: c.req.header('content-length'),
       body: c.req.raw.body,
@@ -400,6 +419,28 @@ adminApi.post('/media/upload', async (c) => {
     return c.json({ file }, 201)
   } catch (err) {
     if (err instanceof UploadError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Discard one upload the editor made but could not save on a row. A URL some
+// row still references is left alone — a lost response must never delete a
+// file the hub still plays. 204 whether or not a file was removed.
+adminApi.post('/media/upload/discard', async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  try {
+    await discardUpload((body as { url?: unknown } | null)?.url)
+    return c.body(null, 204)
+  } catch (err) {
+    if (err instanceof MediaError) {
       return c.json({ error: err.message }, err.status)
     }
     throw err

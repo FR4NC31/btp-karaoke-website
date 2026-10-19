@@ -5,6 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import {
   createAdminMediaItem,
+  discardAdminMediaUpload,
   fetchAdminMedia,
   updateAdminMediaItem,
   uploadAdminMediaFile,
@@ -277,6 +278,10 @@ export default function AdminMediaForm() {
   const [coverFilePreview, setCoverFilePreview] = useState<string | null>(null)
   const [autoCover, setAutoCoverState] = useState<AutoCover | null>(null)
   const [scanningFile, setScanningFile] = useState(false)
+  // Bumped on every pick (and whenever a pick is dropped), so a scan that
+  // finishes after its file was replaced can be discarded instead of
+  // overwriting the form with the old file's metadata.
+  const scanGeneration = useRef(0)
   const coverInputRef = useRef<HTMLInputElement | null>(null)
 
   // Edit mode: load the row and prefill. All state lands in the async
@@ -351,6 +356,9 @@ export default function AdminMediaForm() {
 
   /** Drops the picked file (the stored one, if any, is untouched). */
   function clearFileSelection() {
+    // Any scan in flight belongs to the file being dropped.
+    scanGeneration.current += 1
+    setScanningFile(false)
     setFile(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -385,12 +393,29 @@ export default function AdminMediaForm() {
     clearFileSelection()
     setSourceUrl(null)
     setSourceName(null)
+    // The automatic cover came from the file being detached, so it goes too —
+    // otherwise saving would upload a cover for a file the admin removed.
+    setAutoCover(null)
     // The runtime described that file — a fresh pick reads the next one.
     setDuration('')
   }
 
+  /**
+   * True when the stored upload (if any) fits what `target` accepts: radio
+   * rows carry no file, video rows an MP4, music rows an MP3.
+   */
+  function sectionAcceptsStoredFile(target: MediaSection): boolean {
+    if (!sourceUrl) return true
+    if (target === 'radio') return false
+    const isMp3 = sourceUrl.toLowerCase().endsWith('.mp3')
+    return target === 'music' ? isMp3 : !isMp3
+  }
+
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const picked = event.target.files?.[0] ?? null
+    // Each pick (or drop) invalidates any scan still running: its metadata
+    // describes a file that is no longer the selection.
+    const generation = ++scanGeneration.current
     setFile(picked)
     setFieldError('')
     // A previous file's own cover does not belong to this one.
@@ -403,6 +428,8 @@ export default function AdminMediaForm() {
       // MP3 alike, so video songs and tracks both get their duration read
       // off the file.
       const [tags, seconds] = await Promise.all([readFileTags(picked), probeDuration(picked)])
+      // A superseded scan must not touch the form.
+      if (scanGeneration.current !== generation) return
       // Tags only fill blanks — copy the admin already typed always wins.
       if (tags.title) setTitle((current) => (current.trim() ? current : tags.title))
       if (tags.artist) setArtist((current) => (current.trim() ? current : tags.artist))
@@ -415,10 +442,13 @@ export default function AdminMediaForm() {
       } else if (section === 'video') {
         // No embedded art: a real frame beats the striped placeholder.
         const frame = await grabVideoFrame(picked)
-        if (frame) setAutoCover(makeAutoCover(frame, 'frame', picked.name))
+        if (frame && scanGeneration.current === generation) {
+          setAutoCover(makeAutoCover(frame, 'frame', picked.name))
+        }
       }
     } finally {
-      setScanningFile(false)
+      // Only the newest scan owns the spinner.
+      if (scanGeneration.current === generation) setScanningFile(false)
     }
   }
 
@@ -435,7 +465,9 @@ export default function AdminMediaForm() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (submitting) return
+    // Saving mid-scan would create a row without the file's runtime, tags or
+    // automatic cover — wait for the scan to settle.
+    if (submitting || scanningFile) return
     setFieldError('')
     setSaved(null)
 
@@ -450,6 +482,9 @@ export default function AdminMediaForm() {
     }
 
     setSubmitting(true)
+    // Everything this attempt uploads; discarded again if a later step fails
+    // so a failed save cannot leak the bytes.
+    const freshUploads: string[] = []
     try {
       let nextSourceUrl = sourceUrl
       let nextSourceName = sourceName
@@ -457,6 +492,7 @@ export default function AdminMediaForm() {
         const { file: stored } = await uploadAdminMediaFile(file)
         nextSourceUrl = stored.url
         nextSourceName = stored.name
+        freshUploads.push(stored.url)
       }
 
       // Cover priority: the picked image, else whatever the source file
@@ -471,26 +507,31 @@ export default function AdminMediaForm() {
         const { file: stored } = await uploadAdminMediaFile(await optimizeCover(coverSource))
         nextCoverUrl = stored.url
         nextCoverName = stored.name
+        freshUploads.push(stored.url)
       }
 
+      // Only the selected section's fields are submitted: the others go
+      // empty, so a section change can never carry hidden data (an old source
+      // file, a stale cover, a leftover tempo) into the row.
+      const fileSections = section === 'video' || section === 'music'
       const input: AdminMediaInput = {
         section,
         title,
         subtitle,
-        artist,
+        artist: section === 'radio' ? '' : artist,
         tag,
-        duration,
-        plays,
-        tempo,
-        songKey,
-        freq,
-        listeners,
-        sourceUrl: nextSourceUrl,
-        sourceName: nextSourceName,
-        album,
-        lyrics,
-        coverUrl: nextCoverUrl,
-        coverName: nextCoverName,
+        duration: fileSections ? duration : '',
+        plays: section === 'video' ? plays : null,
+        tempo: section === 'music' ? tempo : '',
+        songKey: section === 'music' ? songKey : '',
+        freq: section === 'radio' ? freq : '',
+        listeners: section === 'radio' ? listeners : null,
+        sourceUrl: fileSections ? nextSourceUrl : null,
+        sourceName: fileSections ? nextSourceName : null,
+        album: fileSections ? album : '',
+        lyrics: section === 'music' ? lyrics : '',
+        coverUrl: fileSections ? nextCoverUrl : null,
+        coverName: fileSections ? nextCoverName : null,
       }
 
       const { item } = editing
@@ -507,6 +548,10 @@ export default function AdminMediaForm() {
       clearCoverSelection()
     } catch (err) {
       setFieldError(describeBookingError(err, 'The item could not be saved.'))
+      // The row was never written, so nothing references these uploads.
+      for (const url of freshUploads) {
+        await discardAdminMediaUpload(url)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -602,12 +647,18 @@ export default function AdminMediaForm() {
                   id="media-section"
                   value={section}
                   onChange={(e) => {
-                    setSection(e.target.value as MediaSection)
+                    const next = e.target.value as MediaSection
+                    setSection(next)
                     // The picker's accept changes with the section: drop a
                     // stale pick (and the cover it brought) so the wrong
                     // file type can never be attached.
                     clearFileSelection()
                     setAutoCover(null)
+                    // A stored upload the new section cannot carry (radio
+                    // carries none; video and music each carry their own
+                    // format) is detached rather than submitted against the
+                    // wrong section.
+                    if (!sectionAcceptsStoredFile(next)) removeStoredFile()
                   }}
                   className={INPUT_CLASSES}
                 >
@@ -934,16 +985,18 @@ export default function AdminMediaForm() {
             <div className="flex flex-wrap items-center gap-4">
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || scanningFile}
                 className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting
                   ? file || coverFile || autoCover
                     ? 'Uploading and saving…'
                     : 'Saving…'
-                  : editing
-                    ? 'Save changes'
-                    : 'Add to the hub'}
+                  : scanningFile
+                    ? 'Reading the file…'
+                    : editing
+                      ? 'Save changes'
+                      : 'Add to the hub'}
               </button>
               <Link
                 to="/admin/media"

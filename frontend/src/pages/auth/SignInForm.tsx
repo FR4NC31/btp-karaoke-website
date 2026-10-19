@@ -104,10 +104,18 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
       // page by role (admins → /admin, everyone else → /studio). Jumping
       // straight to /studio dropped admin sign-ins into the customer view.
       const origin = window.location.origin
+      // Carry any parked `?next=` through the OAuth round trip. Without it an
+      // admin bounced from a deep /admin page lands on the console overview
+      // instead of the page they asked for. landingPathFor validates the value
+      // again on arrival, so nothing new is trusted here.
+      const next = searchParams.get('next')
+      const callback = next
+        ? `${origin}/signin?next=${encodeURIComponent(next)}`
+        : `${origin}/signin`
       const { error: socialError } = await signIn.social({
         provider: 'google',
-        callbackURL: `${origin}/signin`,
-        errorCallbackURL: `${origin}/signin`,
+        callbackURL: callback,
+        errorCallbackURL: callback,
       })
 
       // On success Better Auth returns a `url` and its client-side redirect

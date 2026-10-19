@@ -70,10 +70,18 @@ export default function AdminOverview() {
     }
   }, [reservationsRevision])
 
+  /** Re-reads the snapshot — used best-effort after a failed action. */
+  async function refresh() {
+    const result = await fetchAdminBookings()
+    setBookings(result.bookings)
+    setStudioToday(result.studioToday)
+  }
+
   async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
     if (actingId) return
     setActingId(booking.id)
     setFlash('')
+    setLoadError('')
     try {
       const { booking: updated } = await adminBookingAction(booking.id, action)
       // Swap the one row; the day never changes, so list order holds until
@@ -84,6 +92,13 @@ export default function AdminOverview() {
       )
     } catch (err) {
       setLoadError(describeBookingError(err, 'The reservation could not be updated.'))
+      // The action may have lost a race (409) — re-read so the queue matches
+      // the server even though the action itself reported an error.
+      try {
+        await refresh()
+      } catch {
+        // Keep the action's error; the reload is best-effort.
+      }
     } finally {
       setActingId('')
     }

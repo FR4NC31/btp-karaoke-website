@@ -9,8 +9,8 @@ import { SessionChecking } from './SessionStates'
  * clicking a header link out of habit should all land somewhere useful
  * instead of a login form the user has no use for — where exactly is
  * `landingPathFor`: the page they were originally headed for (`?next=`, set
- * by RequireAdmin/RequireAuth bounces) if there is one, otherwise the admin
- * console for admins and the studio for everyone else.
+ * by RequireAdmin's bounce) if there is one, otherwise the admin console for
+ * admins and the studio for everyone else.
  *
  * Deliberately does *not* re-query the server. Both possible stale answers
  * are harmless here, which is the opposite of `RequireAuth`:

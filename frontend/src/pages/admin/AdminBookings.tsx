@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
@@ -94,10 +94,15 @@ export default function AdminBookings() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
+  // Bumped whenever a filter (or the shell's save revision) starts a new load.
+  // Action handlers capture it so a slower response cannot overwrite rows that
+  // belong to a newer filter.
+  const filterGeneration = useRef(0)
 
   // Reload whenever a filter changes (the API does the filtering) or the
   // modal saves a reservation.
   useEffect(() => {
+    const generation = ++filterGeneration.current
     let alive = true
 
     async function load() {
@@ -108,15 +113,15 @@ export default function AdminBookings() {
           date: date || undefined,
           query: query || undefined,
         })
-        if (!alive) return
+        if (!alive || generation !== filterGeneration.current) return
         setBookings(result.bookings)
         setStudioToday(result.studioToday)
         setLoadError('')
       } catch (err) {
-        if (!alive) return
+        if (!alive || generation !== filterGeneration.current) return
         setLoadError(describeBookingError(err, 'Could not load the reservations.'))
       } finally {
-        if (alive) setLoading(false)
+        if (alive && generation === filterGeneration.current) setLoading(false)
       }
     }
 
@@ -130,35 +135,33 @@ export default function AdminBookings() {
     if (actingId) return
     setActingId(booking.id)
     setFlash('')
+    setLoadError('')
+    const generation = filterGeneration.current
+    let failure = ''
     try {
       const { booking: updated } = await adminBookingAction(booking.id, action)
       setFlash(`${updated.referenceCode} is now ${updated.status}.`)
-      // Reload rather than patch in place: the active filter may no longer
-      // match the row (e.g. "pending" after a confirm), and the server is the
-      // source of truth for order + filters.
+    } catch (err) {
+      // A 409 here is normal life (another tab acted first) — the reload below
+      // shows the row's true state instead of a stale button set.
+      failure = describeBookingError(err, 'The reservation could not be updated.')
+    }
+    // Reload rather than patch in place: the active filter may no longer match
+    // the row (e.g. "pending" after a confirm), and the server is the source of
+    // truth for order + filters. The reload is best-effort — the action's own
+    // error stays on screen when it fails too.
+    try {
       const result = await fetchAdminBookings({
         status: status === 'all' ? undefined : status,
         date: date || undefined,
         query: query || undefined,
       })
-      setBookings(result.bookings)
+      if (generation === filterGeneration.current) setBookings(result.bookings)
     } catch (err) {
-      // A 409 here is normal life (another tab acted first) — reload so the
-      // row shows its true state instead of a stale button set.
-      setLoadError(describeBookingError(err, 'The reservation could not be updated.'))
-      try {
-        const result = await fetchAdminBookings({
-          status: status === 'all' ? undefined : status,
-          date: date || undefined,
-          query: query || undefined,
-        })
-        setBookings(result.bookings)
-      } catch {
-        // Keep the original error message; the reload is best-effort.
-      }
-    } finally {
-      setActingId('')
+      if (!failure) failure = describeBookingError(err, 'Could not refresh the reservations.')
     }
+    if (failure) setLoadError(failure)
+    setActingId('')
   }
 
   return (
