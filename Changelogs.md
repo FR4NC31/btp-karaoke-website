@@ -32,6 +32,12 @@ Last updated: October 19, 2026
 
 ### Bug Fixes
 
+- fix(ui): make the media editor section-safe and leak-free (09ca2e8)
+- fix(api): tell unique violations apart and reap failed uploads (f3c3362)
+- fix(test): hold the QA admin credential in the environment, not the repo (b248df1)
+- fix(ui): stop stale responses from misleading users (4742577)
+- fix(api): fail loudly instead of silently, in the small places (1a5d6ff)
+- fix(auth): refuse control characters in ?next=, which broke the sign-in page (16bb555)
 - fix(studio): resume skips from a removed row's slot (10a4166)
 - fix(studio): harden queue playback and staff previews (426cfe6)
 - fix(auth): route signed-in users to their own dashboard (58d4591)
@@ -60,6 +66,7 @@ Last updated: October 19, 2026
 
 ### Other Changes
 
+- Merge pull request #15 from FR4NC31/fix/autoplay-fix (e600593)
 - Merge pull request #14 from FR4NC31/feat/booking-system (1f7237a)
 - ﻿feat(media): add artist metadata and auto-read runtimes (aab0c39)
 - ﻿feat(media): upload real MP4/MP3 files and confirm deletes (2879b1a)
