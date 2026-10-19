@@ -146,7 +146,8 @@ a session cookie, and `/studio` is guarded by `RequireAuth`.
   `qa-admin@example.com` exists, promotes it if needed
   (`npm run promote-admin` — promotion is CLI-only, by design),
   then writes the session to `playwright/.auth/admin.json`. Admin suites opt
-  in with `test.use({ storageState: ADMIN_STORAGE_STATE })`.
+  in with `test.use({ storageState: ADMIN_STORAGE_STATE })`. It signs in with
+  the environment-held credentials described under [Test data](#test-data).
 
 If the whole feature suite suddenly redirects to `/signin`, the saved state
 is stale: re-run once (the setup project recreates it) or check that
@@ -161,9 +162,16 @@ OAuth failures redirected back as query params are covered by AUTH-018.
 
 - Controlled fake data only: `qa@example.com`, `juan@example.com`,
   `09171234567` (11-digit dummy), `Secret123!` — defined in
-  `helpers/auth.ts` / `signup.spec.ts`. The admin suites use the same
-  contract with `qa-admin@example.com` / `AdminSecret123!` (promoted once;
-  `TEST_ADMIN` in `helpers/auth.ts`).
+  `helpers/auth.ts` / `signup.spec.ts`.
+- The admin account is `qa-admin@example.com`, promoted once through the CLI.
+  Its password is deliberately **not** in the repo: `TEST_ADMIN` in
+  `helpers/auth.ts` reads `TEST_ADMIN_EMAIL` / `TEST_ADMIN_PASSWORD` from the
+  environment — locally that is `frontend/.env.local` (gitignored, loaded by
+  `playwright.config.ts`); in CI it is the `TEST_ADMIN_PASSWORD` repo secret
+  (see `.github/workflows/e2e.yml`). To rotate or reset it: delete the
+  `qa-admin@example.com` row in the database, put the new password in
+  `frontend/.env.local` (and update the repo secret), then run the suite —
+  `setup/admin.setup.ts` recreates the account and re-promotes it.
 - No real users, no production accounts, no production data, no secrets.
 - The backend **does** persist: sign-up/sign-in write rows, and a booking is a
   real row too. Tests stay re-runnable because they clean up what they create,

@@ -43,6 +43,11 @@ export const TEST_USER = {
  * Controlled admin credentials, same contract as TEST_USER — a real account
  * with `role = 'admin'` in Aiven, created once and reused.
  *
+ * The password is deliberately **not** in this file: it is supplied through
+ * the environment. Locally that is `frontend/.env.local` (gitignored, loaded
+ * by playwright.config.ts); in CI it is the `TEST_ADMIN_PASSWORD` repo
+ * secret. Rotating the password means updating both places, nothing here.
+ *
  * Unlike TEST_USER this account cannot be (re)seeded through the sign-up API
  * alone: the role is server-managed (`input: false`), so promotion is a CLI
  * step. setup/admin.setup.ts performs both automatically when they are
@@ -53,9 +58,21 @@ export const TEST_USER = {
  * The role check is part of the security model (see admin-security.spec.ts,
  * SEC-003): there is deliberately no HTTP route that can promote anyone.
  */
+function requiredEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(
+      `${name} is not set. The E2E suite needs the QA admin credentials: ` +
+        'put TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD in frontend/.env.local ' +
+        '(see docs/testing/playwright.md), or export them before running.',
+    )
+  }
+  return value
+}
+
 export const TEST_ADMIN = {
-  email: 'qa-admin@example.com',
-  password: 'AdminSecret123!',
+  email: requiredEnv('TEST_ADMIN_EMAIL'),
+  password: requiredEnv('TEST_ADMIN_PASSWORD'),
 }
 
 /**

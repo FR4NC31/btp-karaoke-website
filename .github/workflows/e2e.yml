@@ -88,6 +88,12 @@ jobs:
 
       - name: Playwright smoke suite
         working-directory: frontend
+        env:
+          # helpers/auth.ts reads the QA admin credentials from the
+          # environment — the same contract as the local frontend/.env.local,
+          # with the password coming from the repo secret instead.
+          TEST_ADMIN_EMAIL: qa-admin@example.com
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: npm run test:e2e:smoke
 
       - name: Upload Playwright report
@@ -154,6 +160,10 @@ jobs:
 
       - name: Playwright full suite
         working-directory: frontend
+        env:
+          # Same contract as the smoke step above.
+          TEST_ADMIN_EMAIL: qa-admin@example.com
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: npm run test:e2e
 
       - name: Upload Playwright report

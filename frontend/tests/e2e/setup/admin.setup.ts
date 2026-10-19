@@ -24,9 +24,10 @@ import { ADMIN_STORAGE_STATE, TEST_ADMIN, signInAsAdmin } from '../helpers/auth'
  *
  * Steps 1–2 are idempotent: on a database where the account is already
  * promoted (the normal case after the first run) the only cost is the role
- * check. If sign-in later fails with "Incorrect email or password", the
- * account predates these credentials — reset the password or delete the row,
- * then re-run.
+ * check. The password comes from the environment (TEST_ADMIN_PASSWORD — see
+ * helpers/auth.ts); if sign-in fails with "Incorrect email or password", the
+ * configured value is stale — put the current password in
+ * frontend/.env.local, or delete the row and re-run to recreate the account.
  */
 setup('authenticate as the QA admin', async ({ page, baseURL }) => {
   setup.setTimeout(60_000)
