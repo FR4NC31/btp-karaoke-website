@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
@@ -15,6 +14,8 @@ import {
 } from '../../lib/admin-api'
 import { describeBookingError, type BookingStatus } from '../../lib/booking-api'
 import { STATUS_STYLES, formatDay, peso } from '../../lib/booking-format'
+import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
+import { ReservationRowsSkeleton } from './AdminSkeletons'
 
 /**
  * /admin/bookings — every reservation, across all customers.
@@ -25,6 +26,10 @@ import { STATUS_STYLES, formatDay, peso } from '../../lib/booking-format'
  * cancelled — exactly the transitions the backend's ADMIN_ACTIONS allows.
  * A 409 ("already confirmed by someone else") surfaces as a flash, and the
  * list reloads so the row shows its real state.
+ *
+ * The + New reservation button opens the shell-hosted modal (no create page);
+ * the shell bumps `reservationsRevision` when it saves, which reloads this
+ * list behind the modal.
  */
 
 const STATUS_FILTERS: Array<{ value: BookingStatus | 'all'; label: string }> = [
@@ -78,6 +83,7 @@ function ActionButton({
 }
 
 export default function AdminBookings() {
+  const { openNewReservation, reservationsRevision } = useNewReservationDialog()
   const [bookings, setBookings] = useState<AdminBooking[]>([])
   const [status, setStatus] = useState<BookingStatus | 'all'>('all')
   const [date, setDate] = useState('')
@@ -89,7 +95,8 @@ export default function AdminBookings() {
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
 
-  // Reload whenever a filter changes; the API does the filtering.
+  // Reload whenever a filter changes (the API does the filtering) or the
+  // modal saves a reservation.
   useEffect(() => {
     let alive = true
 
@@ -117,7 +124,7 @@ export default function AdminBookings() {
     return () => {
       alive = false
     }
-  }, [status, date, query])
+  }, [status, date, query, reservationsRevision])
 
   async function handleAction(booking: AdminBooking, action: AdminBookingAction) {
     if (actingId) return
@@ -163,12 +170,13 @@ export default function AdminBookings() {
             Every customer, every status
           </p>
         </div>
-        <Link
-          to="/admin/bookings/new"
+        <button
+          type="button"
+          onClick={openNewReservation}
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover"
         >
           + New reservation
-        </Link>
+        </button>
       </header>
 
       {loadError && (
@@ -282,11 +290,11 @@ export default function AdminBookings() {
 
       {/* ------------------------------- rows -------------------------------- */}
       {loading ? (
-        <p role="status" className="text-sm text-text-muted">
-          Loading reservations…
-        </p>
+        <ReservationRowsSkeleton />
       ) : bookings.length === 0 ? (
-        <p className="text-sm text-text-muted">No reservations match these filters.</p>
+        <p className="py-16 text-center text-sm text-text-muted">
+          No reservations match these filters.
+        </p>
       ) : (
         <ul className="space-y-3">
           {bookings.map((booking) => (

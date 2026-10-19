@@ -46,6 +46,11 @@ export interface MediaItem {
   sourceName: string | null
   /** Album/collection as shown on the hub, or null to hide it. */
   album: string | null
+  /**
+   * Optional track lyrics — multi-line plain text typed or pasted in the
+   * admin editor (music rows). Null when the admin wrote none.
+   */
+  lyrics: string | null
   /** Uploaded cover image shown on the card/stage; null = default art. */
   coverUrl: string | null
   /** Original filename of the cover upload — admin display only. */
@@ -56,10 +61,14 @@ export interface MediaItem {
   updatedAt: string
 }
 
-/** The public hub payload — no admin bookkeeping fields. */
+/**
+ * The public hub payload — no admin bookkeeping fields, and no lyrics: the
+ * text is staff-only (the admin editor and console read it through
+ * /api/admin/media), so an unauthenticated /api/media read cannot scrape it.
+ */
 export type PublicMediaItem = Omit<
   MediaItem,
-  'isActive' | 'createdAt' | 'updatedAt' | 'sourceName' | 'coverName'
+  'isActive' | 'createdAt' | 'updatedAt' | 'sourceName' | 'coverName' | 'lyrics'
 >
 
 /** Thrown for anything the route should turn into a specific HTTP status. */
@@ -77,6 +86,8 @@ const SECTION_VALUES: MediaSection[] = ['video', 'music', 'radio']
 const TITLE_MAX = 120
 const TEXT_MAX = 160
 const SHORT_TEXT_MAX = 40
+/** Lyrics hold whole songs — room for a long pasted text. */
+const LYRICS_MAX = 10000
 
 type MediaRow = typeof mediaItem.$inferSelect
 
@@ -97,6 +108,7 @@ function toMediaItem(row: MediaRow): MediaItem {
     sourceUrl: row.sourceUrl,
     sourceName: row.sourceName,
     album: row.album,
+    lyrics: row.lyrics,
     coverUrl: row.coverUrl,
     coverName: row.coverName,
     sortOrder: row.sortOrder,
@@ -262,6 +274,7 @@ interface ValidatedFields {
   sourceUrl: string | null
   sourceName: string | null
   album: string | null
+  lyrics: string | null
   coverUrl: string | null
   coverName: string | null
 }
@@ -272,8 +285,9 @@ interface ValidatedFields {
  * a replace — clearing a box clears the column.
  */
 function validateFields(input: Record<string, unknown>): ValidatedFields {
+  const section = cleanSection(input.section)
   return {
-    section: cleanSection(input.section),
+    section,
     title: cleanTitle(input.title),
     subtitle: cleanText(input.subtitle, 'Subtitle'),
     artist: cleanText(input.artist, 'Artist'),
@@ -287,6 +301,10 @@ function validateFields(input: Record<string, unknown>): ValidatedFields {
     sourceUrl: cleanSourceUrl(input.sourceUrl),
     sourceName: cleanText(input.sourceName, 'Source name'),
     album: cleanText(input.album, 'Album'),
+    // Lyrics are a music-track field: video/radio rows never store them, and
+    // switching a music row's section clears its old text instead of leaving
+    // an orphaned staff blob behind.
+    lyrics: section === 'music' ? cleanText(input.lyrics, 'Lyrics', LYRICS_MAX) : null,
     coverUrl: cleanCoverUrl(input.coverUrl),
     coverName: cleanText(input.coverName, 'Cover name'),
   }

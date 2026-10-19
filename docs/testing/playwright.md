@@ -108,10 +108,10 @@ frontend/tests/e2e/
 ├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub (DB-backed catalog), console, player bar, PiP, cross-page sync
-├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
+├── karaoke/discovery.spec.ts    KARAOKE-001…015 media hub (DB-backed catalog), console, player bar, PiP, queue playback
+├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
-├── admin/admin.spec.ts          ADMIN-001…008    console: queue, reservations, booking for others, media catalog
+├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
 ├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
@@ -187,12 +187,13 @@ What the product actually implements today (test coverage is limited to this):
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
 | Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
-| Player play/pause/like toggles   | Working (UI state; real on console) | PLAYER-001/003/004/008 |
+| Player play/pause/like toggles   | Working (real lobby track on the hub; the console's on-air track renames the bar) | PLAYER-001/003/004/008 |
+| Lobby autoplay on studio entry   | **None by design** — silence until the user plays (bar's Play) or a console session hands back on exit (KARAOKE-010); reintroducing autoplay is a regression | PLAYER-009 |
 | Progress display                 | Live m:ss on every studio page (video on console, lobby music elsewhere) | PLAYER-006 |
 | Search input (top bar)           | **Not wired** (decorative) | — (N/A, test-cases.md) |
 | Song detail / lyrics page        | Does not exist        | —                         |
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
-| Previous/Next/Shuffle/Repeat     | Repeat cycles off → all → one on the bar (drives the video `loop`); Previous/Next + Shuffle visual only | — (asserted only where visible) |
+| Previous/Next/Shuffle/Repeat     | Working on the console queue: repeat cycles off → all → one (all wraps the queue — and loops the floating PiP mini, which has no queue of its own; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. No playlist on other studio pages, so the skips are inert there. | KARAOKE-014/015 |
 
 ## Booking desk testing
 
@@ -256,8 +257,8 @@ their tests create the rows they assert and delete them afterwards.
 | -------------------------------------- | ---------------------------------------- | ------------ |
 | Admin sign-in lands on `/admin`        | Working (role-aware redirect)            | ADMIN-001    |
 | Pending queue confirm / reject         | Working — the console answers the queue  | ADMIN-002/003 |
-| Reservation for a tagged customer      | Working (search an account, tag it)      | ADMIN-005    |
-| Reservation for a guest / walk-in      | Working (free-text name, no account)     | ADMIN-004    |
+| Reservation for a tagged customer      | Working — modal on the desk (search an account, tag it) | ADMIN-005    |
+| Reservation for a guest / walk-in      | Working — modal on the desk (free-text name, no account) | ADMIN-004    |
 | confirmed → completed / cancelled      | Working (`ADMIN_ACTIONS` transitions)    | ADMIN-002/004/005 |
 | Console entry from the studio chrome   | Working — shown to admins only; the top bar link is the mobile path | ADMIN-006 / SEC-004 |
 | `/api/admin/*` 401/403 boundary        | Working — fail-closed sub-app mount      | SEC-001/002  |
@@ -266,6 +267,7 @@ their tests create the rows they assert and delete them afterwards.
 | Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
 | Media file upload (MP4/MP3)            | Working — stored with byte ranges + immutable cache; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
 | Tag metadata fill + covers/thumbnails  | Working — tags pre-fill the blank boxes (Artist/album); the runtime is read off the picked file; embedded art, grabbed video frames and picked images become optimized WebP covers | ADMIN-012/013 |
+| Staff preview on the console           | Working — **Play** on a card opens `/studio/player-queue` on that row; admins get the staff-only **Admin details** panel (KARAOKE-002 pins users out of it) | ADMIN-014    |
 | Delete confirmation on media rows      | Working — Delete → Confirm/Cancel pair   | ADMIN-007/009 |
 | User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
@@ -291,7 +293,7 @@ their tests create the rows they assert and delete them afterwards.
   `GET /api/admin/users`, plus the media catalog: `GET/POST /api/admin/media`,
   `POST /api/admin/media/upload`, `POST /api/admin/media/:id`,
   `POST /api/admin/media/:id/{visibility,move,delete}`)
-  is driven end-to-end by ADMIN-001…013, and its boundary is pinned by direct
+  is driven end-to-end by ADMIN-001…014, and its boundary is pinned by direct
   calls: SEC-001 (401 anonymous) and SEC-002 (403 for a signed-in non-admin,
   on every route shape). SEC-003 calls the auth API directly to prove `role`
   cannot be set at sign-up or through `update-user`.

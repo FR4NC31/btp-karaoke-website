@@ -109,6 +109,8 @@ export interface AdminMediaInput {
   sourceName?: string | null
   /** Album/collection as shown on the hub. */
   album?: string
+  /** Track lyrics — multi-line text; blank clears them. */
+  lyrics?: string
   /** Cover image reference from uploadAdminMediaFile; null removes it. */
   coverUrl?: string | null
   /** Original filename of the cover upload. */
@@ -139,6 +141,7 @@ function mediaPayload(input: AdminMediaInput): Record<string, unknown> {
     sourceUrl: input.sourceUrl ?? null,
     sourceName: clean(input.sourceName ?? undefined),
     album: clean(input.album),
+    lyrics: clean(input.lyrics),
     coverUrl: input.coverUrl ?? null,
     coverName: clean(input.coverName ?? undefined),
   }

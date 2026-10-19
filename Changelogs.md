@@ -2,10 +2,13 @@
 
 ## Unreleased
 
-Last updated: October 18, 2026
+Last updated: October 19, 2026
 
 ### Features
 
+- feat(studio): queue playback and shuffle draws (4a286f0)
+- feat(admin): take reservations in a desk modal (0d2fe27)
+- feat(media): add track lyrics and staff preview (8c5c8b6)
 - feat(media): read file tags and carry covers through the hub (0c4c631)
 - feat(media): move the hub onto a managed catalog (1d9d13f)
 - feat(admin): add admin role and booking console (3043d92)
@@ -29,6 +32,8 @@ Last updated: October 18, 2026
 
 ### Bug Fixes
 
+- fix(studio): resume skips from a removed row's slot (10a4166)
+- fix(studio): harden queue playback and staff previews (426cfe6)
 - fix(auth): route signed-in users to their own dashboard (58d4591)
 - fix(studio): real track metadata, logout bounce gate, LFS video (a363aeb)
 - fix(frontend): fall back to home from 404 when history is empty (747f5f9)
@@ -55,8 +60,10 @@ Last updated: October 18, 2026
 
 ### Other Changes
 
+- Merge pull request #14 from FR4NC31/feat/booking-system (1f7237a)
 - ﻿feat(media): add artist metadata and auto-read runtimes (aab0c39)
 - ﻿feat(media): upload real MP4/MP3 files and confirm deletes (2879b1a)
+- Merge pull request #13 from FR4NC31/feat/booking-system (7662119)
 - ﻿fix(backend): repair sslmode strip, pool errors, date validation (6884db3)
 - ﻿feat(booking): day-only booking desk with Drizzle-backed service catalog (d6cf197)
 - Merge pull request #12 from FR4NC31/feat/player-queue (5fcca18)

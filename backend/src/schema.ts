@@ -142,6 +142,11 @@ export const mediaItem = pgTable(
      */
     album: text('album'),
     /**
+     * Optional track lyrics — multi-line plain text the admin types or pastes
+     * in the editor's Lyrics box. NULL means none were written.
+     */
+    lyrics: text('lyrics'),
+    /**
      * Cover art / thumbnail behind the hub card, the console stage poster
      * and the player bar — an uploaded image (`/api/uploads/media/<uuid>.<ext>`
      * returned by the media uploader). NULL = the default art.

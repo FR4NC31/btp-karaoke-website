@@ -34,6 +34,8 @@ export interface MediaSeedInput {
   sourceName?: string
   /** Album/collection as shown on the hub and in the editor. */
   album?: string
+  /** Staff-only track lyrics (music rows; the public feed omits them). */
+  lyrics?: string
   /** Cover-image reference from uploadMediaFileAsAdmin (image upload). */
   coverUrl?: string
   coverName?: string
@@ -82,6 +84,24 @@ export async function deleteMediaItemAsAdmin(
     if (!response.ok() && response.status() !== 404) {
       throw new Error(`media delete failed (${response.status()}): ${await response.text()}`)
     }
+  })
+}
+
+/** Reads one catalog row back through the staff API (bookkeeping + lyrics). */
+export async function getMediaItemAsAdmin(
+  baseURL: string | undefined,
+  id: string,
+): Promise<Record<string, unknown>> {
+  return withAdminApi(baseURL, async (api) => {
+    const response = await api.get('/api/admin/media')
+    expect(
+      response.ok(),
+      `media read should succeed (got ${response.status()})`,
+    ).toBeTruthy()
+    const body = (await response.json()) as { items: Array<Record<string, unknown>> }
+    const item = body.items.find((row) => row.id === id)
+    expect(item, 'the created row should be in the admin catalog').toBeTruthy()
+    return item ?? {}
   })
 }
 

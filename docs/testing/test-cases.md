@@ -447,6 +447,67 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   (206). Deleting the row removes the stored file (404).
 - **Automation:** Playwright — **Status: Automated**
 
+### KARAOKE-013
+
+- **Title:** A card menu queues a song for the console
+- **Priority:** P1
+- **Steps:** 1. Open `/studio`. 2. Click **More options for The Reason** on
+  the first card. 3. Click **Add to queue**. 4. Click **Open lounge queue**.
+- **Expected:** The dialog shows the track (title + artist · runtime) and the
+  button flips to **Added to queue**; the console's Upcoming Lounge Queue
+  carries the row with its remove action — hub and console share one list,
+  persisted to `localStorage` (`btp.lounge-queue`).
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-014
+
+- **Title:** The bar skips play exact queued songs, never the master
+- **Priority:** P1
+- **Preconditions:** Uploads a real (silent) MP3 three times and attaches one
+  to each of three fresh music rows (all rows deleted in `finally`). The clips
+  are stretched past the fixture's 1.35 s so auto-advance timing is
+  deterministic.
+- **Steps:** 1. Queue all three songs from their hub card menus. 2. Open the
+  console, click **Next** on the player bar, end the first song (the test
+  seeks to its last fraction of a second), then click **Previous** and
+  **Next**. 3. Remove the on-air row from the rail, then click **Next** and
+  **Previous**.
+- **Expected:** The first **Next** steps over the mockup queue rows (nothing
+  real behind them) onto the first queued song and plays **its exact file**
+  (`src` is the stored `/api/uploads/media/...` url - never the bundled
+  master), and the bar shows its title; the song finishing rolls onto the
+  second queued file and auto-plays it; **Previous** / **Next** walk the real
+  songs. Removing the on-air row keeps that song playing, and the next
+  **Next** resumes from the slot it occupied (the third song) instead of
+  restarting at the top; **Previous** steps back over the removed row.
+- **Automation:** Playwright - **Status: Automated**
+
+### KARAOKE-015
+
+- **Title:** Repeat all wraps the queue and shuffle draws random songs
+- **Priority:** P1
+- **Preconditions:** Same setup as KARAOKE-014 but with three real silent MP3s
+  attached to three fresh music rows (all deleted in `finally`); the clips are
+  stretched so no song runs out between two clicks.
+- **Steps:** 1. Queue the three songs and open the console. 2. Click
+  **Shuffle** on the bar, then **Next** through a full round (three draws),
+  then **Previous**. 3. Switch shuffle off, cycle repeat to **Repeat all**,
+  walk on two rows and end the song; then cycle **Repeat one** → **Repeat
+  off** and end the last queue row with repeat off.
+- **Expected:** With shuffle on (`aria-pressed="true"`) the rail reorders to
+  a random order - the same rows in new positions - and the skips draw: the
+  first **Next** plays a random song (never the one on air), the second the
+  only song the round had not played, and the third starts a fresh round
+  without repeating the song just heard - so nothing repeats until a full
+  round is done. **Previous** walks the round's played songs back, and a
+  following **Next** does not replay the song just left behind. Switching
+  shuffle off restores the arranged queue order. With repeat all the songs
+  run out in order and wrap around at the end - ending a song rolls playback
+  back onto the row it started from, still playing, instead of stopping or
+  looping one song. Repeat one loops the video element itself; repeat off
+  stops at the queue's end.
+- **Automation:** Playwright - **Status: Automated**
+
 ---
 
 ## Player — `frontend/tests/e2e/player/player.spec.ts`
@@ -464,8 +525,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Playback starts
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Play** in the player bar.
-- **Expected:** The toggle becomes **Pause** (the spec settles the lobby
-  track to paused first — the test browser allows autoplay).
+- **Expected:** The toggle becomes **Pause** (the hub never autoplays —
+  PLAYER-009 — so this click is the first start; the spec settles the lobby
+  track's metadata first).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-004
@@ -493,6 +555,18 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P2
 - **Steps:** 1. Click the **Like** heart in the player bar.
 - **Expected:** Active (primary-colored) styling toggles on/off.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYER-009
+
+- **Title:** Studio entry does not autoplay the lobby music
+- **Priority:** P1
+- **Steps:** 1. Sign in / open `/studio`. 2. Watch the lobby track without
+  touching anything.
+- **Expected:** The lobby music stays paused (silent, 0:00, bar shows
+  **Play**) until the user actually chooses to hear something: the bar's
+  Play button or a console session handed back on exit (KARAOKE-010). The
+  single auto-resume that survives is that handoff.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -690,7 +764,7 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin books a day for a guest name
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/bookings/new`, switch to **Guest name**. 2. Type a name, pick a service and a day ~1–2 years out, save. 3. Search the reference in Reservations, then cancel it.
+- **Steps:** 1. Open `/admin`, click **+ New reservation** — the form opens in a modal and the URL stays on the desk (no create page). 2. Switch to **Guest name**. 3. Type a name, pick a service and a day ~1–2 years out, save. 4. Leave the modal via **View reservations**, search the reference, then cancel it.
 - **Expected:** The flash carries the reference, the guest name and **confirmed** — no approval step for a reservation the admin just took. The list row shows the Guest marker and the name. Cancelling is cleanup.
 - **Automation:** Playwright — **Status: Automated**
 
@@ -698,7 +772,7 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin tags a registered customer instead of a guest
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/bookings/new` (default mode: **Registered customer**). 2. Type `qa@example.com`, tag the result. 3. Pick a service and day, save. 4. Search the reference in Reservations, then mark it completed.
+- **Steps:** 1. On `/admin/bookings`, click **+ New reservation** (same modal as Overview; default mode: **Registered customer**). 2. Type `qa@example.com`, tag the result. 3. Pick a service and day, save, then leave the modal via **View reservations**. 4. Search the reference in Reservations, then mark it completed.
 - **Expected:** The flash carries the reference and **confirmed**; the list row shows the customer's email and no Guest marker. Marking completed is cleanup (it releases the day in the unique index).
 - **Automation:** Playwright — **Status: Automated**
 
@@ -714,8 +788,8 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin adds a music track and it reaches the hub
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/media/new`, pick **Music track**. 2. Fill title, description, tempo "120 BPM", key "Am"; save. 3. Check `/admin/media`, then `/studio`. 4. Delete the row from the console — the delete asks for confirmation; cancel once, then confirm.
-- **Expected:** The editor's fields switch per type (music asks tempo/key); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; **Delete** first turns into a "Delete permanently?" Confirm/Cancel pair — Cancel keeps the Live row, Confirm removes it (cleanup).
+- **Steps:** 1. Open `/admin/media/new` — the default video form carries no Lyrics box. 2. Pick **Music track**. 3. Fill title, description, tempo "120 BPM", key "Am" and a multi-line Lyrics text; save. 4. Check `/admin/media`, then `/studio`, then the row's stored lyrics through the admin API. 5. Delete the row from the console — the delete asks for confirmation; cancel once, then confirm.
+- **Expected:** The editor's fields switch per type (music asks tempo/key **and** the Lyrics box; video has none); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; the Lyrics text round-trips with line breaks intact; **Delete** first turns into a "Delete permanently?" Confirm/Cancel pair — Cancel keeps the Live row, Confirm removes it (cleanup).
 - **Automation:** Playwright — **Status: Automated**
 
 ### ADMIN-008
@@ -765,6 +839,15 @@ desk: every test-created reservation is driven to a terminal state
 - **Priority:** P1
 - **Steps:** 1. Open `/admin/media/new` as **Video song**. 2. Pick a tagless MP4 (`the-reason.mp4`) → the editor grabs a frame. 3. Pick `tests/e2e/assets/cover.png` over it, save, check the hub card. 4. Edit the row → **Remove cover** → save. 5. Delete the row.
 - **Expected:** The tagless video gets "Grabbed from the video" as its default thumbnail (no striped placeholder); an explicitly picked image overrides it and lands on the card as optimized WebP. After removal the card falls back to the default art and the replaced cover file is 404. Deleting the row takes the stored MP4 with it (404).
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-014
+
+- **Title:** Play previews a catalog row on the console with staff-only details
+- **Priority:** P2
+- **Preconditions:** Creates one video row through the admin API; deleted in `finally`.
+- **Steps:** 1. Open `/admin/media` and click **Play {title}** on the row's card. 2. Check the console stage and the **Admin details** panel. 3. Delete the row.
+- **Expected:** **Play** (offered where users can play too: video rows — bundled-master fallback included — and music rows with an upload; never radio) hands the row to `/studio/player-queue`, which opens on the picked row. Admins get the staff-only **Admin details** panel: catalog ID, section + Live/Hidden state, the source-file and cover references (or their fallbacks), and an **Edit item** link back to the editor. Regular users never render the panel (KARAOKE-002 pins the absence on the same console).
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -820,13 +903,13 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | API failure / 500 handling in UI       | N/A                   | Auth calls surface their error codes as inline form messages (`src/lib/auth-errors.ts`); no 500/retry handling exists yet. |
 | Favorites / playlists round-trip       | N/A                   | Not implemented (like button is local state only).           |
 | Database persistence after refresh     | Partial               | Sign-up/sign-in read and write Aiven (AUTH-010, AUTH-001) and the session persists (AUTH-009); favorites/playlists are still local state only. |
-| Song detail / lyrics synchronization   | N/A                   | No detail page or lyrics implementation.                     |
-| Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. |
+| Song detail / lyrics synchronization   | N/A                   | No song detail page; the admin stores staff-only lyrics on music rows (the public `/api/media` payload omits them), but nothing renders or syncs them yet. |
+| Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and the end-of-song auto-advance play each row's exact file and step over rows with no real media (KARAOKE-014). |
 | Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
-| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 — tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art). KARAOKE-003/005 create their rows via the admin API and delete them. |
+| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 - reaches `/studio`, multi-line lyrics stored on music rows and kept staff-only: the public `/api/media` payload omits them), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 - stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 - tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 - **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |

@@ -1,7 +1,7 @@
+import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  CalendarAdd01Icon,
   CalendarCheck01Icon,
   DashboardSquare01Icon,
   MusicNote01Icon,
@@ -9,12 +9,18 @@ import {
 } from '@hugeicons/core-free-icons'
 import BrandLogo from '../../components/BrandLogo'
 import ProfileMenu from '../studio/components/ProfileMenu'
+import NewReservationDialog from './NewReservationDialog'
 
 /**
  * Admin console shell: top bar, desk navigation, and the routed page through
  * <Outlet/>. Deliberately plain compared to StudioShell — no karaoke player,
  * no simulated loading skeleton; the console exists to work through
  * reservations, not to be browsed.
+ *
+ * The New reservation modal is hosted here and handed to the pages through
+ * the outlet context (lib/new-reservation-dialog.ts) — the + New reservation
+ * buttons on Overview and Reservations open it in place, so there is no
+ * "create" page (the old /admin/bookings/new route is gone).
  *
  * The sidebar is `hidden md:flex`, so the same links also render as a
  * horizontal strip inside <main> below md — every destination stays reachable
@@ -27,12 +33,16 @@ import ProfileMenu from '../studio/components/ProfileMenu'
 const navLinks = [
   { to: '/admin', label: 'Overview', icon: DashboardSquare01Icon, end: true },
   { to: '/admin/bookings', label: 'Reservations', icon: CalendarCheck01Icon, end: true },
-  { to: '/admin/bookings/new', label: 'New reservation', icon: CalendarAdd01Icon, end: true },
   // No `end`: the Media Hub entry stays lit while adding or editing an item.
   { to: '/admin/media', label: 'Media Hub', icon: MusicNote01Icon, end: false },
 ]
 
 export default function AdminShell() {
+  const [newReservationOpen, setNewReservationOpen] = useState(false)
+  // Bumped whenever the modal saves a reservation, so the open desk page
+  // refetches what it shows (overview stats / reservations list).
+  const [reservationsRevision, setReservationsRevision] = useState(0)
+
   return (
     <div className="flex h-dvh flex-col bg-background text-text-primary">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:px-4">
@@ -51,12 +61,6 @@ export default function AdminShell() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <Link
-            to="/studio"
-            className="rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-text-primary"
-          >
-            Studio
-          </Link>
           <Link
             to="/"
             className="hidden rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-text-primary sm:block"
@@ -119,9 +123,20 @@ export default function AdminShell() {
             ))}
           </nav>
 
-          <Outlet />
+          <Outlet
+            context={{
+              openNewReservation: () => setNewReservationOpen(true),
+              reservationsRevision,
+            }}
+          />
         </main>
       </div>
+
+      <NewReservationDialog
+        open={newReservationOpen}
+        onOpenChange={setNewReservationOpen}
+        onCreated={() => setReservationsRevision((revision) => revision + 1)}
+      />
     </div>
   )
 }

@@ -39,12 +39,27 @@ test.describe('player', () => {
     await expect(playerBar.getByRole('button', { name: 'Pause' })).toBeVisible()
   })
 
+  test('PLAYER-009: studio entry does not autoplay the lobby music', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio')
+    const audio = page.locator('audio')
+    // Metadata proves the mount effects ran. Under the old behaviour the
+    // mount play() would already have set paused = false here (Chromium
+    // allows autoplay) — now the entry must stay silent.
+    await expect
+      .poll(() => audio.evaluate((el) => (el as HTMLAudioElement).readyState))
+      .toBeGreaterThanOrEqual(2)
+    await expect(audio).toHaveJSProperty('paused', true)
+    expect(await audio.evaluate((el) => (el as HTMLAudioElement).played.length)).toBe(0)
+    // The bar offers the choice instead: a paused transport showing Play.
+    await expect(page.getByRole('contentinfo').getByRole('button', { name: 'Play' })).toBeVisible()
+  })
+
   test('PLAYER-006: progress display shows current and total time', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio')
     const playerBar = page.getByRole('contentinfo')
     // The bar mirrors the real lobby music transport: total time is the
-    // placeholder track's length; current time ticks (0:00 while autoplay
-    // still waits for the first interaction).
+    // placeholder track's length; current time sits at 0:00 until playback
+    // starts (the studio never autoplays the lobby — PLAYER-009).
     await expect(playerBar.getByText('3:54')).toBeVisible()
     await expect(playerBar.getByText(/^\d+:\d{2}$/).first()).toBeVisible()
   })

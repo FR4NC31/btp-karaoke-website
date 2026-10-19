@@ -42,6 +42,7 @@ export default function VideoSongSection({ items }: { items: MediaItem[] }) {
               toState={{ autoplay: true, item: song }}
               titleAs={index === 0 ? 'h1' : undefined}
               meta={meta}
+              queue={{ mediaId: song.id, len: song.duration, src: song.sourceUrl, kind: 'video' }}
             />
           )
         })}

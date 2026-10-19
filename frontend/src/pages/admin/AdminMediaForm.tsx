@@ -266,6 +266,8 @@ export default function AdminMediaForm() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [album, setAlbum] = useState('')
+  // Lyrics live with the track: multi-line plain text, music rows only.
+  const [lyrics, setLyrics] = useState('')
   // Covers split like the file: the stored upload is server truth, a picked
   // image overrides it, and `autoCover` is whatever the source file itself
   // carried (embedded art, or a frame grabbed off the video).
@@ -307,6 +309,7 @@ export default function AdminMediaForm() {
         setSourceUrl(item.sourceUrl)
         setSourceName(item.sourceName)
         setAlbum(item.album ?? '')
+        setLyrics(item.lyrics ?? '')
         setCoverUrl(item.coverUrl)
         setCoverName(item.coverName)
         setLoadError('')
@@ -340,6 +343,7 @@ export default function AdminMediaForm() {
     setSourceUrl(null)
     setSourceName(null)
     setAlbum('')
+    setLyrics('')
     clearCoverSelection()
     setCoverUrl(null)
     setCoverName(null)
@@ -484,6 +488,7 @@ export default function AdminMediaForm() {
         sourceUrl: nextSourceUrl,
         sourceName: nextSourceName,
         album,
+        lyrics,
         coverUrl: nextCoverUrl,
         coverName: nextCoverName,
       }
@@ -871,6 +876,25 @@ export default function AdminMediaForm() {
                     className={INPUT_CLASSES}
                   />
                 </div>
+              </div>
+            )}
+
+            {section === 'music' && (
+              <div>
+                <label htmlFor="media-lyrics" className={LABEL_CLASSES}>
+                  Lyrics
+                </label>
+                <textarea
+                  id="media-lyrics"
+                  rows={8}
+                  value={lyrics}
+                  onChange={(e) => setLyrics(e.target.value)}
+                  placeholder="Paste or type the track's lyrics — line breaks are kept."
+                  className={`${INPUT_CLASSES} min-h-40 resize-y leading-relaxed`}
+                />
+                <p className="mt-1.5 text-[11px] text-text-muted">
+                  Optional — saved with the track. Blank clears them.
+                </p>
               </div>
             )}
 
