@@ -32,6 +32,7 @@ Last updated: October 19, 2026
 
 ### Bug Fixes
 
+- fix(studio): harden queue playback and staff previews (426cfe6)
 - fix(auth): route signed-in users to their own dashboard (58d4591)
 - fix(studio): real track metadata, logout bounce gate, LFS video (a363aeb)
 - fix(frontend): fall back to home from 404 when history is empty (747f5f9)
