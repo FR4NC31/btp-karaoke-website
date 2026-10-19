@@ -54,6 +54,8 @@ export default function AdminOverview() {
         if (!alive) return
         setBookings(result.bookings)
         setStudioToday(result.studioToday)
+        // A successful reload clears a stale error from an earlier attempt.
+        setLoadError('')
       } catch (err) {
         if (!alive) return
         setLoadError(describeBookingError(err, 'Could not load the reservations.'))

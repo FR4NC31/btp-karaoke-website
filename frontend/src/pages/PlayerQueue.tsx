@@ -24,9 +24,10 @@ import {
 import placeholderVideo from '../assets/placeholder-video.svg'
 import placeholderAlbum from '../assets/placeholder-album.svg'
 import localVideo from '../assets/video_local/the-reason.mp4'
+import { fetchAdminMedia } from '../lib/admin-api'
 import { useSession } from '../lib/auth-client'
 import { useKaraokeVideoControls } from '../lib/karaoke-player'
-import { resolveQueueSource, useLoungeQueue } from '../lib/lounge-queue'
+import { resolveQueueSource, useLoungeQueue, type QueueItem } from '../lib/lounge-queue'
 import {
   fetchMediaCatalog,
   MEDIA_SECTION_LABELS,
@@ -73,13 +74,14 @@ import {
  * shuffle is on; the singer's own arrangement comes back when it is off.
  *
  * Signed-in admins get a staff-only "Admin details" panel under the stage:
- * the catalog row behind the song — artist/album/tempo, file and cover
- * references, visibility, timestamps, lyrics — reading whatever the entry
- * point carried (a Media Hub Play click hands over the full admin row; a hub
- * card carries the public fields). Regular users never render it.
+ * the catalog row behind the current song — artist/album/tempo, file and cover
+ * references, visibility, timestamps, lyrics. It follows the stage: the row
+ * behind a skipped song is resolved from the admin catalog (fetched once for
+ * staff), falling back to the entry point's public fields. Regular users never
+ * render it.
  *
  * The lounge queue is shared studio state (lib/lounge-queue → the shell's
- * outlet context): card menus on the hub add rows, this page adds a custom
+ * queue context): card menus on the hub add rows, this page adds a custom
  * track from the empty state or the header, removes a row, clears all, and
  * drag-reorders with the grip handle — all persisted to localStorage. The
  * bar's Previous/Next skip through that list and a finished song advances to
@@ -247,7 +249,7 @@ export default function PlayerQueue() {
   const autoplay = Boolean(routeState?.autoplay)
 
   // Lounge queue — shared studio state (lib/lounge-queue via the shell's
-  // outlet context): the hub's card menus add to the same list, and every
+  // queue context): the hub's card menus add to the same list, and every
   // edit here (add / remove / clear / drag-reorder) persists to localStorage.
   const {
     items: queueRows,
@@ -271,7 +273,25 @@ export default function PlayerQueue() {
   // Shuffle's played songs, most recent last: the draw below never picks one
   // of them until a full round has played, and Previous pops them back.
   const shuffleHistoryRef = useRef<string[]>([])
+  // Turning Shuffle on starts a fresh round: a half-played round from an
+  // earlier shuffle session must not leak into the new one.
+  useEffect(() => {
+    shuffleHistoryRef.current = []
+  }, [shuffle])
+  // Queue rows whose file failed to load this session: the console steps over
+  // them, and stops when every remaining row has failed too, instead of
+  // ping-ponging on the same dead files under repeat all.
+  const failedRowsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    failedRowsRef.current.clear()
+  }, [queueRows])
+
   const queued = queueRows.find((row) => row.id === queueTrackId) ?? null
+  // The row last sent to the stage, kept as a snapshot: removing the on-air
+  // row (or clearing the queue) must not swap the song out from under the
+  // singer, so the stage keeps resolving it until a skip picks another one.
+  const [lastQueuedRow, setLastQueuedRow] = useState<QueueItem | null>(null)
+  const activeRow = queued ?? (queueTrackId !== null ? lastQueuedRow : null)
 
   // The catalog resolves every queue row to the exact file it must play (see
   // resolveQueueSource) — the id/file captured when queued, or the live row
@@ -289,15 +309,32 @@ export default function PlayerQueue() {
     }
   }, [])
 
+  // Staff panel data: the admin catalog carries the bookkeeping + lyrics the
+  // public payload omits. Fetched once per admin session; a failure simply
+  // leaves the panel on the entry point's public fields.
+  const [adminCatalog, setAdminCatalog] = useState<AdminMediaItem[]>([])
+  useEffect(() => {
+    if (!isAdmin) return
+    let alive = true
+    fetchAdminMedia()
+      .then((result) => {
+        if (alive) setAdminCatalog(result.items)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [isAdmin])
+
   // The queued row's exact song, resolved against the catalog. Null = nothing
   // real behind the row (mock seeds, hand-typed entries, rows whose upload is
   // gone): the stage then falls back to the entry point rather than faking a
   // song, and the next skip resumes from that row's position in the list.
   const queuedPlay = useMemo(() => {
-    if (!queued) return null
-    const resolved = resolveQueueSource(queued, catalog)
-    return resolved ? { row: queued, source: resolved } : null
-  }, [queued, catalog])
+    if (!activeRow) return null
+    const resolved = resolveQueueSource(activeRow, catalog)
+    return resolved ? { row: activeRow, source: resolved } : null
+  }, [activeRow, catalog])
 
   // The rail's order — which is the playlist's order too: the stored queue,
   // or, while the bar's Shuffle is on, the same rows in the random order its
@@ -352,6 +389,34 @@ export default function PlayerQueue() {
     queueRows.find((row) => row.title.toLowerCase() === trackTitle.toLowerCase())?.id ??
     null
 
+  // The catalog row the staff panel describes: the admin row behind whatever
+  // is on stage (by id, then title), the entry point's row when nothing is
+  // playing, or null when the row has no live catalog match — never another
+  // song's details after a skip.
+  const panelItem = useMemo<PreviewItem | null>(() => {
+    if (!queuedPlay) {
+      if (!item) return null
+      return adminCatalog.find((candidate) => candidate.id === item.id) ?? item
+    }
+    const row = queuedPlay.row
+    const title = row.title.trim().toLowerCase()
+    const fromAdmin =
+      (row.mediaId !== null
+        ? adminCatalog.find((candidate) => candidate.id === row.mediaId)
+        : undefined) ??
+      adminCatalog.find(
+        (candidate) => candidate.section !== 'radio' && candidate.title.trim().toLowerCase() === title,
+      )
+    if (fromAdmin) return fromAdmin
+    return (
+      (row.mediaId !== null ? catalog.find((candidate) => candidate.id === row.mediaId) : undefined) ??
+      catalog.find(
+        (candidate) => candidate.section !== 'radio' && candidate.title.trim().toLowerCase() === title,
+      ) ??
+      null
+    )
+  }, [queuedPlay, item, adminCatalog, catalog])
+
   // Stage badge visibility: while playing it auto-hides after 2s (the timer
   // restarts on every play event) and returns on stage hover; while paused it
   // stays (it is the play affordance).
@@ -373,6 +438,19 @@ export default function PlayerQueue() {
     }
     setBadgeTimedOut(false)
   }
+
+  /**
+   * Sends one queue row to the stage. The snapshot travels with the id: the
+   * live row can disappear from the queue, the song on stage cannot.
+   */
+  const goToRow = useCallback(
+    (id: string) => {
+      setQueueTrackId(id)
+      setLastQueuedRow(queueRows.find((row) => row.id === id) ?? null)
+      setPlayToken((token) => token + 1)
+    },
+    [queueRows],
+  )
 
   /**
    * Skip through the playlist — the bar's Previous/Next and the auto-advance
@@ -405,8 +483,7 @@ export default function PlayerQueue() {
           while (history.length > 0) {
             const previous = history.pop()
             if (previous !== undefined && playableIds.includes(previous)) {
-              setQueueTrackId(previous)
-              setPlayToken((token) => token + 1)
+              goToRow(previous)
               return
             }
           }
@@ -424,8 +501,7 @@ export default function PlayerQueue() {
         }
         const pick = pool[Math.floor(Math.random() * pool.length)]
         if (currentId !== null) shuffleHistoryRef.current.push(currentId)
-        setQueueTrackId(pick)
-        setPlayToken((token) => token + 1)
+        if (pick !== undefined) goToRow(pick)
         return
       }
 
@@ -436,10 +512,10 @@ export default function PlayerQueue() {
         if (repeatMode !== 'all') return
         index = step === 1 ? 0 : playableIds.length - 1
       }
-      setQueueTrackId(playableIds[index])
-      setPlayToken((token) => token + 1)
+      const next = playableIds[index]
+      if (next !== undefined) goToRow(next)
     },
-    [playableIds, queueRows, queued, trackTitle, shuffle, repeatMode],
+    [playableIds, queueRows, queued, trackTitle, shuffle, repeatMode, goToRow],
   )
 
   // The bar's Previous/Next call through the transport; the console
@@ -621,7 +697,18 @@ export default function PlayerQueue() {
                 onError={() => {
                   // A queued song whose file is gone from the server hands over
                   // to the next playable row instead of parking on a dead stage.
-                  if (queuedPlay) advance(1)
+                  // When every remaining row has failed too, it stops rather
+                  // than looping through the same broken files.
+                  if (!queuedPlay) return
+                  failedRowsRef.current.add(queuedPlay.row.id)
+                  const remaining = playableIds.filter((id) => !failedRowsRef.current.has(id))
+                  if (remaining.length === 0) return
+                  advance(1)
+                }}
+                onLoadedData={() => {
+                  // A row that really loaded is healthy again — later rounds
+                  // may retry it.
+                  if (queuedPlay) failedRowsRef.current.delete(queuedPlay.row.id)
                 }}
                 className="absolute inset-0 h-full w-full cursor-pointer object-contain"
               />
@@ -663,11 +750,12 @@ export default function PlayerQueue() {
             </div>
           </section>
 
-          {/* Staff-only: the catalog row behind the stage. Fed by the entry
-              point's history state — a Media Hub Play click carries the full
-              admin row, a hub card the public fields; regular users never
-              render this. */}
-          {isAdmin && item && (
+          {/* Staff-only: the catalog row behind the stage. The entry point's
+              history state seeds it (a Media Hub Play click carries the full
+              admin row, a hub card the public fields); after a skip the admin
+              catalog resolves the row on stage. Regular users never render
+              this. */}
+          {isAdmin && panelItem && (
             <section
               aria-label="Admin details"
               className="rounded-2xl border border-primary/30 bg-surface px-4 py-4"
@@ -681,15 +769,15 @@ export default function PlayerQueue() {
                   Staff only
                 </span>
                 <span className="text-[10px] font-semibold tracking-widest text-text-muted uppercase">
-                  {MEDIA_SECTION_LABELS[item.section]}
-                  {item.isActive !== undefined
-                    ? item.isActive
+                  {MEDIA_SECTION_LABELS[panelItem.section]}
+                  {panelItem.isActive !== undefined
+                    ? panelItem.isActive
                       ? ' · Live on the hub'
                       : ' · Hidden from the hub'
                     : ''}
                 </span>
                 <Link
-                  to={`/admin/media/${item.id}`}
+                  to={`/admin/media/${panelItem.id}`}
                   className="ml-auto text-[10px] font-bold tracking-widest text-primary uppercase transition hover:text-primary-hover"
                 >
                   Edit item
@@ -697,20 +785,20 @@ export default function PlayerQueue() {
               </div>
 
               <dl className="mt-4 grid gap-x-6 gap-y-3 text-[11px] sm:grid-cols-2 xl:grid-cols-3">
-                {adminFacts(item).map((fact) => (
+                {adminFacts(panelItem).map((fact) => (
                   <AdminFactItem key={fact.label} label={fact.label}>
                     {fact.value}
                   </AdminFactItem>
                 ))}
               </dl>
 
-              {item.lyrics && (
+              {panelItem.lyrics && (
                 <details className="mt-4 rounded-lg border border-border bg-background">
                   <summary className="cursor-pointer px-3.5 py-2.5 text-[10px] font-bold tracking-widest text-text-secondary uppercase">
-                    Lyrics — {item.lyrics.split('\n').length} lines
+                    Lyrics — {panelItem.lyrics.split('\n').length} lines
                   </summary>
                   <p className="max-h-72 overflow-auto border-t border-border px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap text-text-secondary">
-                    {item.lyrics}
+                    {panelItem.lyrics}
                   </p>
                 </details>
               )}

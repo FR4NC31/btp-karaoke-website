@@ -28,7 +28,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -44,7 +46,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: backend
-        run: npm install
+        run: npm ci
 
       # backend/.env is gitignored; CI rebuilds it from repo secrets.
       # Set them with `gh secret set <NAME>` (values never appear in chat,
@@ -112,7 +114,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -120,7 +124,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: backend
-        run: npm install
+        run: npm ci
 
       # Same secrets-built .env as pr-checks (see above).
       - name: Write backend/.env

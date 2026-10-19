@@ -34,6 +34,8 @@ export interface MediaSeedInput {
   sourceName?: string
   /** Album/collection as shown on the hub and in the editor. */
   album?: string
+  /** Staff-only track lyrics (music rows; the public feed omits them). */
+  lyrics?: string
   /** Cover-image reference from uploadMediaFileAsAdmin (image upload). */
   coverUrl?: string
   coverName?: string

@@ -47,8 +47,6 @@ export interface MediaItem {
   sourceUrl: string | null
   /** Album/collection shown in the music meta strip; null hides it. */
   album: string | null
-  /** Track lyrics (multi-line); null when none were written. */
-  lyrics: string | null
   /**
    * Uploaded cover image / video thumbnail for the card artwork
    * (`/api/uploads/media/...`); null = the default art.
@@ -59,6 +57,11 @@ export interface MediaItem {
 
 /** The admin console's view — adds the moderation fields. */
 export interface AdminMediaItem extends MediaItem {
+  /**
+   * Track lyrics (multi-line); null when none were written. Staff-only: the
+   * public /api/media payload omits the field entirely.
+   */
+  lyrics: string | null
   /** Original filename of the attached upload, for the editor's display. */
   sourceName: string | null
   /** Original filename of the cover upload, for the editor's display. */

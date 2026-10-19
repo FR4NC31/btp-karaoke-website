@@ -64,6 +64,10 @@ export default function MediaCard({
 }: MediaCardProps) {
   const TitleTag = titleAs === 'h1' ? 'h1' : 'p'
   const { add } = useLoungeQueue()
+  // What the queue can actually play: catalog video songs fall back to the
+  // bundled master, music rows need an uploaded file, and radio has no console
+  // stage at all — offering it would only seed a row the console skips.
+  const queueable = Boolean(queue && (queue.kind === 'video' || queue.src))
   const [optionsOpen, setOptionsOpen] = useState(false)
   // "Added to queue" confirmation — flips back so a song can be queued twice.
   const [added, setAdded] = useState(false)
@@ -167,32 +171,53 @@ export default function MediaCard({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-3">
-              <p className="text-[10px] font-bold tracking-widest text-text-muted uppercase">
-                Lounge queue
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-text-secondary">
-                Add this to the Upcoming Lounge Queue — the player console picks it up for its
-                next-up list.
-              </p>
-            </div>
+            {queueable ? (
+              <>
+                <div className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-3">
+                  <p className="text-[10px] font-bold tracking-widest text-text-muted uppercase">
+                    Lounge queue
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                    Add this to the Upcoming Lounge Queue — the player console picks it up for its
+                    next-up list.
+                  </p>
+                </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={addToQueue}
-                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[11px] font-bold text-text-primary transition hover:bg-primary-hover"
-              >
-                <HugeiconsIcon icon={added ? Tick02Icon : PlusSignIcon} size={13} />
-                {added ? 'Added to queue' : 'Add to queue'}
-              </button>
-              <Link
-                to="/studio/player-queue"
-                className="text-[11px] font-semibold text-text-muted transition hover:text-text-primary"
-              >
-                Open lounge queue
-              </Link>
-            </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={addToQueue}
+                    className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[11px] font-bold text-text-primary transition hover:bg-primary-hover"
+                  >
+                    <HugeiconsIcon icon={added ? Tick02Icon : PlusSignIcon} size={13} />
+                    {added ? 'Added to queue' : 'Add to queue'}
+                  </button>
+                  <Link
+                    to="/studio/player-queue"
+                    className="text-[11px] font-semibold text-text-muted transition hover:text-text-primary"
+                  >
+                    Open lounge queue
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-dashed border-border px-3 py-3">
+                <p className="text-[10px] font-bold tracking-widest text-text-muted uppercase">
+                  Not available for the queue
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                  {queue?.kind === 'music'
+                    ? 'This music row has no uploaded file yet, so the console would have nothing to play.'
+                    : 'Radio stations play live in their own player and cannot join the lounge queue.'}
+                </p>
+                <Link
+                  to="/studio/player-queue"
+                  className="mt-2 inline-block text-[11px] font-semibold text-text-muted transition hover:text-text-primary"
+                >
+                  Open lounge queue
+                </Link>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

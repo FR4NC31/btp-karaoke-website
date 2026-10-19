@@ -25,7 +25,8 @@ import { useOutletContext } from 'react-router'
  * handlers back the bar's Previous/Next buttons and the auto-advance when a
  * song ends. Other studio pages register nothing, so the buttons stay inert.
  * The bar's repeat/shuffle modes live here too: 'one' loops the registered
- * videos, while 'all' and shuffle are read by the console's playlist (wrap
+ * console video (and 'all' loops the floating mini, which has no queue),
+ * while 'all' and shuffle are otherwise read by the console's playlist (wrap
  * the queue; present it in a random order and draw songs at random — see
  * `shuffleSeed`).
  */
@@ -110,8 +111,9 @@ export interface PlaylistHandlers {
 
 /**
  * Bar repeat cycle: 'off' stops at the queue's end, 'all' wraps the console's
- * queue around, 'one' loops the element itself (the console never sees an
- * `ended` then, so the auto-advance stays put).
+ * queue around (the floating mini, which has no queue, loops its one song
+ * instead), 'one' loops the element itself (the console never sees an `ended`
+ * then, so the auto-advance stays put).
  */
 export type RepeatMode = 'off' | 'all' | 'one'
 
@@ -219,7 +221,9 @@ export function useKaraokeVideo(): KaraokeVideoApi {
         el.loop = repeatModeRef.current === 'one'
       } else if (kind === 'mini') {
         miniRef.current = el
-        el.loop = repeatModeRef.current === 'one'
+        // The floating player has no playlist behind it, so repeat all and
+        // repeat one both loop its single song (its old behavior).
+        el.loop = repeatModeRef.current !== 'off'
       } else {
         musicRef.current = el
       }
@@ -325,11 +329,12 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const setRepeatMode = useCallback((mode: RepeatMode) => {
     repeatModeRef.current = mode
     setRepeatModeState(mode)
-    // Only repeat-one loops the element itself: an element loop suppresses
-    // `ended`, so repeat-all must instead be wrapped by the playlist.
-    const loop = mode === 'one'
-    if (videoRef.current) videoRef.current.loop = loop
-    if (miniRef.current) miniRef.current.loop = loop
+    // Only repeat-one loops the console element itself: an element loop
+    // suppresses `ended`, so repeat-all must be wrapped by the playlist. The
+    // floating mini has no playlist, so 'all' loops it there.
+    const consoleLoops = mode === 'one'
+    if (videoRef.current) videoRef.current.loop = consoleLoops
+    if (miniRef.current) miniRef.current.loop = mode !== 'off'
   }, [])
 
   const setShuffle = useCallback((next: boolean) => {

@@ -1,17 +1,26 @@
-import { useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router'
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import type { ReactNode } from 'react'
 import type { MediaItem } from './media-api'
 
 /**
  * The lounge queue: one "up next" list shared by the studio hub and the
  * player-queue console.
  *
- * The studio shell owns the state and hands it to the routed pages through
- * the outlet context (same pattern as the karaoke transport), so a card's
- * "Add to queue" on /studio lands in the same list the console renders —
- * add, remove, clear and drag-reorder all drive those rows. The list
- * persists to localStorage, so it survives a reload; the first visit seeds
- * the mockup rows. There is no API yet — nothing is sent to the backend.
+ * The studio shell owns the state and hands it to the routed pages through a
+ * dedicated React context (the transport's outlet context changes on every
+ * playback tick), so a card's "Add to queue" on /studio lands in the same
+ * list the console renders — add, remove, clear and drag-reorder all drive
+ * those rows. The list persists to localStorage, so it survives a reload; the
+ * first visit seeds the mockup rows. There is no API yet — nothing is sent to
+ * the backend.
  *
  * A row only knows what it can play through `resolveQueueSource`: the file
  * captured when it was queued, or the live catalog row its title/media id
@@ -83,7 +92,9 @@ export function resolveQueueSource(row: QueueItem, catalog: MediaItem[]): QueueS
     (row.mediaId !== null ? catalog.find((item) => item.id === row.mediaId) : undefined) ??
     catalog.find((item) => item.section !== 'radio' && titleKey(item.title) === titleKey(row.title))
 
-  const src = match?.sourceUrl ?? row.src
+  // Prefer the live row whenever it exists: its source is authoritative (a
+  // deleted upload really is gone; the captured URL must not resurrect it).
+  const src = match ? match.sourceUrl : row.src
   if (src) {
     const kind: 'video' | 'music' = match ? (match.section === 'music' ? 'music' : 'video') : row.kind
     return { src, kind }
@@ -220,9 +231,10 @@ export function useLoungeQueueState(): LoungeQueueApi {
     }
   }, [items])
 
-  return {
-    items,
-    add: (input) =>
+  // Stable actions + a memoized API object: consumers re-render only when the
+  // rows actually change, not on every transport tick from the shell.
+  const add = useCallback(
+    (input: QueueInput) =>
       setItems((rows) => [
         ...rows,
         {
@@ -238,9 +250,15 @@ export function useLoungeQueueState(): LoungeQueueApi {
           mediaId: input.mediaId ?? null,
         },
       ]),
-    remove: (id) => setItems((rows) => rows.filter((row) => row.id !== id)),
-    clear: () => setItems([]),
-    move: (from, to) =>
+    [],
+  )
+  const remove = useCallback(
+    (id: string) => setItems((rows) => rows.filter((row) => row.id !== id)),
+    [],
+  )
+  const clear = useCallback(() => setItems([]), [])
+  const move = useCallback(
+    (from: number, to: number) =>
       setItems((rows) => {
         if (from === to || from < 0 || to < 0 || from >= rows.length || to >= rows.length) return rows
         const next = [...rows]
@@ -248,10 +266,33 @@ export function useLoungeQueueState(): LoungeQueueApi {
         next.splice(to, 0, moved)
         return next
       }),
-  }
+    [],
+  )
+
+  return useMemo(() => ({ items, add, remove, clear, move }), [items, add, remove, clear, move])
 }
 
-/** Studio pages read the shared queue through the shell's outlet context. */
+/** Provided by StudioShell around the routed pages — one list for hub and console. */
+const LoungeQueueContext = createContext<LoungeQueueApi | null>(null)
+
+/**
+ * Hands the shell-owned queue to the routed pages through a dedicated context
+ * instead of the outlet context: the transport object changes on every
+ * playback tick, and the hub's cards must not re-render with it.
+ */
+export function LoungeQueueProvider({
+  api,
+  children,
+}: {
+  api: LoungeQueueApi
+  children: ReactNode
+}) {
+  return createElement(LoungeQueueContext.Provider, { value: api }, children)
+}
+
+/** Studio pages read the shared queue through the shell's queue context. */
 export function useLoungeQueue(): LoungeQueueApi {
-  return useOutletContext<LoungeQueueApi>()
+  const api = useContext(LoungeQueueContext)
+  if (!api) throw new Error('useLoungeQueue must be used inside the studio shell.')
+  return api
 }

@@ -24,7 +24,7 @@ function CardSkeleton() {
       <div className="mt-auto flex items-center gap-3 border-t border-border px-3.5 py-2">
         <Bar className="h-2.5 w-10" />
         <Bar className="h-2.5 w-8" />
-        <Bar className="ml-auto size-5 rounded-full" />
+        <Bar className="ml-auto size-6 rounded" />
       </div>
     </div>
   )
@@ -61,7 +61,8 @@ function SectionSkeleton({
 
 export default function StudioSkeleton() {
   return (
-    <div role="status" aria-label="Loading studio" className="space-y-8">
+    <div role="status" className="space-y-8">
+      <span className="sr-only">Loading studio content</span>
       <SectionSkeleton
         headingWidth="w-36"
         labelWidth="w-44"

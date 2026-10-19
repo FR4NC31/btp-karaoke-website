@@ -464,41 +464,44 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** The bar skips play exact queued songs, never the master
 - **Priority:** P1
 - **Preconditions:** Uploads a real (silent) MP3 twice and attaches one to
-  each of two fresh music rows; both rows are deleted in `finally`.
+  each of two fresh music rows (both rows deleted in `finally`). The clips are
+  stretched past the fixture's 1.35 s so auto-advance timing is deterministic.
 - **Steps:** 1. Queue both songs from their hub card menus. 2. Open the
-  console, click **Next** on the player bar, then **Previous**, then **Next**
-  again; let the first song run to its end.
+  console, click **Next** on the player bar, end the first song (the test
+  seeks to its last fraction of a second), then click **Previous** and
+  **Next**.
 - **Expected:** The first **Next** steps over the mockup queue rows (nothing
   real behind them) onto the first queued song and plays **its exact file**
-  (`src` is the stored `/api/uploads/media/...` url — never the bundled
+  (`src` is the stored `/api/uploads/media/...` url - never the bundled
   master), and the bar shows its title; the song finishing rolls onto the
   second queued file and auto-plays it; **Previous** / **Next** walk the real
-  songs. Skipping past either end is a no-op and elsewhere in the studio no
-  playlist is registered, so the skip buttons stay inert.
-- **Automation:** Playwright — **Status: Automated**
+  songs.
+- **Automation:** Playwright - **Status: Automated**
 
 ### KARAOKE-015
 
 - **Title:** Repeat all wraps the queue and shuffle draws random songs
 - **Priority:** P1
 - **Preconditions:** Same setup as KARAOKE-014 but with three real silent MP3s
-  attached to three fresh music rows (all deleted in `finally`).
+  attached to three fresh music rows (all deleted in `finally`); the clips are
+  stretched so no song runs out between two clicks.
 - **Steps:** 1. Queue the three songs and open the console. 2. Click
-  **Shuffle** on the bar, then **Next** through a full round (three draws)
-  plus one more, then **Previous**. 3. Switch shuffle off, cycle repeat to
-  **Repeat all**, and let the songs run out.
+  **Shuffle** on the bar, then **Next** through a full round (three draws),
+  then **Previous**. 3. Switch shuffle off, cycle repeat to **Repeat all**,
+  walk on two rows and end the song; then cycle **Repeat one** → **Repeat
+  off** and end the last queue row with repeat off.
 - **Expected:** With shuffle on (`aria-pressed="true"`) the rail reorders to
-  a random order — the same rows in new positions — and the skips draw: the
+  a random order - the same rows in new positions - and the skips draw: the
   first **Next** plays a random song (never the one on air), the second the
   only song the round had not played, and the third starts a fresh round
-  without repeating the song just heard — so nothing repeats until a full
+  without repeating the song just heard - so nothing repeats until a full
   round is done. **Previous** walks the round's played songs back. Switching
   shuffle off restores the arranged queue order. With repeat all the songs
-  run out in order and wrap around the ends — a full cycle later playback is
-  back on the row it started from, still playing, instead of stopping or
+  run out in order and wrap around at the end - ending a song rolls playback
+  back onto the row it started from, still playing, instead of stopping or
   looping one song. Repeat one loops the video element itself; repeat off
   stops at the queue's end.
-- **Automation:** Playwright — **Status: Automated**
+- **Automation:** Playwright - **Status: Automated**
 
 ---
 
@@ -895,13 +898,13 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | API failure / 500 handling in UI       | N/A                   | Auth calls surface their error codes as inline form messages (`src/lib/auth-errors.ts`); no 500/retry handling exists yet. |
 | Favorites / playlists round-trip       | N/A                   | Not implemented (like button is local state only).           |
 | Database persistence after refresh     | Partial               | Sign-up/sign-in read and write Aiven (AUTH-010, AUTH-001) and the session persists (AUTH-009); favorites/playlists are still local state only. |
-| Song detail / lyrics synchronization   | N/A                   | No detail page or lyrics implementation.                     |
+| Song detail / lyrics synchronization   | N/A                   | No song detail page; the admin stores staff-only lyrics on music rows (the public `/api/media` payload omits them), but nothing renders or syncs them yet. |
 | Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and the end-of-song auto-advance play each row's exact file and step over rows with no real media (KARAOKE-014). |
 | Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
-| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`, multi-line lyrics stored on music rows), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 — tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 — **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |
+| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 - reaches `/studio`, multi-line lyrics stored on music rows and kept staff-only: the public `/api/media` payload omits them), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 - stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 - tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 - **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |

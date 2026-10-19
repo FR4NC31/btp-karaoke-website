@@ -58,8 +58,18 @@ export default function NewReservationDialog({
   onOpenChange,
   onCreated,
 }: NewReservationDialogProps) {
+  // Keep the modal open while a save is in flight: dismissing it mid-request
+  // would hide the result (or error) after the booking may already exist.
+  const [busy, setBusy] = useState(false)
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && busy) return
+        onOpenChange(next)
+      }}
+    >
       <DialogContent className="border border-border bg-surface p-6 text-text-primary sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="font-heading text-2xl font-bold tracking-wide uppercase">
@@ -72,7 +82,11 @@ export default function NewReservationDialog({
 
         {/* Radix unmounts the content while closed, so the form remounts fresh
             (service catalog refetched included) every time it opens. */}
-        <NewReservationForm onClose={() => onOpenChange(false)} onCreated={onCreated} />
+        <NewReservationForm
+          onClose={() => onOpenChange(false)}
+          onCreated={onCreated}
+          onBusyChange={setBusy}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -81,9 +95,11 @@ export default function NewReservationDialog({
 function NewReservationForm({
   onClose,
   onCreated,
+  onBusyChange,
 }: {
   onClose: () => void
   onCreated: () => void
+  onBusyChange: (busy: boolean) => void
 }) {
   const [mode, setMode] = useState<CustomerMode>('user')
 
@@ -203,6 +219,7 @@ function NewReservationForm({
     }
 
     setSubmitting(true)
+    onBusyChange(true)
     setFormError('')
     try {
       const { booking } = await createAdminBooking({
@@ -226,6 +243,7 @@ function NewReservationForm({
       setFormError(describeBookingError(err, 'The reservation could not be saved.'))
     } finally {
       setSubmitting(false)
+      onBusyChange(false)
     }
   }
 

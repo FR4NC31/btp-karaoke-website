@@ -7,6 +7,30 @@ import {
 } from '../helpers/media'
 
 /**
+ * The 1.35 s silence fixture, stretched by repeating its MP3 frame payload
+ * (the ID3 tag stays once at the front). Skips and auto-advance assertions
+ * get an 8 s clip, so a slow assertion can never race the fixture running
+ * out — the tests end the song themselves when they need `ended`.
+ */
+function loopedSilence(repeats: number): Buffer {
+  const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
+  let payloadStart = 0
+  if (mp3.subarray(0, 3).toString() === 'ID3') {
+    const size = mp3.subarray(6, 10)
+    const b0 = size[0] ?? 0
+    const b1 = size[1] ?? 0
+    const b2 = size[2] ?? 0
+    const b3 = size[3] ?? 0
+    payloadStart = 10 + ((b0 << 21) | (b1 << 14) | (b2 << 7) | b3)
+  }
+  const frames = mp3.subarray(payloadStart)
+  return Buffer.concat([
+    mp3.subarray(0, payloadStart),
+    ...Array.from({ length: repeats }, () => frames),
+  ])
+}
+
+/**
  * KARAOKE — the studio media hub on /studio (video song, music player and
  * radio sections) plus the hop into the player-queue console. The genre
  * filter / collections grid / telemetry table were retired with the media
@@ -64,6 +88,7 @@ test.describe('karaoke discovery', () => {
       tag: 'TAPE',
       tempo: '118 BPM',
       songKey: 'Fmaj',
+      lyrics: 'E2E lyric line one\nE2E lyric line two',
     })
 
     try {
@@ -78,6 +103,23 @@ test.describe('karaoke discovery', () => {
       await expect(card.getByRole('button', { name: `More options for ${title}` })).toBeVisible()
       // No uploaded file → visual-only: no play link until audio is attached.
       await expect(card.getByRole('link', { name: `Play ${title}` })).toHaveCount(0)
+
+      // Nothing real to queue either: the menu explains instead of adding a
+      // row the console would only skip.
+      await card.getByRole('button', { name: `More options for ${title}` }).click()
+      const dialog = page.getByRole('dialog')
+      await expect(dialog.getByText('Not available for the queue')).toBeVisible()
+      await expect(dialog.getByRole('button', { name: 'Add to queue' })).toHaveCount(0)
+      await page.keyboard.press('Escape')
+
+      // Lyrics are staff-only: the public catalog feed must not carry them.
+      const publicFeed = await page.request.get('/api/media')
+      expect(publicFeed.ok()).toBeTruthy()
+      const publicItems = ((await publicFeed.json()) as { items: Array<Record<string, unknown>> })
+        .items
+      const publicRow = publicItems.find((item) => item.id === id)
+      expect(publicRow).toBeTruthy()
+      expect(publicRow).not.toHaveProperty('lyrics')
     } finally {
       await deleteMediaItemAsAdmin(baseURL, id)
     }
@@ -247,6 +289,14 @@ test.describe('karaoke discovery', () => {
     await mini.getByRole('button', { name: 'Play' }).click()
     await expect(mini.getByRole('button', { name: 'Pause' })).toBeVisible()
 
+    // Repeat all keeps the floating song looping: the mini has no queue of
+    // its own to wrap.
+    await page.getByRole('contentinfo').getByRole('button', { name: 'Repeat off' }).click()
+    await expect(
+      page.getByRole('contentinfo').getByRole('button', { name: 'Repeat all' }),
+    ).toBeVisible()
+    await expect(miniVideo).toHaveJSProperty('loop', true)
+
     // Up arrow expands back into the console with the session carried over.
     await mini.getByRole('button', { name: 'Expand' }).click()
     await expect(page).toHaveURL('/studio/player-queue')
@@ -335,40 +385,43 @@ test.describe('karaoke discovery', () => {
     const stamp = Date.now()
     const first = `E2E Skip First ${stamp}`
     const second = `E2E Skip Second ${stamp}`
-    // Two real uploads (the silent MP3 fixture) attached to two catalog rows:
-    // a skip onto one can be told apart from the bundled master and from its
-    // neighbour. Both rows are deleted in `finally`.
-    const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
-    const one = await uploadMediaFileAsAdmin(baseURL, {
-      name: 'e2e-skip-one.mp3',
-      mimeType: 'audio/mpeg',
-      data: mp3,
-    })
-    const two = await uploadMediaFileAsAdmin(baseURL, {
-      name: 'e2e-skip-two.mp3',
-      mimeType: 'audio/mpeg',
-      data: mp3,
-    })
-    expect(one.status).toBe(201)
-    expect(two.status).toBe(201)
-    const url1 = one.body.file!.url
-    const url2 = two.body.file!.url
-    const { id: id1 } = await createMediaItemAsAdmin(baseURL, {
-      section: 'music',
-      title: first,
-      tag: 'TAPE',
-      sourceUrl: url1,
-      sourceName: one.body.file!.name,
-    })
-    const { id: id2 } = await createMediaItemAsAdmin(baseURL, {
-      section: 'music',
-      title: second,
-      tag: 'TAPE',
-      sourceUrl: url2,
-      sourceName: two.body.file!.name,
-    })
+    // Longer silent MP3s (see loopedSilence): the fixture's own end never
+    // races the assertions — this test ends the song explicitly when needed.
+    const mp3 = loopedSilence(6)
+    const createdIds: string[] = []
 
     try {
+      const one = await uploadMediaFileAsAdmin(baseURL, {
+        name: 'e2e-skip-one.mp3',
+        mimeType: 'audio/mpeg',
+        data: mp3,
+      })
+      const two = await uploadMediaFileAsAdmin(baseURL, {
+        name: 'e2e-skip-two.mp3',
+        mimeType: 'audio/mpeg',
+        data: mp3,
+      })
+      expect(one.status).toBe(201)
+      expect(two.status).toBe(201)
+      const url1 = one.body.file!.url
+      const url2 = two.body.file!.url
+      const { id: id1 } = await createMediaItemAsAdmin(baseURL, {
+        section: 'music',
+        title: first,
+        tag: 'TAPE',
+        sourceUrl: url1,
+        sourceName: one.body.file!.name,
+      })
+      createdIds.push(id1)
+      const { id: id2 } = await createMediaItemAsAdmin(baseURL, {
+        section: 'music',
+        title: second,
+        tag: 'TAPE',
+        sourceUrl: url2,
+        sourceName: two.body.file!.name,
+      })
+      createdIds.push(id2)
+
       await page.goto('/studio')
       for (const title of [first, second]) {
         const card = page.locator('main article').filter({ hasText: title })
@@ -380,9 +433,23 @@ test.describe('karaoke discovery', () => {
       await page.goto('/studio/player-queue')
       const stage = page.locator('main video')
       const playerBar = page.getByRole('contentinfo')
+      const paused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
       await expect
         .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).readyState))
         .toBeGreaterThanOrEqual(1)
+
+      // End the current song deterministically: seek into its last fraction
+      // of a second and make sure it is rolling so `ended` really fires.
+      const finishSong = async () => {
+        await expect
+          .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).readyState))
+          .toBeGreaterThanOrEqual(1)
+        await stage.evaluate(async (el) => {
+          const video = el as HTMLVideoElement
+          video.currentTime = Math.max(0, video.duration - 0.2)
+          if (video.paused) await video.play().catch(() => {})
+        })
+      }
 
       // The first Next steps over the mockup rows (nothing real behind them)
       // straight onto the first queued file, playing it — the bundled master
@@ -390,12 +457,13 @@ test.describe('karaoke discovery', () => {
       await playerBar.getByRole('button', { name: 'Next' }).click()
       await expect(stage).toHaveAttribute('src', url1)
       await expect(playerBar).toContainText(first)
-      await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+      await expect.poll(paused).toBe(false)
 
       // Song finished → the next queued file takes over and auto-plays.
+      await finishSong()
       await expect(stage).toHaveAttribute('src', url2)
       await expect(playerBar).toContainText(second)
-      await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+      await expect.poll(paused).toBe(false)
 
       // Previous walks back to the exact file; Next moves forward again.
       await playerBar.getByRole('button', { name: 'Previous' }).click()
@@ -403,9 +471,14 @@ test.describe('karaoke discovery', () => {
       await playerBar.getByRole('button', { name: 'Next' }).click()
       await expect(stage).toHaveAttribute('src', url2)
       await expect(playerBar).toContainText(second)
+
+      // Removing the on-air row does not swap the song under the singer: the
+      // stage keeps the snapshot it was playing.
+      await page.getByRole('button', { name: `Remove ${second}` }).click()
+      await expect(stage).toHaveAttribute('src', url2)
+      await expect(playerBar).toContainText(second)
     } finally {
-      await deleteMediaItemAsAdmin(baseURL, id1)
-      await deleteMediaItemAsAdmin(baseURL, id2)
+      for (const id of createdIds) await deleteMediaItemAsAdmin(baseURL, id)
     }
   })
 
@@ -414,51 +487,58 @@ test.describe('karaoke discovery', () => {
     const first = `E2E Loop First ${stamp}`
     const second = `E2E Loop Second ${stamp}`
     const third = `E2E Loop Third ${stamp}`
-    const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
-    const one = await uploadMediaFileAsAdmin(baseURL, {
-      name: 'e2e-loop-one.mp3',
-      mimeType: 'audio/mpeg',
-      data: mp3,
-    })
-    const two = await uploadMediaFileAsAdmin(baseURL, {
-      name: 'e2e-loop-two.mp3',
-      mimeType: 'audio/mpeg',
-      data: mp3,
-    })
-    const three = await uploadMediaFileAsAdmin(baseURL, {
-      name: 'e2e-loop-three.mp3',
-      mimeType: 'audio/mpeg',
-      data: mp3,
-    })
-    expect(one.status).toBe(201)
-    expect(two.status).toBe(201)
-    expect(three.status).toBe(201)
-    const url1 = one.body.file!.url
-    const url2 = two.body.file!.url
-    const url3 = three.body.file!.url
-    const { id: id1 } = await createMediaItemAsAdmin(baseURL, {
-      section: 'music',
-      title: first,
-      tag: 'TAPE',
-      sourceUrl: url1,
-      sourceName: one.body.file!.name,
-    })
-    const { id: id2 } = await createMediaItemAsAdmin(baseURL, {
-      section: 'music',
-      title: second,
-      tag: 'TAPE',
-      sourceUrl: url2,
-      sourceName: two.body.file!.name,
-    })
-    const { id: id3 } = await createMediaItemAsAdmin(baseURL, {
-      section: 'music',
-      title: third,
-      tag: 'TAPE',
-      sourceUrl: url3,
-      sourceName: three.body.file!.name,
-    })
+    // An 8 s silent track per row: long enough that the pause/settle
+    // sequences never race the clip running out between two clicks.
+    const mp3 = loopedSilence(6)
+    const createdIds: string[] = []
 
     try {
+      const one = await uploadMediaFileAsAdmin(baseURL, {
+        name: 'e2e-loop-one.mp3',
+        mimeType: 'audio/mpeg',
+        data: mp3,
+      })
+      const two = await uploadMediaFileAsAdmin(baseURL, {
+        name: 'e2e-loop-two.mp3',
+        mimeType: 'audio/mpeg',
+        data: mp3,
+      })
+      const three = await uploadMediaFileAsAdmin(baseURL, {
+        name: 'e2e-loop-three.mp3',
+        mimeType: 'audio/mpeg',
+        data: mp3,
+      })
+      expect(one.status).toBe(201)
+      expect(two.status).toBe(201)
+      expect(three.status).toBe(201)
+      const url1 = one.body.file!.url
+      const url2 = two.body.file!.url
+      const url3 = three.body.file!.url
+      const { id: id1 } = await createMediaItemAsAdmin(baseURL, {
+        section: 'music',
+        title: first,
+        tag: 'TAPE',
+        sourceUrl: url1,
+        sourceName: one.body.file!.name,
+      })
+      createdIds.push(id1)
+      const { id: id2 } = await createMediaItemAsAdmin(baseURL, {
+        section: 'music',
+        title: second,
+        tag: 'TAPE',
+        sourceUrl: url2,
+        sourceName: two.body.file!.name,
+      })
+      createdIds.push(id2)
+      const { id: id3 } = await createMediaItemAsAdmin(baseURL, {
+        section: 'music',
+        title: third,
+        tag: 'TAPE',
+        sourceUrl: url3,
+        sourceName: three.body.file!.name,
+      })
+      createdIds.push(id3)
+
       await page.goto('/studio')
       for (const title of [first, second, third]) {
         const card = page.locator('main article').filter({ hasText: title })
@@ -470,20 +550,33 @@ test.describe('karaoke discovery', () => {
       await page.goto('/studio/player-queue')
       const stage = page.locator('main video')
       const playerBar = page.getByRole('contentinfo')
+      const paused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
       await expect
         .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).readyState))
         .toBeGreaterThanOrEqual(1)
 
-      // Park the stage before a check: pause until it really stays paused —
-      // the skip effect starts the fresh source on `canplay`, which can land
-      // just after a first pause attempt — so a 1.35 s fixture never runs out
-      // and draws on its own between two clicks.
+      // Park the stage before a check: the skip effect starts the fresh source
+      // on `canplay`, which can land just after a first pause attempt.
       const settlePause = async () => {
-        for (let attempt = 0; attempt < 4; attempt += 1) {
-          await stage.evaluate((el) => (el as HTMLVideoElement).pause())
-          await page.waitForTimeout(150)
-          if (await stage.evaluate((el) => (el as HTMLVideoElement).paused)) return
-        }
+        await expect
+          .poll(async () => {
+            await stage.evaluate((el) => (el as HTMLVideoElement).pause())
+            return stage.evaluate((el) => (el as HTMLVideoElement).paused)
+          })
+          .toBe(true)
+      }
+
+      // End the current song deterministically: seek into its last fraction of
+      // a second and make sure it is rolling so `ended` really fires.
+      const finishSong = async () => {
+        await expect
+          .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).readyState))
+          .toBeGreaterThanOrEqual(1)
+        await stage.evaluate(async (el) => {
+          const video = el as HTMLVideoElement
+          video.currentTime = Math.max(0, video.duration - 0.2)
+          if (video.paused) await video.play().catch(() => {})
+        })
       }
 
       // Land on the first queued song (the mock rows are stepped over).
@@ -547,28 +640,48 @@ test.describe('karaoke discovery', () => {
       )
       expect(await railTitles()).toEqual(arranged)
 
-      // Repeat all wraps the queue at the end: walk on in order and let the
-      // songs run out — a full cycle later playback is back on the row it
-      // started from and still playing, instead of stopping or looping one.
+      // Repeat all wraps the queue at the end: walk on in order, then end the
+      // second song so auto-advance wraps onto the row it started from.
       await playerBar.getByRole('button', { name: 'Repeat off' }).click()
       await expect(playerBar.getByRole('button', { name: 'Repeat all' })).toBeVisible()
       const cycle = [url1, url2, url3]
-      // The singer sits on a known queue row — walk on from wherever.
       const at = cycle.indexOf((await stageSrc()) ?? '')
-      const step1 = cycle[(at + 1) % cycle.length]
-      const step2 = cycle[(at + 2) % cycle.length]
-      const wrapped = cycle[(at + 3) % cycle.length]
+      if (at === -1) throw new Error('the stage is not playing a queued song')
+      const step1 = cycle[(at + 1) % cycle.length]!
+      const step2 = cycle[(at + 2) % cycle.length]!
+      const wrapped = cycle[at]!
       await playerBar.getByRole('button', { name: 'Next' }).click()
       await expect(stage).toHaveAttribute('src', step1)
       await settlePause()
       await playerBar.getByRole('button', { name: 'Next' }).click()
       await expect(stage).toHaveAttribute('src', step2)
+      await settlePause()
+      await finishSong()
       await expect(stage).toHaveAttribute('src', wrapped)
-      await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+      await expect.poll(paused).toBe(false)
+
+      // Repeat one loops the element itself; repeat off restores the queue.
+      await playerBar.getByRole('button', { name: 'Repeat all' }).click()
+      await expect(playerBar.getByRole('button', { name: 'Repeat one' })).toBeVisible()
+      await expect(stage).toHaveJSProperty('loop', true)
+      await playerBar.getByRole('button', { name: 'Repeat one' }).click()
+      await expect(playerBar.getByRole('button', { name: 'Repeat off' })).toBeVisible()
+      await expect(stage).toHaveJSProperty('loop', false)
+
+      // Repeat off stops at the queue's end instead of wrapping.
+      let source = (await stageSrc()) ?? ''
+      for (let guard = 0; guard < cycle.length && source !== cycle[2]; guard += 1) {
+        await playerBar.getByRole('button', { name: 'Next' }).click()
+        await expect.poll(stageSrc).not.toBe(source)
+        await settlePause()
+        source = (await stageSrc()) ?? ''
+      }
+      await expect(stage).toHaveAttribute('src', cycle[2]!)
+      await finishSong()
+      await expect.poll(paused).toBe(true)
+      await expect(stage).toHaveAttribute('src', cycle[2]!)
     } finally {
-      await deleteMediaItemAsAdmin(baseURL, id1)
-      await deleteMediaItemAsAdmin(baseURL, id2)
-      await deleteMediaItemAsAdmin(baseURL, id3)
+      for (const id of createdIds) await deleteMediaItemAsAdmin(baseURL, id)
     }
   })
 })

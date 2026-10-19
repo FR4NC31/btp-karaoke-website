@@ -7,7 +7,7 @@ import StudioBgm from './components/StudioBgm'
 import StudioPip from './components/StudioPip'
 import StudioSkeleton from './components/StudioSkeleton'
 import { useKaraokeVideo } from '../../lib/karaoke-player'
-import { useLoungeQueueState } from '../../lib/lounge-queue'
+import { LoungeQueueProvider, useLoungeQueueState } from '../../lib/lounge-queue'
 
 /** Simulated load time for the /studio content skeleton (3.5 s). */
 const SKELETON_MS = 3500
@@ -22,8 +22,9 @@ const SKELETON_MS = 3500
  *
  * The shell owns the video transport state (useKaraokeVideo): the routed page
  * registers its <video> through the outlet context and PlayerBar drives it.
- * It also owns the lounge queue (useLoungeQueueState), so a card's "Add to
- * queue" on the hub and the console's own queue edits share one list.
+ * It also owns the lounge queue (useLoungeQueueState), handed to the routed
+ * pages through its own provider, so a card's "Add to queue" on the hub and
+ * the console's own queue edits share one list.
  * It also mounts StudioBgm — lobby background music, scoped to /studio routes
  * and silenced on the console where the karaoke video takes over.
  *
@@ -62,7 +63,11 @@ export default function StudioShell() {
           {loading && !skipSkeleton ? (
             <StudioSkeleton />
           ) : (
-            <Outlet context={{ ...player, ...queue }} />
+            // The queue rides on its own context (stable across transport
+            // ticks); the outlet context carries only the player API.
+            <LoungeQueueProvider api={queue}>
+              <Outlet context={player} />
+            </LoungeQueueProvider>
           )}
         </main>
       </div>
