@@ -37,6 +37,13 @@ const WING_LABELS: Record<string, string> = {
 
 const NOTES_MAX = 500
 
+/** The API's list order: newest session day first, then newest booking first. */
+function byNewest(a: Booking, b: Booking): number {
+  if (a.bookingDate !== b.bookingDate) return a.bookingDate < b.bookingDate ? 1 : -1
+  if (a.createdAt === b.createdAt) return 0
+  return a.createdAt < b.createdAt ? 1 : -1
+}
+
 function describeError(err: unknown, fallback: string): string {
   if (err instanceof BookingApiError) {
     if (err.status === 401) {
@@ -94,6 +101,19 @@ export default function BookingPage() {
     setBookings(result.bookings)
   }
 
+  /**
+   * Best-effort re-read after a mutation. The mutation already produced its
+   * own outcome (success flash or error message), so a failed refresh must not
+   * replace it — the next visit reads fresh rows anyway.
+   */
+  async function refreshBookingsQuietly() {
+    try {
+      await refreshBookings()
+    } catch {
+      // Keep the mutation's outcome on screen.
+    }
+  }
+
   function startBooking(service: Service) {
     setSelected(service)
     // Pre-fill with the studio's today so the field is never empty on open.
@@ -114,18 +134,22 @@ export default function BookingPage() {
 
     setSubmitting(true)
     setFormError('')
+    setLoadError('')
     try {
       const { booking } = await createBooking({
         serviceId: selected.id,
         bookingDate,
         notes: notes.trim() || undefined,
       })
-      await refreshBookings()
+      // Show the new row immediately, in the server's order, rather than
+      // waiting on a second request; the quiet refresh reconciles the list.
+      setBookings((prev) => [booking, ...prev].sort(byNewest))
       setSelected(null)
       setNotes('')
       setFlash(
         `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} — reference ${booking.referenceCode}.`,
       )
+      void refreshBookingsQuietly()
     } catch (err) {
       setFormError(describeError(err, 'The booking could not be saved.'))
     } finally {
@@ -137,6 +161,7 @@ export default function BookingPage() {
     if (cancellingId) return
     setCancellingId(booking.id)
     setFlash('')
+    setLoadError('')
     try {
       const { booking: updated } = await cancelBooking(booking.id)
       // Swap the one row: bookingDate is unchanged, so the list order holds.
@@ -145,6 +170,11 @@ export default function BookingPage() {
     } catch (err) {
       setFlash('')
       setLoadError(describeError(err, 'The booking could not be cancelled.'))
+      // A 409/404 means this list is stale — re-read it so the row shows its
+      // real state instead of a Cancel button the server will keep refusing.
+      if (err instanceof BookingApiError && (err.status === 409 || err.status === 404)) {
+        void refreshBookingsQuietly()
+      }
     } finally {
       setCancellingId('')
     }
@@ -332,7 +362,8 @@ export default function BookingPage() {
                 <button
                   type="button"
                   onClick={() => startBooking(service)}
-                  className="mt-5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-xs font-bold tracking-widest text-text-secondary uppercase transition hover:border-primary/50 hover:text-text-primary"
+                  disabled={submitting}
+                  className="mt-5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-xs font-bold tracking-widest text-text-secondary uppercase transition hover:border-primary/50 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Book this service
                 </button>

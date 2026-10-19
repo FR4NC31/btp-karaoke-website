@@ -44,10 +44,19 @@ export function safeNextPath(raw: string | null | undefined): string | null {
   // C0 controls and DEL. Stripping these is what turns `/<LF>/evil.example`
   // into the protocol-relative `//evil.example`, so none of them may reach a
   // navigation.
-  if (/[\u0000-\u001f\u007f]/.test(raw)) return null
+  if (hasControlCharacter(raw)) return null
   if (raw.startsWith('/signin') || raw.startsWith('/signup')) return null
   if (!resolvesToOwnOrigin(raw)) return null
   return raw
+}
+
+/** C0 controls and DEL, by code point (see the note above). */
+function hasControlCharacter(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i)
+    if (code <= 0x1f || code === 0x7f) return true
+  }
+  return false
 }
 
 /**

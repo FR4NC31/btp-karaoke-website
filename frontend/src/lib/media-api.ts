@@ -76,9 +76,21 @@ export function fetchMediaCatalog(): Promise<{ items: MediaItem[] }> {
   return request('/api/media')
 }
 
-/** 12400 → "12.4K" — the compact form the hub meta strip uses. */
+/** The compact form the hub meta strip uses: 12400 → "12.4K", 1200000 → "1.2M". */
 export function formatCount(value: number): string {
   if (value < 1000) return String(value)
-  const compact = value / 1000
-  return `${compact >= 100 ? Math.round(compact) : compact.toFixed(1).replace(/\.0$/, '')}K`
+
+  // Pick the unit from the number that will actually be printed: 999,500
+  // rounds to 1000K under a K-only rule, which reads as a different value, so
+  // anything that rounds to 1000 in K belongs in M.
+  const thousands = value / 1000
+  if (Math.round(thousands) >= 1000) {
+    return `${compact(value / 1_000_000)}M`
+  }
+  return `${compact(thousands)}K`
+}
+
+/** One decimal below 100, a whole number above it — the hub's meta style. */
+function compact(value: number): string {
+  return value >= 100 ? String(Math.round(value)) : value.toFixed(1).replace(/\.0$/, '')
 }

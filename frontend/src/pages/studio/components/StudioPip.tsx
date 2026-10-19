@@ -58,9 +58,13 @@ export default function StudioPip({ player }: { player: KaraokeVideoApi }) {
       }`}
     >
       <div className="group relative">
+        {/* Only mirror the console's track while PiP is actually armed. When it
+            is off this element is hidden, and re-pointing it at every on-air
+            change made the browser fetch metadata for a file nobody was
+            watching. */}
         <video
           ref={videoRef}
-          src={onAir?.src ?? localVideo}
+          src={pip ? (onAir?.src ?? localVideo) : localVideo}
           playsInline
           preload="metadata"
           onClick={toggle}

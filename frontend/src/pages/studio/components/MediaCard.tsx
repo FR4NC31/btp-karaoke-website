@@ -72,6 +72,10 @@ export default function MediaCard({
   // "Added to queue" confirmation — flips back so a song can be queued twice.
   const [added, setAdded] = useState(false)
   const addedTimer = useRef<number | null>(null)
+  // A cover URL can 404 (deleted upload, stale row). Remember *which* URL
+  // failed rather than a boolean, so a different URL on the same card is
+  // retried without needing an effect to reset the flag.
+  const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
 
   useEffect(
     () => () => {
@@ -103,12 +107,13 @@ export default function MediaCard({
   return (
     <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface">
       <div className="relative">
-        {coverUrl ? (
+        {coverUrl && failedCoverUrl !== coverUrl ? (
           <img
             src={coverUrl}
             alt=""
             loading="lazy"
             decoding="async"
+            onError={() => setFailedCoverUrl(coverUrl)}
             className="aspect-[4/3] w-full bg-surface-elevated object-cover"
           />
         ) : (
@@ -143,8 +148,10 @@ export default function MediaCard({
       </div>
 
       <div className="mt-auto flex items-center gap-3 border-t border-border px-3.5 py-2 text-[10px] text-text-muted">
-        {meta.map((item) => (
-          <span key={item.text} className="flex min-w-0 items-center gap-1">
+        {meta.map((item, index) => (
+          // The entries are positional, so the index is their identity. Display
+          // text is not: two independent admin fields can hold the same value.
+          <span key={index} className="flex min-w-0 items-center gap-1">
             <HugeiconsIcon icon={item.icon} size={12} className="shrink-0" />
             <span className="truncate">{item.text}</span>
           </span>

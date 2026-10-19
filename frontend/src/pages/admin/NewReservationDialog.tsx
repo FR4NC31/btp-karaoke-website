@@ -108,6 +108,9 @@ function NewReservationForm({
   const [userResults, setUserResults] = useState<TagUser[]>([])
   const [searchingUsers, setSearchingUsers] = useState(false)
   const [selectedUser, setSelectedUser] = useState<TagUser | null>(null)
+  // A failed search used to look identical to an empty result — "No accounts
+  // match" — which invites an admin to book a registered customer as a guest.
+  const [userSearchError, setUserSearchError] = useState('')
 
   // Guest name
   const [guestName, setGuestName] = useState('')
@@ -164,11 +167,18 @@ function NewReservationForm({
     const timer = setTimeout(async () => {
       try {
         const { users } = await searchUsers(query)
-        if (alive) setUserResults(users)
-      } catch {
-        // A failed search must not block typing; the error surfaces on submit
-        // if it left no customer selected.
-        if (alive) setUserResults([])
+        if (alive) {
+          setUserResults(users)
+          setUserSearchError('')
+        }
+      } catch (err) {
+        // A failed search must not block typing, but it must not read as
+        // "no matches" either — that is how a registered customer ends up
+        // booked as a guest.
+        if (alive) {
+          setUserResults([])
+          setUserSearchError(describeBookingError(err, 'Could not search accounts.'))
+        }
       } finally {
         if (alive) setSearchingUsers(false)
       }
@@ -202,7 +212,11 @@ function NewReservationForm({
     if (submitting) return
 
     if (mode === 'user' && !selectedUser) {
-      setFormError('Pick a registered customer, or switch to a guest name.')
+      setFormError(
+        userSearchError
+          ? 'The customer search failed. Try again, or switch to a guest name.'
+          : 'Pick a registered customer, or switch to a guest name.',
+      )
       return
     }
     if (mode === 'guest' && !guestName.trim()) {
@@ -379,7 +393,14 @@ function NewReservationForm({
                         // nothing to search; anything else reads as
                         // "Searching…" until the debounced request settles.
                         setSearchingUsers(value.trim().length > 0)
+                        setUserSearchError('')
                         if (!value.trim()) setUserResults([])
+                      }}
+                      onKeyDown={(e) => {
+                        // Enter has nothing to select here; without this it
+                        // submits the whole reservation form and reports
+                        // "Pick a customer" instead of finishing the search.
+                        if (e.key === 'Enter') e.preventDefault()
                       }}
                       className="w-full rounded-lg border border-border bg-background py-2 pr-3 pl-9 text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
                     />
@@ -389,6 +410,10 @@ function NewReservationForm({
                     <div className="mt-2 overflow-hidden rounded-lg border border-border bg-surface-elevated">
                       {searchingUsers ? (
                         <p className="px-4 py-3 text-xs text-text-muted">Searching…</p>
+                      ) : userSearchError ? (
+                        <p role="alert" className="px-4 py-3 text-xs text-error">
+                          {userSearchError}
+                        </p>
                       ) : userResults.length === 0 ? (
                         <p className="px-4 py-3 text-xs text-text-muted">
                           No accounts match “{userQuery.trim()}”.

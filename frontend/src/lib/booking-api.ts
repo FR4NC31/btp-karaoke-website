@@ -58,7 +58,7 @@ export class BookingApiError extends Error {
 export function describeBookingError(err: unknown, fallback: string): string {
   if (err instanceof BookingApiError) {
     if (err.status === 401) {
-      return 'Your session has expired. Sign in again to manage bookings.'
+      return 'Your session has expired. Sign in again to continue.'
     }
     if (err.status === 403) {
       return 'You do not have access to that.'
@@ -99,6 +99,14 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const message =
       (payload as { error?: string } | null)?.error ?? `Request failed (${response.status}).`
     throw new BookingApiError(message, response.status)
+  }
+
+  // Every endpoint this helper calls answers with JSON. A 2xx that carries
+  // nothing — or something unparseable — is a broken server, not a success:
+  // returning null here used to surface later as a crash on destructuring,
+  // far from the cause.
+  if (payload === null) {
+    throw new BookingApiError('The server returned an empty response.', response.status)
   }
 
   return payload as T
