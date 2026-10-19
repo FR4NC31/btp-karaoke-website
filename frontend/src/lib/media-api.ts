@@ -47,6 +47,8 @@ export interface MediaItem {
   sourceUrl: string | null
   /** Album/collection shown in the music meta strip; null hides it. */
   album: string | null
+  /** Track lyrics (multi-line); null when none were written. */
+  lyrics: string | null
   /**
    * Uploaded cover image / video thumbnail for the card artwork
    * (`/api/uploads/media/...`); null = the default art.

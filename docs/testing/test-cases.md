@@ -714,8 +714,8 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin adds a music track and it reaches the hub
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/media/new`, pick **Music track**. 2. Fill title, description, tempo "120 BPM", key "Am"; save. 3. Check `/admin/media`, then `/studio`. 4. Delete the row from the console — the delete asks for confirmation; cancel once, then confirm.
-- **Expected:** The editor's fields switch per type (music asks tempo/key); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; **Delete** first turns into a "Delete permanently?" Confirm/Cancel pair — Cancel keeps the Live row, Confirm removes it (cleanup).
+- **Steps:** 1. Open `/admin/media/new` — the default video form carries no Lyrics box. 2. Pick **Music track**. 3. Fill title, description, tempo "120 BPM", key "Am" and a multi-line Lyrics text; save. 4. Check `/admin/media`, then `/studio`, then the row's stored lyrics through the admin API. 5. Delete the row from the console — the delete asks for confirmation; cancel once, then confirm.
+- **Expected:** The editor's fields switch per type (music asks tempo/key **and** the Lyrics box; video has none); the flash says the item is live on the hub; the console lists it as a Live row with its meta; the studio hub renders the card; the Lyrics text round-trips with line breaks intact; **Delete** first turns into a "Delete permanently?" Confirm/Cancel pair — Cancel keeps the Live row, Confirm removes it (cleanup).
 - **Automation:** Playwright — **Status: Automated**
 
 ### ADMIN-008
@@ -765,6 +765,15 @@ desk: every test-created reservation is driven to a terminal state
 - **Priority:** P1
 - **Steps:** 1. Open `/admin/media/new` as **Video song**. 2. Pick a tagless MP4 (`the-reason.mp4`) → the editor grabs a frame. 3. Pick `tests/e2e/assets/cover.png` over it, save, check the hub card. 4. Edit the row → **Remove cover** → save. 5. Delete the row.
 - **Expected:** The tagless video gets "Grabbed from the video" as its default thumbnail (no striped placeholder); an explicitly picked image overrides it and lands on the card as optimized WebP. After removal the card falls back to the default art and the replaced cover file is 404. Deleting the row takes the stored MP4 with it (404).
+- **Automation:** Playwright — **Status: Automated**
+
+### ADMIN-014
+
+- **Title:** Play previews a catalog row on the console with staff-only details
+- **Priority:** P2
+- **Preconditions:** Creates one video row through the admin API; deleted in `finally`.
+- **Steps:** 1. Open `/admin/media` and click **Play {title}** on the row's card. 2. Check the console stage and the **Admin details** panel. 3. Delete the row.
+- **Expected:** **Play** (offered where users can play too: video rows — bundled-master fallback included — and music rows with an upload; never radio) hands the row to `/studio/player-queue`, which opens on the picked row. Admins get the staff-only **Admin details** panel: catalog ID, section + Live/Hidden state, the source-file and cover references (or their fallbacks), and an **Edit item** link back to the editor. Regular users never render the panel (KARAOKE-002 pins the absence on the same console).
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -826,7 +835,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
-| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 — tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art). KARAOKE-003/005 create their rows via the admin API and delete them. |
+| Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 — reaches `/studio`, multi-line lyrics stored on music rows), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 — stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 — tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 — **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |
 | Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
 | Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |

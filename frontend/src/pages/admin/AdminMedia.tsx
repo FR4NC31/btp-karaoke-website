@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { HugeiconsIcon } from '@hugeicons/react'
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
   CheckmarkCircle02Icon,
   Delete01Icon,
+  MusicNote01Icon,
   PencilEdit01Icon,
+  PlayIcon,
+  Radio01Icon,
   ViewIcon,
   ViewOffSlashIcon,
 } from '@hugeicons/core-free-icons'
@@ -28,14 +31,21 @@ import {
 /**
  * /admin/media — the media hub catalog behind /studio.
  *
- * Rows are grouped by section in hub order (video → music → radio). Every
- * action is a POST to /api/admin/media/*: hide/show pulls a row from the
- * public feed without deleting it, move swaps it with its neighbour, edit
- * opens the full editor, and delete is permanent — so it asks first (the
- * delete icon turns into a Confirm/Cancel pair; the row's uploaded file is
- * deleted with it). The list reloads after every action — the server owns
- * the order, so the buttons' edge states (first row can't move up, last
- * can't move down) always follow the reload.
+ * Cards are grouped by section in hub order (video → music → radio) and take
+ * the studio hub's card shape — cover artwork (striped default without one),
+ * tag chip, title and artist — while keeping the console's full information:
+ * the MP3/MP4 + cover + Live/Hidden chips, the section's meta line, and every
+ * action. Play hands the row to the studio console for a staff preview —
+ * offered exactly where users can play it: video rows (bundled-master
+ * fallback included) and music rows with an upload; the console answers with
+ * its staff-only Admin details panel. The other actions are POSTs to
+ * /api/admin/media/*: hide/show pulls a row from the public feed without
+ * deleting it, move swaps it with its neighbour, edit opens the full editor,
+ * and delete is permanent — so it asks first (the delete icon turns into a
+ * Confirm/Cancel pair; the row's uploaded file is deleted with it). The list
+ * reloads after every action — the server owns the order, so the buttons'
+ * edge states (first row can't move up, last can't move down) always follow
+ * the reload.
  */
 
 const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
@@ -43,6 +53,13 @@ const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
 const STATUS_STYLES: Record<'live' | 'hidden', string> = {
   live: 'border-success/40 bg-success/10 text-success',
   hidden: 'border-border bg-surface-elevated text-text-muted',
+}
+
+/** Section icons for the default (coverless) artwork, same as the hub cards. */
+const SECTION_ICONS: Record<MediaSection, IconSvgElement> = {
+  video: PlayIcon,
+  music: MusicNote01Icon,
+  radio: Radio01Icon,
 }
 
 /** The meta strip under a row — only the columns its section actually uses. */
@@ -60,6 +77,18 @@ function metaParts(item: AdminMediaItem): string[] {
     if (item.listeners !== null) parts.push(`${formatCount(item.listeners)} listeners`)
   }
   return parts
+}
+
+/** Attachment chip (file / cover) in the hub cards' primary chip style. */
+function AttachmentChip({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <span
+      title={title}
+      className="rounded border border-primary/40 bg-primary-soft px-2 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase"
+    >
+      {children}
+    </span>
+  )
 }
 
 function RowButton({
@@ -236,64 +265,99 @@ export default function AdminMedia() {
                 {sectionItems.length === 0 ? (
                   <p className="text-sm text-text-muted">No items in this section yet.</p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {sectionItems.map((item, index) => {
                       const busy = actingId === item.id
                       const parts = metaParts(item)
+                      const SectionIcon = SECTION_ICONS[item.section]
+                      // Same reachability users have: video rows always play
+                      // (bundled-master fallback), music rows only with an
+                      // upload; radio carries no media file.
+                      const previewable =
+                        item.section === 'video' || (item.section === 'music' && item.sourceUrl !== null)
                       return (
                         <li
                           key={item.id}
-                          className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-surface p-4"
+                          className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface"
                         >
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <p className="font-heading text-base font-bold tracking-wide uppercase">
-                                {item.title}
-                              </p>
-                              {item.tag && (
-                                <span className="rounded border border-border bg-surface-elevated px-2 py-0.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
-                                  {item.tag}
-                                </span>
-                              )}
-                              {item.sourceUrl && (
-                                <span
-                                  title={item.sourceName ?? undefined}
-                                  className="rounded border border-primary/40 bg-primary-soft px-2 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase"
-                                >
-                                  {item.sourceUrl.endsWith('.mp3') ? 'MP3 file' : 'MP4 file'}
-                                </span>
-                              )}
-                              {item.coverUrl && (
-                                <span
-                                  title={item.coverName ?? undefined}
-                                  className="rounded border border-primary/40 bg-primary-soft px-2 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase"
-                                >
-                                  Cover
-                                </span>
-                              )}
-                              <span
-                                className={`rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${
-                                  item.isActive ? STATUS_STYLES.live : STATUS_STYLES.hidden
-                                }`}
+                          {/* Artwork, mirroring the studio hub card: the row's
+                              cover when it has one, else the striped default. */}
+                          <div className="relative">
+                            {item.coverUrl ? (
+                              <img
+                                src={item.coverUrl}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="aspect-[4/3] w-full bg-surface-elevated object-cover"
+                              />
+                            ) : (
+                              <div
+                                className="flex aspect-[4/3] w-full items-center justify-center bg-surface-elevated text-text-muted"
+                                style={{
+                                  backgroundImage:
+                                    'repeating-linear-gradient(135deg, transparent, transparent 10px, rgba(244,244,242,0.035) 10px, rgba(244,244,242,0.035) 20px)',
+                                }}
                               >
-                                {item.isActive ? 'Live' : 'Hidden'}
+                                <HugeiconsIcon icon={SectionIcon} size={28} />
+                              </div>
+                            )}
+                            {item.tag && (
+                              <span className="absolute top-2 left-2 rounded-sm bg-primary px-2 py-0.5 text-[10px] font-bold tracking-wider text-text-primary uppercase">
+                                {item.tag}
                               </span>
-                            </div>
+                            )}
+                            <span
+                              className={`absolute top-2 right-2 rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${
+                                item.isActive ? STATUS_STYLES.live : STATUS_STYLES.hidden
+                              }`}
+                            >
+                              {item.isActive ? 'Live' : 'Hidden'}
+                            </span>
+                          </div>
+
+                          <div className="px-3.5 pt-3 pb-2.5">
+                            <p className="line-clamp-2 font-heading text-base leading-tight font-bold tracking-wide uppercase">
+                              {item.title}
+                            </p>
                             {/* Under the title: the artist, else the
                                 subtitle (music description, radio genre). */}
                             {(item.artist ?? item.subtitle) && (
-                              <p className="mt-1.5 text-sm text-text-secondary">
+                              <p className="mt-0.5 truncate text-[10px] text-text-muted">
                                 {item.artist ?? item.subtitle}
                               </p>
                             )}
+                            {(item.sourceUrl || item.coverUrl) && (
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                {item.sourceUrl && (
+                                  <AttachmentChip title={item.sourceName ?? undefined}>
+                                    {item.sourceUrl.endsWith('.mp3') ? 'MP3 file' : 'MP4 file'}
+                                  </AttachmentChip>
+                                )}
+                                {item.coverUrl && (
+                                  <AttachmentChip title={item.coverName ?? undefined}>Cover</AttachmentChip>
+                                )}
+                              </div>
+                            )}
                             {parts.length > 0 && (
-                              <p className="mt-1 text-[11px] tracking-widest text-text-muted uppercase">
+                              <p className="mt-2 text-[10px] tracking-widest text-text-muted uppercase">
                                 {parts.join(' · ')}
                               </p>
                             )}
                           </div>
 
-                          <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border px-3.5 py-2">
+                            {previewable && (
+                              <Link
+                                to="/studio/player-queue"
+                                state={{ autoplay: true, item }}
+                                aria-label={`Play ${item.title}`}
+                                title={`Play ${item.title}`}
+                                className="rounded-lg border border-primary/40 bg-primary-soft/40 p-2 text-primary transition hover:border-primary hover:bg-primary-soft"
+                              >
+                                <HugeiconsIcon icon={PlayIcon} size={13} />
+                              </Link>
+                            )}
                             <RowButton
                               label={`Move ${item.title} up`}
                               disabled={busy || index === 0}

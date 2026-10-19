@@ -264,12 +264,16 @@ test.describe('media hub catalog', () => {
     const title = `E2E Session ${Date.now()}`
 
     await page.goto('/admin/media/new')
+    // Lyrics are a music-rows thing: the default video form has no box.
+    await expect(page.getByLabel('Lyrics')).toHaveCount(0)
     // The editor swaps fields per type: music wants tempo/key, video plays.
     await page.getByLabel('Type').selectOption('music')
     await page.getByLabel('Title', { exact: true }).fill(title)
     await page.getByLabel('Description').fill('E2E mixdown notes')
     await page.getByLabel('Tempo').fill('120 BPM')
     await page.getByLabel('Key', { exact: true }).fill('Am')
+    const lyricsText = 'E2E lyric line one\nE2E lyric line two'
+    await page.getByLabel('Lyrics').fill(lyricsText)
     await page.getByRole('button', { name: 'Add to the hub' }).click()
 
     const flash = flashWith(page, title)
@@ -288,6 +292,11 @@ test.describe('media hub catalog', () => {
     const card = page.locator('main article').filter({ hasText: title })
     await expect(card).toContainText('E2E mixdown notes')
     await expect(card).toContainText('120 BPM')
+
+    // The Lyrics box round-trips through the API — line breaks kept intact.
+    const listed = await page.request.get('/api/admin/media')
+    const items = (await listed.json()).items as Array<{ title: string; lyrics: string | null }>
+    expect(items.find((entry) => entry.title === title)?.lyrics).toBe(lyricsText)
 
     // Cleanup through the console's delete button — it asks for
     // confirmation first, so a stray click can never drop a live row.
@@ -623,5 +632,37 @@ test.describe('media hub catalog', () => {
     await expect(flashWith(page, `${title} removed.`)).toBeVisible()
 
     expect((await page.request.get(sourceUrl)).status()).toBe(404)
+  })
+
+  test('ADMIN-014: Play previews the row on the console with staff-only details', { tag: '@p2' }, async ({ page, baseURL }) => {
+    const title = `E2E Preview ${Date.now()}`
+    const item = await createMediaItemAsAdmin(baseURL, { section: 'video', title, tag: 'KTV' })
+
+    try {
+      await page.goto('/admin/media')
+      // Play sits with the row's actions — video rows are playable even
+      // without an upload (the bundled master stands in).
+      const card = page.locator('main li').filter({ hasText: title })
+      await card.getByRole('link', { name: `Play ${title}` }).click()
+
+      // The console opens on the row the admin picked…
+      await expect(page).toHaveURL('/studio/player-queue')
+      await expect(page.getByRole('heading', { name: title })).toBeVisible()
+
+      // …and answers with the staff-only details: the catalog id, the live
+      // state, and the file/cover fallbacks — plus the way back to the editor.
+      const details = page.getByRole('region', { name: 'Admin details' })
+      await expect(details).toBeVisible()
+      await expect(details).toContainText(item.id)
+      await expect(details).toContainText('Live on the hub')
+      await expect(details).toContainText('None — the stage falls back to the bundled master')
+      await expect(details).toContainText('Default art')
+      await expect(details.getByRole('link', { name: 'Edit item' })).toHaveAttribute(
+        'href',
+        `/admin/media/${item.id}`,
+      )
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, item.id)
+    }
   })
 })

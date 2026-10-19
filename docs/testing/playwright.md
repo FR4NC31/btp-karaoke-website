@@ -266,6 +266,7 @@ their tests create the rows they assert and delete them afterwards.
 | Media visibility + ordering            | Working — hide/show, move up/down        | ADMIN-008    |
 | Media file upload (MP4/MP3)            | Working — stored with byte ranges + immutable cache; the hub plays the upload | ADMIN-009/010, KARAOKE-012 |
 | Tag metadata fill + covers/thumbnails  | Working — tags pre-fill the blank boxes (Artist/album); the runtime is read off the picked file; embedded art, grabbed video frames and picked images become optimized WebP covers | ADMIN-012/013 |
+| Staff preview on the console           | Working — **Play** on a card opens `/studio/player-queue` on that row; admins get the staff-only **Admin details** panel (KARAOKE-002 pins users out of it) | ADMIN-014    |
 | Delete confirmation on media rows      | Working — Delete → Confirm/Cancel pair   | ADMIN-007/009 |
 | User management (list/ban/set-role)    | Not implemented (deliberately out of v1) | —            |
 
@@ -291,7 +292,7 @@ their tests create the rows they assert and delete them afterwards.
   `GET /api/admin/users`, plus the media catalog: `GET/POST /api/admin/media`,
   `POST /api/admin/media/upload`, `POST /api/admin/media/:id`,
   `POST /api/admin/media/:id/{visibility,move,delete}`)
-  is driven end-to-end by ADMIN-001…013, and its boundary is pinned by direct
+  is driven end-to-end by ADMIN-001…014, and its boundary is pinned by direct
   calls: SEC-001 (401 anonymous) and SEC-002 (403 for a signed-in non-admin,
   on every route shape). SEC-003 calls the auth API directly to prove `role`
   cannot be set at sign-up or through `update-user`.

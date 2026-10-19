@@ -46,6 +46,11 @@ export interface MediaItem {
   sourceName: string | null
   /** Album/collection as shown on the hub, or null to hide it. */
   album: string | null
+  /**
+   * Optional track lyrics — multi-line plain text typed or pasted in the
+   * admin editor (music rows). Null when the admin wrote none.
+   */
+  lyrics: string | null
   /** Uploaded cover image shown on the card/stage; null = default art. */
   coverUrl: string | null
   /** Original filename of the cover upload — admin display only. */
@@ -77,6 +82,8 @@ const SECTION_VALUES: MediaSection[] = ['video', 'music', 'radio']
 const TITLE_MAX = 120
 const TEXT_MAX = 160
 const SHORT_TEXT_MAX = 40
+/** Lyrics hold whole songs — room for a long pasted text. */
+const LYRICS_MAX = 10000
 
 type MediaRow = typeof mediaItem.$inferSelect
 
@@ -97,6 +104,7 @@ function toMediaItem(row: MediaRow): MediaItem {
     sourceUrl: row.sourceUrl,
     sourceName: row.sourceName,
     album: row.album,
+    lyrics: row.lyrics,
     coverUrl: row.coverUrl,
     coverName: row.coverName,
     sortOrder: row.sortOrder,
@@ -122,6 +130,7 @@ function toPublicMediaItem(item: MediaItem): PublicMediaItem {
     listeners: item.listeners,
     sourceUrl: item.sourceUrl,
     album: item.album,
+    lyrics: item.lyrics,
     coverUrl: item.coverUrl,
     sortOrder: item.sortOrder,
   }
@@ -262,6 +271,7 @@ interface ValidatedFields {
   sourceUrl: string | null
   sourceName: string | null
   album: string | null
+  lyrics: string | null
   coverUrl: string | null
   coverName: string | null
 }
@@ -287,6 +297,7 @@ function validateFields(input: Record<string, unknown>): ValidatedFields {
     sourceUrl: cleanSourceUrl(input.sourceUrl),
     sourceName: cleanText(input.sourceName, 'Source name'),
     album: cleanText(input.album, 'Album'),
+    lyrics: cleanText(input.lyrics, 'Lyrics', LYRICS_MAX),
     coverUrl: cleanCoverUrl(input.coverUrl),
     coverName: cleanText(input.coverName, 'Cover name'),
   }
