@@ -17,7 +17,17 @@ import { useOutletContext } from 'react-router'
  * transport also tracks the on-air track (`onAir`): the bar shows its
  * metadata and the mini mirrors its source. Position handoffs (console →
  * mini, console → lobby) are gated on matching sources, so an uploaded song
- * never jumps the lobby's own timeline.
+ * never jumps the lobby's own timeline. The lobby itself never autoplays:
+ * StudioBgm starts it only on a real user choice (the bar's Play) or when a
+ * console exit flags a handoff for it to consume.
+ *
+ * Only the console registers a playlist (`attachPlaylist`): its queue skip
+ * handlers back the bar's Previous/Next buttons and the auto-advance when a
+ * song ends. Other studio pages register nothing, so the buttons stay inert.
+ * The bar's repeat/shuffle modes live here too: 'one' loops the registered
+ * videos, while 'all' and shuffle are read by the console's playlist (wrap
+ * the queue; present it in a random order and draw songs at random — see
+ * `shuffleSeed`).
  */
 export type KaraokeVideoApi = {
   /** True while the in-app PiP mini player holds the session. */
@@ -42,13 +52,40 @@ export type KaraokeVideoApi = {
   attachMusic: (el: HTMLAudioElement) => () => void
   /** Console pages announce their track here (null clears it). */
   setOnAir: (track: OnAirTrack | null) => void
+  /**
+   * True once after the console handed its song to the lobby track on exit
+   * (the same file, position > 1s moved onto the <audio>). StudioBgm consumes
+   * it to resume exactly that handoff — the lobby never autoplays without a
+   * user choice.
+   */
+  consumeMusicHandoff: () => boolean
   /** Console PiP button: arm the mini player, then navigate away. */
   enterPip: () => void
   toggle: () => void
   seek: (time: number) => void
   changeVolume: (volume: number) => void
-  /** Loop flag for the registered videos (bar's repeat button). */
-  setLoop: (loop: boolean) => void
+  /** Repeat cycle from the bar: 'one' loops the registered videos. */
+  repeatMode: RepeatMode
+  setRepeatMode: (mode: RepeatMode) => void
+  /** Shuffle flag from the bar: the console shuffles — random rail order, random draws. */
+  shuffle: boolean
+  setShuffle: (shuffle: boolean) => void
+  /**
+   * Fresh every time shuffle switches on: the console derives its random
+   * queue order from it, so the order is random yet pure to render — and
+   * stays put while the same shuffled round plays out.
+   */
+  shuffleSeed: number
+  /** Skip back a song on the console queue (no-op with no playlist). */
+  previous: () => void
+  /** Skip forward a song on the console queue (no-op with no playlist). */
+  next: () => void
+  /**
+   * Register the console's queue skip handlers for the bar's Previous/Next
+   * buttons; returns the detach cleanup. Only the console registers one, so
+   * the buttons stay inert on the other studio pages.
+   */
+  attachPlaylist: (handlers: PlaylistHandlers | null) => () => void
 }
 
 /** The track the console is playing — a catalog row or the bundled master. */
@@ -61,6 +98,22 @@ export interface OnAirTrack {
   coverUrl: string | null
   kind: 'video' | 'music'
 }
+
+/**
+ * What the console registers for the bar's Previous/Next buttons: skipping
+ * walks the console's lounge queue (only /studio/player-queue has one).
+ */
+export interface PlaylistHandlers {
+  previous: () => void
+  next: () => void
+}
+
+/**
+ * Bar repeat cycle: 'off' stops at the queue's end, 'all' wraps the console's
+ * queue around, 'one' loops the element itself (the console never sees an
+ * `ended` then, so the auto-advance stays put).
+ */
+export type RepeatMode = 'off' | 'all' | 'one'
 
 type SourceKind = 'video' | 'mini' | 'music'
 
@@ -80,7 +133,15 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   // state synchronously during the navigation commit, before re-renders.
   const pipRef = useRef(false)
   const videoVolumeRef = useRef(DEFAULT_VOLUME)
-  const loopRef = useRef(false)
+  // Repeat mode lives in a ref too: a freshly attached video must pick up the
+  // current mode synchronously, before the bar's state re-render lands.
+  const repeatModeRef = useRef<RepeatMode>('off')
+  // Set when the console exits with the lobby track as its heir (see the
+  // detach below); StudioBgm consumes it to resume the handed-off song.
+  const musicHandoffRef = useRef(false)
+  // The console's queue skip handlers (bar Previous/Next). A ref, like the
+  // PiP flag, so the bar always calls the latest registered playlist.
+  const playlistRef = useRef<PlaylistHandlers | null>(null)
 
   const [pip, setPip] = useState(false)
   const [playing, setPlaying] = useState(false)
@@ -88,6 +149,9 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
   const [onAir, setOnAirState] = useState<OnAirTrack | null>(null)
+  const [repeatMode, setRepeatModeState] = useState<RepeatMode>('off')
+  const [shuffle, setShuffleState] = useState(false)
+  const [shuffleSeed, setShuffleSeed] = useState(0)
 
   const setOnAir = useCallback((track: OnAirTrack | null) => {
     setOnAirState(track)
@@ -152,10 +216,10 @@ export function useKaraokeVideo(): KaraokeVideoApi {
         setPip(false)
         videoRef.current = el
         el.volume = videoVolumeRef.current
-        el.loop = loopRef.current
+        el.loop = repeatModeRef.current === 'one'
       } else if (kind === 'mini') {
         miniRef.current = el
-        el.loop = loopRef.current
+        el.loop = repeatModeRef.current === 'one'
       } else {
         musicRef.current = el
       }
@@ -182,15 +246,24 @@ export function useKaraokeVideo(): KaraokeVideoApi {
           } else if (!pipRef.current) {
             // Plain exit → hand the song to the lobby track, synced: a video
             // that made real progress moves its position onto the lobby
-            // <audio> (StudioBgm's route effect then resumes it from there).
-            // Only when both play the same file — an uploaded song keeps its
-            // place instead of jumping the lobby's own timeline. Dev-only
-            // quirk: StrictMode invokes the console's attach effect twice, so
-            // this also fires once right after a (re)entry — it only nudges
-            // the parked, silent lobby track; production mounts once.
+            // <audio> and flags the handoff (StudioBgm's route effect
+            // consumes the flag and resumes it — a fresh studio entry never
+            // autoplays the lobby). Only when both play the same file — an
+            // uploaded song keeps its place instead of jumping the lobby's
+            // own timeline. Dev-only quirk: StrictMode invokes the console's
+            // attach effect twice, so this also fires once right after a
+            // (re)entry — it only nudges the parked, silent lobby track;
+            // production mounts once.
             const music = musicRef.current
-            if (music && sameSource(el, music) && el.currentTime > 1) {
-              music.currentTime = el.currentTime
+            if (music && sameSource(el, music)) {
+              if (el.currentTime > 1) {
+                music.currentTime = el.currentTime
+                musicHandoffRef.current = true
+              } else {
+                // No progress → nothing to hand over; also clears a stale
+                // flag the StrictMode early detach above may have left.
+                musicHandoffRef.current = false
+              }
             }
           }
           // "Now playing" follows the console's track: a floating PiP keeps
@@ -214,6 +287,12 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const attachVideo = useCallback((el: HTMLVideoElement) => register(el, 'video'), [register])
   const attachMini = useCallback((el: HTMLVideoElement) => register(el, 'mini'), [register])
   const attachMusic = useCallback((el: HTMLAudioElement) => register(el, 'music'), [register])
+
+  const consumeMusicHandoff = useCallback(() => {
+    const handoff = musicHandoffRef.current
+    musicHandoffRef.current = false
+    return handoff
+  }, [])
 
   const enterPip = useCallback(() => {
     pipRef.current = true
@@ -243,10 +322,36 @@ export function useKaraokeVideo(): KaraokeVideoApi {
     if (el === videoRef.current || el === miniRef.current) videoVolumeRef.current = clamped
   }, [])
 
-  const setLoop = useCallback((loop: boolean) => {
-    loopRef.current = loop
+  const setRepeatMode = useCallback((mode: RepeatMode) => {
+    repeatModeRef.current = mode
+    setRepeatModeState(mode)
+    // Only repeat-one loops the element itself: an element loop suppresses
+    // `ended`, so repeat-all must instead be wrapped by the playlist.
+    const loop = mode === 'one'
     if (videoRef.current) videoRef.current.loop = loop
     if (miniRef.current) miniRef.current.loop = loop
+  }, [])
+
+  const setShuffle = useCallback((next: boolean) => {
+    setShuffleState(next)
+    // Seed the console's random queue order here — this is an event handler,
+    // never render, so the console can derive the order purely.
+    if (next) setShuffleSeed(Math.random())
+  }, [])
+
+  const attachPlaylist = useCallback((handlers: PlaylistHandlers | null) => {
+    playlistRef.current = handlers
+    return () => {
+      if (playlistRef.current === handlers) playlistRef.current = null
+    }
+  }, [])
+
+  const previous = useCallback(() => {
+    playlistRef.current?.previous()
+  }, [])
+
+  const next = useCallback(() => {
+    playlistRef.current?.next()
   }, [])
 
   return {
@@ -260,11 +365,19 @@ export function useKaraokeVideo(): KaraokeVideoApi {
     attachMini,
     attachMusic,
     setOnAir,
+    consumeMusicHandoff,
     enterPip,
     toggle,
     seek,
     changeVolume,
-    setLoop,
+    repeatMode,
+    setRepeatMode,
+    shuffle,
+    setShuffle,
+    shuffleSeed,
+    previous,
+    next,
+    attachPlaylist,
   }
 }
 

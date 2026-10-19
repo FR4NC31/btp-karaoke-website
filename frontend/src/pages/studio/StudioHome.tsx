@@ -3,6 +3,7 @@ import { fetchMediaCatalog, type MediaItem } from '../../lib/media-api'
 import VideoSongSection from './components/VideoSongSection'
 import MusicPlayerSection from './components/MusicPlayerSection'
 import RadioSection from './components/RadioSection'
+import StudioSkeleton from './components/StudioSkeleton'
 
 /**
  * /studio index: the studio media hub, fed by the admin-managed catalog
@@ -47,11 +48,10 @@ export default function StudioHome() {
   }
 
   if (!items) {
-    return (
-      <p role="status" className="text-sm text-text-muted">
-        Loading the media hub…
-      </p>
-    )
+    // Reuse the shell skeleton, so the simulated shell delay and the real
+    // catalog fetch read as one continuous loading state (same shape as the
+    // hub they resolve into).
+    return <StudioSkeleton />
   }
 
   if (items.length === 0) {

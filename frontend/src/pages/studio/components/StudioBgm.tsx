@@ -16,17 +16,17 @@ const BGM_VOLUME = 0.35
  * seek, volume) on every studio page except the console, where it yields to
  * the karaoke <video>.
  *
- * Autoplay: browsers only allow sound after user interaction. The mount
- * attempt is caught when blocked (keeps ERROR-002 clean) — until a real
- * gesture happens the music simply stays paused and the bar's Play button
- * (a real click) starts it. No resume-on-first-click listeners: they raced
- * the Play button's own pointerdown and cancelled the click's play().
+ * No autoplay: entering the studio leaves the music paused until the user
+ * actually chooses something — the bar's Play button (a real click) or a
+ * console session handed back on exit (KARAOKE-010; the transport flags the
+ * handoff). A play() the browser still rejects is caught and the music stays
+ * paused (keeps ERROR-002 clean).
  */
 export default function StudioBgm({ player }: { player: KaraokeVideoApi }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { pathname } = useLocation()
   const onConsole = pathname === '/studio/player-queue'
-  const { attachMusic, pip } = player
+  const { attachMusic, consumeMusicHandoff, pip } = player
   // The lobby yields wherever a video session is on air: the console itself
   // or the floating PiP mini player.
   const videoOnAir = onConsole || pip
@@ -39,8 +39,10 @@ export default function StudioBgm({ player }: { player: KaraokeVideoApi }) {
     return attachMusic(el)
   }, [attachMusic])
 
-  // Play on the studio pages, yield to the console / floating mini player.
-  // A rejected play() (no user activation yet) is caught and left paused.
+  // Pause wherever a video session is on air. Otherwise start ONLY a
+  // console handoff (the user picked a song there): a fresh studio entry
+  // stays silent until the bar's Play. A rejected play() (no user
+  // activation yet) is caught and left paused.
   useEffect(() => {
     const el = audioRef.current
     if (!el) return
@@ -48,8 +50,8 @@ export default function StudioBgm({ player }: { player: KaraokeVideoApi }) {
       el.pause()
       return
     }
-    void el.play().catch(() => {})
-  }, [videoOnAir])
+    if (consumeMusicHandoff()) void el.play().catch(() => {})
+  }, [videoOnAir, consumeMusicHandoff])
 
   return <audio ref={audioRef} src={lobbyTrack} loop preload="auto" aria-hidden="true" />
 }

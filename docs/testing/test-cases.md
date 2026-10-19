@@ -447,6 +447,59 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   (206). Deleting the row removes the stored file (404).
 - **Automation:** Playwright — **Status: Automated**
 
+### KARAOKE-013
+
+- **Title:** A card menu queues a song for the console
+- **Priority:** P1
+- **Steps:** 1. Open `/studio`. 2. Click **More options for The Reason** on
+  the first card. 3. Click **Add to queue**. 4. Click **Open lounge queue**.
+- **Expected:** The dialog shows the track (title + artist · runtime) and the
+  button flips to **Added to queue**; the console's Upcoming Lounge Queue
+  carries the row with its remove action — hub and console share one list,
+  persisted to `localStorage` (`btp.lounge-queue`).
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-014
+
+- **Title:** The bar skips play exact queued songs, never the master
+- **Priority:** P1
+- **Preconditions:** Uploads a real (silent) MP3 twice and attaches one to
+  each of two fresh music rows; both rows are deleted in `finally`.
+- **Steps:** 1. Queue both songs from their hub card menus. 2. Open the
+  console, click **Next** on the player bar, then **Previous**, then **Next**
+  again; let the first song run to its end.
+- **Expected:** The first **Next** steps over the mockup queue rows (nothing
+  real behind them) onto the first queued song and plays **its exact file**
+  (`src` is the stored `/api/uploads/media/...` url — never the bundled
+  master), and the bar shows its title; the song finishing rolls onto the
+  second queued file and auto-plays it; **Previous** / **Next** walk the real
+  songs. Skipping past either end is a no-op and elsewhere in the studio no
+  playlist is registered, so the skip buttons stay inert.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-015
+
+- **Title:** Repeat all wraps the queue and shuffle draws random songs
+- **Priority:** P1
+- **Preconditions:** Same setup as KARAOKE-014 but with three real silent MP3s
+  attached to three fresh music rows (all deleted in `finally`).
+- **Steps:** 1. Queue the three songs and open the console. 2. Click
+  **Shuffle** on the bar, then **Next** through a full round (three draws)
+  plus one more, then **Previous**. 3. Switch shuffle off, cycle repeat to
+  **Repeat all**, and let the songs run out.
+- **Expected:** With shuffle on (`aria-pressed="true"`) the rail reorders to
+  a random order — the same rows in new positions — and the skips draw: the
+  first **Next** plays a random song (never the one on air), the second the
+  only song the round had not played, and the third starts a fresh round
+  without repeating the song just heard — so nothing repeats until a full
+  round is done. **Previous** walks the round's played songs back. Switching
+  shuffle off restores the arranged queue order. With repeat all the songs
+  run out in order and wrap around the ends — a full cycle later playback is
+  back on the row it started from, still playing, instead of stopping or
+  looping one song. Repeat one loops the video element itself; repeat off
+  stops at the queue's end.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Player — `frontend/tests/e2e/player/player.spec.ts`
@@ -464,8 +517,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Playback starts
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Play** in the player bar.
-- **Expected:** The toggle becomes **Pause** (the spec settles the lobby
-  track to paused first — the test browser allows autoplay).
+- **Expected:** The toggle becomes **Pause** (the hub never autoplays —
+  PLAYER-009 — so this click is the first start; the spec settles the lobby
+  track's metadata first).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-004
@@ -493,6 +547,18 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P2
 - **Steps:** 1. Click the **Like** heart in the player bar.
 - **Expected:** Active (primary-colored) styling toggles on/off.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYER-009
+
+- **Title:** Studio entry does not autoplay the lobby music
+- **Priority:** P1
+- **Steps:** 1. Sign in / open `/studio`. 2. Watch the lobby track without
+  touching anything.
+- **Expected:** The lobby music stays paused (silent, 0:00, bar shows
+  **Play**) until the user actually chooses to hear something: the bar's
+  Play button or a console session handed back on exit (KARAOKE-010). The
+  single auto-resume that survives is that handoff.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -830,7 +896,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Favorites / playlists round-trip       | N/A                   | Not implemented (like button is local state only).           |
 | Database persistence after refresh     | Partial               | Sign-up/sign-in read and write Aiven (AUTH-010, AUTH-001) and the session persists (AUTH-009); favorites/playlists are still local state only. |
 | Song detail / lyrics synchronization   | N/A                   | No detail page or lyrics implementation.                     |
-| Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. |
+| Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and the end-of-song auto-advance play each row's exact file and step over rows with no real media (KARAOKE-014). |
 | Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |

@@ -4,12 +4,11 @@ import { expect } from '@playwright/test'
 /**
  * Settle the lobby music before a spec drives the bar's Play/Pause toggle.
  *
- * Playwright's Chromium allows autoplay, so StudioBgm's mount play() may
- * already be running (or still loading) when a test reaches the bar — a
- * Play click would then race the media and sometimes pause instead of play.
- * Wait for the track's metadata, pause it when it started on its own, and
- * only return a bar that shows 'Play'. Real browsers block the no-gesture
- * autoplay, so users never see this race.
+ * The hub never autoplays (the lobby starts only from a real user choice),
+ * so the track should already be paused — but metadata may still be
+ * loading, and a Play click must not race that load. Wait for metadata,
+ * pause it if something started it anyway, and only return a bar that
+ * shows 'Play'.
  */
 export async function settlePlayerBar(page: Page) {
   const audio = page.locator('audio')

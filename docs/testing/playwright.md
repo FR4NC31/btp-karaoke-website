@@ -109,7 +109,7 @@ frontend/tests/e2e/
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…011 media hub (DB-backed catalog), console, player bar, PiP, cross-page sync
-├── player/player.spec.ts        PLAYER-001,003,004,006,008 player bar controls
+├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
 ├── admin/admin.spec.ts          ADMIN-001…008    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
@@ -187,7 +187,8 @@ What the product actually implements today (test coverage is limited to this):
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
 | Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
-| Player play/pause/like toggles   | Working (UI state; real on console) | PLAYER-001/003/004/008 |
+| Player play/pause/like toggles   | Working (real lobby track on the hub; the console's on-air track renames the bar) | PLAYER-001/003/004/008 |
+| Lobby autoplay on studio entry   | **None by design** — silence until the user plays (bar's Play) or a console session hands back on exit (KARAOKE-010); reintroducing autoplay is a regression | PLAYER-009 |
 | Progress display                 | Live m:ss on every studio page (video on console, lobby music elsewhere) | PLAYER-006 |
 | Search input (top bar)           | **Not wired** (decorative) | — (N/A, test-cases.md) |
 | Song detail / lyrics page        | Does not exist        | —                         |

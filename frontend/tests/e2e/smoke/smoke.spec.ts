@@ -55,8 +55,9 @@ test.describe('smoke', () => {
     await signIn(page)
     await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
 
-    // The bar drives the real lobby track on the hub — settle any autoplay
-    // first, then the Play/Pause toggle runs deterministically.
+    // The bar drives the real lobby track on the hub — settle the track,
+    // then the Play/Pause toggle runs deterministically (no autoplay since
+    // PLAYER-009: the first start is this very click).
     await settlePlayerBar(page)
     const playerBar = page.getByRole('contentinfo')
     await playerBar.getByRole('button', { name: 'Play' }).click()

@@ -52,6 +52,7 @@ export default function MusicPlayerSection({ items }: { items: MediaItem[] }) {
               to={track.sourceUrl ? '/studio/player-queue' : undefined}
               toState={track.sourceUrl ? { autoplay: true, item: track } : undefined}
               meta={meta}
+              queue={{ mediaId: track.id, len: track.duration, src: track.sourceUrl, kind: 'music' }}
             />
           )
         })}

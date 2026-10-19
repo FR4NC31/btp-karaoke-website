@@ -36,8 +36,6 @@ function formatTime(seconds: number): string {
  */
 export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
   const [liked, setLiked] = useState(false)
-  const [repeat, setRepeat] = useState<'off' | 'all' | 'one'>('off')
-  const [shuffled, setShuffled] = useState(false)
 
   const playing = player.playing
   const progress = player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
@@ -54,15 +52,15 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
       : 'Karaoke master · MP4'
     : '24-Bit · WAV · FLAC'
 
-  // Repeat cycles off → all → one (RepeatOff / Repeat / RepeatOne01 icons);
-  // off and the two repeat modes mirror onto the video's loop flag.
+  // Repeat cycles off → all → one (RepeatOff / Repeat / RepeatOne01 icons).
+  // The mode lives in the shared transport: 'all' wraps the console's queue
+  // at either end, 'one' loops the video element itself.
+  const repeat = player.repeatMode
   const repeatLabel = repeat === 'one' ? 'Repeat one' : repeat === 'all' ? 'Repeat all' : 'Repeat off'
   const repeatIcon = repeat === 'one' ? RepeatOne01Icon : repeat === 'all' ? RepeatIcon : RepeatOffIcon
 
   const cycleRepeat = () => {
-    const next = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off'
-    setRepeat(next)
-    player.setLoop(next !== 'off')
+    player.setRepeatMode(repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off')
   }
 
   return (
@@ -126,16 +124,21 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => setShuffled((v) => !v)}
+            onClick={() => player.setShuffle(!player.shuffle)}
             aria-label="Shuffle"
-            aria-pressed={shuffled}
+            aria-pressed={player.shuffle}
             className={`hidden transition hover:text-text-primary sm:block ${
-              shuffled ? 'text-warning' : 'text-text-muted'
+              player.shuffle ? 'text-warning' : 'text-text-muted'
             }`}
           >
             <HugeiconsIcon icon={ShuffleIcon} size={16} />
           </button>
-          <button type="button" aria-label="Previous" className="text-text-secondary transition hover:text-text-primary">
+          <button
+            type="button"
+            aria-label="Previous"
+            onClick={player.previous}
+            className="text-text-secondary transition hover:text-text-primary"
+          >
             <HugeiconsIcon icon={SkipBackIcon} size={18} />
           </button>
           <button
@@ -146,7 +149,12 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
           >
             <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={16} />
           </button>
-          <button type="button" aria-label="Next" className="text-text-secondary transition hover:text-text-primary">
+          <button
+            type="button"
+            aria-label="Next"
+            onClick={player.next}
+            className="text-text-secondary transition hover:text-text-primary"
+          >
             <HugeiconsIcon icon={SkipForwardIcon} size={18} />
           </button>
           <button

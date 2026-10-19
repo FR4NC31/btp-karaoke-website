@@ -46,6 +46,7 @@ Important functionality; degraded experience but a workaround exists:
 | Session persistence           | AUTH-009                              |
 | Music player track listing    | KARAOKE-003, KARAOKE-005              |
 | Player controls               | PLAYER-001, PLAYER-003, PLAYER-004    |
+| Lobby stays silent on entry   | PLAYER-009                            |
 | Mobile navigation             | NAV-003                               |
 | Password visibility           | AUTH-007                              |
 | Error states & app health     | ERROR-001, ERROR-002, ERROR-003       |
@@ -159,6 +160,7 @@ Only mark what actually exists in the application.
   pinned by KARAOKE-002)
 - [x] Video song → console hop (KARAOKE-002)
 - [x] Player opens with track (PLAYER-001)
+- [x] Studio entry stays silent — no lobby autoplay (PLAYER-009)
 - [x] Playback start / pause / resume (PLAYER-003, PLAYER-004)
 - [x] Like toggle (PLAYER-008)
 - [x] Song loads real media — uploaded files or the bundled master via shell player bar (KARAOKE-006/012)
