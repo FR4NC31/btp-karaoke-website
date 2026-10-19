@@ -213,6 +213,22 @@ export interface CreateBookingInput {
  * absurdly far ahead. Returns the trimmed day so callers cannot accidentally
  * keep the raw input.
  */
+/**
+ * True when `day` is a `YYYY-MM-DD` string naming a day that actually exists.
+ *
+ * The shape test alone accepts days that do not exist — 2027-02-29,
+ * 2027-04-31, 2027-13-01 — and those reach Postgres, which rejects them as an
+ * out-of-range `date`. `Date` rolls impossible days over (2027-04-31 ->
+ * 2027-05-01) rather than failing, so parsing back and comparing is what
+ * actually catches it. Shared by the booking writers and the admin date
+ * filter, which must not hand Postgres a day it cannot parse.
+ */
+function isRealCalendarDay(day: string): boolean {
+  if (!ISO_DATE.test(day)) return false
+  const parsed = new Date(`${day}T00:00:00Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day
+}
+
 function validateBookingDay(raw: unknown): string {
   const bookingDate = typeof raw === 'string' ? raw.trim() : ''
 
@@ -220,13 +236,7 @@ function validateBookingDay(raw: unknown): string {
     throw new BookingError('Pick a date in YYYY-MM-DD format.', 400)
   }
 
-  // The shape alone accepts days that do not exist — 2027-02-29, 2027-04-31,
-  // 2027-13-01. Those reach Postgres, which rejects them as an out-of-range
-  // `date` and surfaces to the client as an uncaught 500, so reject them here.
-  // `Date` rolls impossible days over (2027-04-31 -> 2027-05-01) rather than
-  // failing, so parsing back and comparing is what actually catches it.
-  const parsedDay = new Date(`${bookingDate}T00:00:00Z`)
-  if (Number.isNaN(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== bookingDate) {
+  if (!isRealCalendarDay(bookingDate)) {
     throw new BookingError('That is not a real calendar date. Pick a valid day.', 400)
   }
 
@@ -367,7 +377,14 @@ export interface AdminBooking extends Booking {
   customerContact: string | null
 }
 
-export type AdminBookingAction = 'confirm' | 'reject' | 'complete' | 'cancel'
+/**
+ * The admin status moves, in the order the console offers them. Exported so the
+ * route handler validates the URL segment against the same list the transition
+ * table is built from — the two drifted silently before.
+ */
+export const ADMIN_ACTION_NAMES = ['confirm', 'reject', 'complete', 'cancel'] as const
+
+export type AdminBookingAction = (typeof ADMIN_ACTION_NAMES)[number]
 
 /**
  * The only status moves an admin can make, and the states they are legal
@@ -441,6 +458,15 @@ export interface ListBookingsFilter {
 }
 
 /**
+ * Escapes the wildcards in a user-supplied ILIKE pattern, so searching for
+ * `50%` matches that literal text instead of every row. Postgres treats a
+ * backslash as the default escape character inside a LIKE pattern.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&')
+}
+
+/**
  * Every customer's bookings, oldest upcoming day first, pending ones on top —
  * the order the admin queue works through. Filters are applied in SQL so the
  * page never has to pull the whole table to narrow it.
@@ -451,12 +477,16 @@ export async function listAllBookings(filter: ListBookingsFilter = {}): Promise<
   if (filter.status) {
     conditions.push(eq(booking.status, filter.status))
   }
-  if (filter.date && ISO_DATE.test(filter.date)) {
-    conditions.push(eq(booking.bookingDate, filter.date))
+  const date = filter.date?.trim()
+  // An impossible day (2027-02-30, 2027-13-01) would reach Postgres and fail as
+  // an uncaught 500. Like any other unusable filter value, it is ignored — the
+  // admin simply sees the unfiltered queue rather than an error page.
+  if (date && isRealCalendarDay(date)) {
+    conditions.push(eq(booking.bookingDate, date))
   }
   const query = filter.query?.trim()
   if (query) {
-    const like = `%${query}%`
+    const like = `%${escapeLike(query)}%`
     conditions.push(
       or(
         ilike(booking.referenceCode, like),
@@ -630,7 +660,7 @@ export interface TagUser {
  */
 export async function listUsersForTagging(query?: string): Promise<TagUser[]> {
   const q = query?.trim()
-  const like = q ? `%${q}%` : null
+  const like = q ? `%${escapeLike(q)}%` : null
 
   return db
     .select({ id: user.id, name: user.name, email: user.email })

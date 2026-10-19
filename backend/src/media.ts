@@ -217,8 +217,11 @@ function cleanText(raw: unknown, label: string, max = TEXT_MAX): string | null {
 function cleanCount(raw: unknown, label: string): number | null {
   if (raw === undefined || raw === null || raw === '') return null
   const value = typeof raw === 'number' ? raw : Number(raw)
-  if (!Number.isInteger(value) || value < 0) {
-    throw new MediaError(`${label} must be a whole, non-negative number.`, 400)
+  // `count` / `tracks` are Postgres `integer` columns: anything wider passes
+  // validation here and then fails at write time as a 500, turning a normal
+  // admin typo into a server error.
+  if (!Number.isInteger(value) || value < 0 || value > 2_147_483_647) {
+    throw new MediaError(`${label} must be a whole number between 0 and 2,147,483,647.`, 400)
   }
   return value
 }
