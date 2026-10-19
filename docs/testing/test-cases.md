@@ -463,19 +463,23 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 - **Title:** The bar skips play exact queued songs, never the master
 - **Priority:** P1
-- **Preconditions:** Uploads a real (silent) MP3 twice and attaches one to
-  each of two fresh music rows (both rows deleted in `finally`). The clips are
-  stretched past the fixture's 1.35 s so auto-advance timing is deterministic.
-- **Steps:** 1. Queue both songs from their hub card menus. 2. Open the
+- **Preconditions:** Uploads a real (silent) MP3 three times and attaches one
+  to each of three fresh music rows (all rows deleted in `finally`). The clips
+  are stretched past the fixture's 1.35 s so auto-advance timing is
+  deterministic.
+- **Steps:** 1. Queue all three songs from their hub card menus. 2. Open the
   console, click **Next** on the player bar, end the first song (the test
   seeks to its last fraction of a second), then click **Previous** and
-  **Next**.
+  **Next**. 3. Remove the on-air row from the rail, then click **Next** and
+  **Previous**.
 - **Expected:** The first **Next** steps over the mockup queue rows (nothing
   real behind them) onto the first queued song and plays **its exact file**
   (`src` is the stored `/api/uploads/media/...` url - never the bundled
   master), and the bar shows its title; the song finishing rolls onto the
   second queued file and auto-plays it; **Previous** / **Next** walk the real
-  songs.
+  songs. Removing the on-air row keeps that song playing, and the next
+  **Next** resumes from the slot it occupied (the third song) instead of
+  restarting at the top; **Previous** steps back over the removed row.
 - **Automation:** Playwright - **Status: Automated**
 
 ### KARAOKE-015
@@ -495,7 +499,8 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   first **Next** plays a random song (never the one on air), the second the
   only song the round had not played, and the third starts a fresh round
   without repeating the song just heard - so nothing repeats until a full
-  round is done. **Previous** walks the round's played songs back. Switching
+  round is done. **Previous** walks the round's played songs back, and a
+  following **Next** does not replay the song just left behind. Switching
   shuffle off restores the arranged queue order. With repeat all the songs
   run out in order and wrap around at the end - ending a song rolls playback
   back onto the row it started from, still playing, instead of stopping or

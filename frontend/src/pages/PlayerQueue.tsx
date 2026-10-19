@@ -270,13 +270,17 @@ export default function PlayerQueue() {
   // playback (a fresh source, or the same master rewound to 0 when the row
   // carries no upload of its own).
   const [playToken, setPlayToken] = useState(0)
-  // Shuffle's played songs, most recent last: the draw below never picks one
-  // of them until a full round has played, and Previous pops them back.
+  // Shuffle's played songs, most recent last: Previous walks them back.
   const shuffleHistoryRef = useRef<string[]>([])
+  // Every song the current shuffle round has played, including the one
+  // Previous left behind — the forward draw must not replay it until the
+  // round is exhausted (clear the set below) and a fresh one starts.
+  const shufflePlayedRef = useRef<Set<string>>(new Set())
   // Turning Shuffle on starts a fresh round: a half-played round from an
   // earlier shuffle session must not leak into the new one.
   useEffect(() => {
     shuffleHistoryRef.current = []
+    shufflePlayedRef.current.clear()
   }, [shuffle])
   // Queue rows whose file failed to load this session: the console steps over
   // them, and stops when every remaining row has failed too, instead of
@@ -439,6 +443,47 @@ export default function PlayerQueue() {
     setBadgeTimedOut(false)
   }
 
+  // Where the on-air row sat when it left the queue: the next skip (or the
+  // end-of-song auto-advance) resumes from that slot instead of restarting
+  // the list from the top. Built from the current playable order; rows that
+  // disappear later are stepped over. The next skip or a queue edit clears it.
+  const removedSlotRef = useRef<{ forward: string[]; backward: string[] } | null>(null)
+  const rememberRemovedSlot = useCallback(
+    (id: string) => {
+      const index = playableIds.indexOf(id)
+      if (index === -1) return
+      removedSlotRef.current = {
+        forward: playableIds.slice(index + 1),
+        backward: playableIds.slice(0, index),
+      }
+    },
+    [playableIds],
+  )
+
+  /** Remove a row; when it is the on-air one, remember its queue slot. */
+  const handleRemoveRow = useCallback(
+    (id: string) => {
+      if (id === activeRow?.id) rememberRemovedSlot(id)
+      removeRow(id)
+    },
+    [activeRow?.id, rememberRemovedSlot, removeRow],
+  )
+
+  /** Clear the queue; the on-air song keeps playing from its remembered slot. */
+  const handleClearQueue = useCallback(() => {
+    if (queued) rememberRemovedSlot(queued.id)
+    clearQueue()
+  }, [queued, rememberRemovedSlot, clearQueue])
+
+  /** Reordering invalidates the remembered slot (the order it was built on). */
+  const handleMoveRow = useCallback(
+    (from: number, to: number) => {
+      removedSlotRef.current = null
+      moveRow(from, to)
+    },
+    [moveRow],
+  )
+
   /**
    * Sends one queue row to the stage. The snapshot travels with the id: the
    * live row can disappear from the queue, the song on stage cannot.
@@ -448,6 +493,7 @@ export default function PlayerQueue() {
       setQueueTrackId(id)
       setLastQueuedRow(queueRows.find((row) => row.id === id) ?? null)
       setPlayToken((token) => token + 1)
+      removedSlotRef.current = null
     },
     [queueRows],
   )
@@ -458,7 +504,8 @@ export default function PlayerQueue() {
    * steps through the queue's real songs: the stored order, an off-playlist
    * song (a card click, the bundled master) starting from its own row when
    * the queue has one, repeat all wrapping around either end and repeat off
-   * stopping at the end. With Shuffle on it draws instead: every skip and
+   * stopping at the end. A row that left the queue while on air keeps playing,
+   * and the next skip resumes from the slot it occupied. With Shuffle on it draws instead: every skip and
    * every finished song plays a random song the round has not played yet —
    * nothing repeats until a full round is done, when a fresh round starts —
    * and Previous walks the round's played songs back. With nothing playable
@@ -469,12 +516,13 @@ export default function PlayerQueue() {
       if (playableIds.length === 0) return
 
       const currentId =
-        queued?.id ??
+        activeRow?.id ??
         queueRows.find((row) => row.title.toLowerCase() === trackTitle.toLowerCase())?.id ??
         null
 
       if (shuffle) {
         const history = shuffleHistoryRef.current
+        const played = shufflePlayedRef.current
 
         if (step === -1) {
           // Previous walks back through the round's played songs (rows that
@@ -483,6 +531,9 @@ export default function PlayerQueue() {
           while (history.length > 0) {
             const previous = history.pop()
             if (previous !== undefined && playableIds.includes(previous)) {
+              // The song being left behind stays in this round's played set,
+              // so a following Next draws a new song instead of replaying it.
+              if (currentId !== null) played.add(currentId)
               goToRow(previous)
               return
             }
@@ -492,20 +543,45 @@ export default function PlayerQueue() {
         // The draw: a random song the round has not used yet and that is not
         // the current one — so a round never repeats until it has played them
         // all. Then a fresh round starts, still avoiding the song just heard.
-        const played = new Set(history)
         let pool = playableIds.filter((id) => id !== currentId && !played.has(id))
         if (pool.length === 0) {
-          shuffleHistoryRef.current = []
+          // The round is exhausted; keep the Previous history so the skips
+          // can still walk back, but every song is drawable again.
+          played.clear()
           pool = playableIds.filter((id) => id !== currentId)
           if (pool.length === 0) pool = playableIds
         }
         const pick = pool[Math.floor(Math.random() * pool.length)]
-        if (currentId !== null) shuffleHistoryRef.current.push(currentId)
+        if (currentId !== null) {
+          history.push(currentId)
+          played.add(currentId)
+        }
         if (pick !== undefined) goToRow(pick)
         return
       }
 
       const currentIndex = currentId === null ? -1 : playableIds.indexOf(currentId)
+
+      // The on-air row left the queue after it was sent to the stage: resume
+      // from the slot it occupied instead of restarting from the top. Rows
+      // removed since are stepped over.
+      if (currentIndex === -1 && removedSlotRef.current) {
+        const slot = removedSlotRef.current
+        const resumeId = (step === 1 ? slot.forward : slot.backward).find((id) =>
+          playableIds.includes(id),
+        )
+        if (resumeId !== undefined) {
+          goToRow(resumeId)
+          return
+        }
+        // Nothing left on that side of the slot: repeat all wraps, repeat off
+        // stops there (the snapshot keeps playing).
+        if (repeatMode !== 'all') return
+        const wrapped = step === 1 ? playableIds[0] : playableIds[playableIds.length - 1]
+        if (wrapped !== undefined) goToRow(wrapped)
+        return
+      }
+
       let index = currentIndex === -1 ? (step === 1 ? 0 : -1) : currentIndex + step
       if (index < 0 || index >= playableIds.length) {
         // Repeat all wraps the queue around; repeat off stops at either end.
@@ -515,7 +591,7 @@ export default function PlayerQueue() {
       const next = playableIds[index]
       if (next !== undefined) goToRow(next)
     },
-    [playableIds, queueRows, queued, trackTitle, shuffle, repeatMode, goToRow],
+    [playableIds, queueRows, activeRow, trackTitle, shuffle, repeatMode, goToRow],
   )
 
   // The bar's Previous/Next call through the transport; the console
@@ -545,6 +621,8 @@ export default function PlayerQueue() {
     event.preventDefault()
     const title = draftTitle.trim()
     if (!title) return
+    // A new row invalidates the remembered removal slot — it must be reachable.
+    removedSlotRef.current = null
     addQueueItem({ title, artist: draftArtist.trim() })
     setDraftTitle('')
     setDraftArtist('')
@@ -867,7 +945,7 @@ export default function PlayerQueue() {
             </button>
             <button
               type="button"
-              onClick={clearQueue}
+              onClick={handleClearQueue}
               disabled={queueRows.length === 0}
               className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted transition hover:text-error disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -953,7 +1031,7 @@ export default function PlayerQueue() {
                       if (shuffle || dragIndex === null) return
                       event.dataTransfer.dropEffect = 'move'
                       if (dragIndex !== index) {
-                        moveRow(dragIndex, index)
+                        handleMoveRow(dragIndex, index)
                         setDragIndex(index)
                       }
                     }}
@@ -1028,7 +1106,7 @@ export default function PlayerQueue() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeRow(row.id)}
+                        onClick={() => handleRemoveRow(row.id)}
                         aria-label={`Remove ${row.title}`}
                         className="grid size-6 place-items-center rounded-md text-text-muted transition hover:bg-surface-elevated hover:text-error"
                       >

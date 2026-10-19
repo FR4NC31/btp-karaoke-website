@@ -3,6 +3,7 @@ import { test, expect } from '../fixtures'
 import {
   createMediaItemAsAdmin,
   deleteMediaItemAsAdmin,
+  getMediaItemAsAdmin,
   uploadMediaFileAsAdmin,
 } from '../helpers/media'
 
@@ -111,6 +112,11 @@ test.describe('karaoke discovery', () => {
       await expect(dialog.getByText('Not available for the queue')).toBeVisible()
       await expect(dialog.getByRole('button', { name: 'Add to queue' })).toHaveCount(0)
       await page.keyboard.press('Escape')
+
+      // The row really stored the lyrics (staff read), so the public-feed
+      // omission below proves the serializer, not a missing write.
+      const adminRow = await getMediaItemAsAdmin(baseURL, id)
+      expect(adminRow.lyrics).toBe('E2E lyric line one\nE2E lyric line two')
 
       // Lyrics are staff-only: the public catalog feed must not carry them.
       const publicFeed = await page.request.get('/api/media')
@@ -385,6 +391,7 @@ test.describe('karaoke discovery', () => {
     const stamp = Date.now()
     const first = `E2E Skip First ${stamp}`
     const second = `E2E Skip Second ${stamp}`
+    const third = `E2E Skip Third ${stamp}`
     // Longer silent MP3s (see loopedSilence): the fixture's own end never
     // races the assertions — this test ends the song explicitly when needed.
     const mp3 = loopedSilence(6)
@@ -401,10 +408,17 @@ test.describe('karaoke discovery', () => {
         mimeType: 'audio/mpeg',
         data: mp3,
       })
+      const three = await uploadMediaFileAsAdmin(baseURL, {
+        name: 'e2e-skip-three.mp3',
+        mimeType: 'audio/mpeg',
+        data: mp3,
+      })
       expect(one.status).toBe(201)
       expect(two.status).toBe(201)
+      expect(three.status).toBe(201)
       const url1 = one.body.file!.url
       const url2 = two.body.file!.url
+      const url3 = three.body.file!.url
       const { id: id1 } = await createMediaItemAsAdmin(baseURL, {
         section: 'music',
         title: first,
@@ -421,9 +435,17 @@ test.describe('karaoke discovery', () => {
         sourceName: two.body.file!.name,
       })
       createdIds.push(id2)
+      const { id: id3 } = await createMediaItemAsAdmin(baseURL, {
+        section: 'music',
+        title: third,
+        tag: 'TAPE',
+        sourceUrl: url3,
+        sourceName: three.body.file!.name,
+      })
+      createdIds.push(id3)
 
       await page.goto('/studio')
-      for (const title of [first, second]) {
+      for (const title of [first, second, third]) {
         const card = page.locator('main article').filter({ hasText: title })
         await card.getByRole('button', { name: `More options for ${title}` }).click()
         await page.getByRole('dialog').getByRole('button', { name: 'Add to queue' }).click()
@@ -477,6 +499,15 @@ test.describe('karaoke discovery', () => {
       await page.getByRole('button', { name: `Remove ${second}` }).click()
       await expect(stage).toHaveAttribute('src', url2)
       await expect(playerBar).toContainText(second)
+
+      // Next resumes from the removed row's slot (the third song), not from
+      // the top of the queue; Previous then steps back over the removed row.
+      await playerBar.getByRole('button', { name: 'Next' }).click()
+      await expect(stage).toHaveAttribute('src', url3)
+      await expect(playerBar).toContainText(third)
+      await expect.poll(paused).toBe(false)
+      await playerBar.getByRole('button', { name: 'Previous' }).click()
+      await expect(stage).toHaveAttribute('src', url1)
     } finally {
       for (const id of createdIds) await deleteMediaItemAsAdmin(baseURL, id)
     }
@@ -627,10 +658,15 @@ test.describe('karaoke discovery', () => {
       expect([url1, draw1]).toContain(draw3)
       expect(draw3).not.toBe(draw2)
 
-      // Previous walks the round's played songs back.
+      // Previous walks the round's played songs back; a following Next must
+      // not replay the song left behind (it stays in the round's played set).
       await playerBar.getByRole('button', { name: 'Previous' }).click()
       await expect(stage).toHaveAttribute('src', draw2)
       await settlePause()
+      await playerBar.getByRole('button', { name: 'Next' }).click()
+      await expect.poll(stageSrc).not.toBe(draw2)
+      await settlePause()
+      expect(await stageSrc()).not.toBe(draw3)
 
       // Shuffle off: the rail goes back to the singer's arrangement.
       await playerBar.getByRole('button', { name: 'Shuffle' }).click()

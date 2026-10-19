@@ -87,6 +87,24 @@ export async function deleteMediaItemAsAdmin(
   })
 }
 
+/** Reads one catalog row back through the staff API (bookkeeping + lyrics). */
+export async function getMediaItemAsAdmin(
+  baseURL: string | undefined,
+  id: string,
+): Promise<Record<string, unknown>> {
+  return withAdminApi(baseURL, async (api) => {
+    const response = await api.get('/api/admin/media')
+    expect(
+      response.ok(),
+      `media read should succeed (got ${response.status()})`,
+    ).toBeTruthy()
+    const body = (await response.json()) as { items: Array<Record<string, unknown>> }
+    const item = body.items.find((row) => row.id === id)
+    expect(item, 'the created row should be in the admin catalog').toBeTruthy()
+    return item ?? {}
+  })
+}
+
 /** What the uploader answers: the stored file, or the rejection message. */
 export interface UploadResult {
   status: number

@@ -193,7 +193,7 @@ What the product actually implements today (test coverage is limited to this):
 | Search input (top bar)           | **Not wired** (decorative) | — (N/A, test-cases.md) |
 | Song detail / lyrics page        | Does not exist        | —                         |
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
-| Previous/Next/Shuffle/Repeat     | Working on the console queue: repeat cycles off → all → one (all wraps the queue, one loops the element, off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs and Previous walks the round back. No playlist on other studio pages, so the skips are inert there. | KARAOKE-014/015 |
+| Previous/Next/Shuffle/Repeat     | Working on the console queue: repeat cycles off → all → one (all wraps the queue — and loops the floating PiP mini, which has no queue of its own; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. No playlist on other studio pages, so the skips are inert there. | KARAOKE-014/015 |
 
 ## Booking desk testing
 
