@@ -19,7 +19,6 @@ import ProfilePage from "./pages/studio/ProfilePage"
 import AdminShell from "./pages/admin/AdminShell"
 import AdminOverview from "./pages/admin/AdminOverview"
 import AdminBookings from "./pages/admin/AdminBookings"
-import AdminNewBooking from "./pages/admin/AdminNewBooking"
 import AdminMedia from "./pages/admin/AdminMedia"
 import AdminMediaForm from "./pages/admin/AdminMediaForm"
 
@@ -98,7 +97,6 @@ export const router = createBrowserRouter([
                         children: [
                             { index: true, element: <AdminOverview /> },
                             { path: "bookings", element: <AdminBookings /> },
-                            { path: "bookings/new", element: <AdminNewBooking /> },
                             { path: "media", element: <AdminMedia /> },
                             { path: "media/new", element: <AdminMediaForm /> },
                             { path: "media/:id", element: <AdminMediaForm /> },

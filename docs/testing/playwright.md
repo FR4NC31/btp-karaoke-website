@@ -256,8 +256,8 @@ their tests create the rows they assert and delete them afterwards.
 | -------------------------------------- | ---------------------------------------- | ------------ |
 | Admin sign-in lands on `/admin`        | Working (role-aware redirect)            | ADMIN-001    |
 | Pending queue confirm / reject         | Working — the console answers the queue  | ADMIN-002/003 |
-| Reservation for a tagged customer      | Working (search an account, tag it)      | ADMIN-005    |
-| Reservation for a guest / walk-in      | Working (free-text name, no account)     | ADMIN-004    |
+| Reservation for a tagged customer      | Working — modal on the desk (search an account, tag it) | ADMIN-005    |
+| Reservation for a guest / walk-in      | Working — modal on the desk (free-text name, no account) | ADMIN-004    |
 | confirmed → completed / cancelled      | Working (`ADMIN_ACTIONS` transitions)    | ADMIN-002/004/005 |
 | Console entry from the studio chrome   | Working — shown to admins only; the top bar link is the mobile path | ADMIN-006 / SEC-004 |
 | `/api/admin/*` 401/403 boundary        | Working — fail-closed sub-app mount      | SEC-001/002  |

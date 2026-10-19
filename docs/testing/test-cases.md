@@ -690,7 +690,7 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin books a day for a guest name
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/bookings/new`, switch to **Guest name**. 2. Type a name, pick a service and a day ~1–2 years out, save. 3. Search the reference in Reservations, then cancel it.
+- **Steps:** 1. Open `/admin`, click **+ New reservation** — the form opens in a modal and the URL stays on the desk (no create page). 2. Switch to **Guest name**. 3. Type a name, pick a service and a day ~1–2 years out, save. 4. Leave the modal via **View reservations**, search the reference, then cancel it.
 - **Expected:** The flash carries the reference, the guest name and **confirmed** — no approval step for a reservation the admin just took. The list row shows the Guest marker and the name. Cancelling is cleanup.
 - **Automation:** Playwright — **Status: Automated**
 
@@ -698,7 +698,7 @@ desk: every test-created reservation is driven to a terminal state
 
 - **Title:** The admin tags a registered customer instead of a guest
 - **Priority:** P1
-- **Steps:** 1. Open `/admin/bookings/new` (default mode: **Registered customer**). 2. Type `qa@example.com`, tag the result. 3. Pick a service and day, save. 4. Search the reference in Reservations, then mark it completed.
+- **Steps:** 1. On `/admin/bookings`, click **+ New reservation** (same modal as Overview; default mode: **Registered customer**). 2. Type `qa@example.com`, tag the result. 3. Pick a service and day, save, then leave the modal via **View reservations**. 4. Search the reference in Reservations, then mark it completed.
 - **Expected:** The flash carries the reference and **confirmed**; the list row shows the customer's email and no Guest marker. Marking completed is cleanup (it releases the day in the unique index).
 - **Automation:** Playwright — **Status: Automated**
 

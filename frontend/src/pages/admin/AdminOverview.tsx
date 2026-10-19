@@ -14,6 +14,8 @@ import {
 } from '../../lib/admin-api'
 import { describeBookingError } from '../../lib/booking-api'
 import { STATUS_STYLES, formatDay } from '../../lib/booking-format'
+import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
+import { OverviewSkeleton } from './AdminSkeletons'
 
 /**
  * /admin — the work queue.
@@ -24,6 +26,8 @@ import { STATUS_STYLES, formatDay } from '../../lib/booking-format'
  *
  * Reads the full list (this is a single studio's calendar, not a paginated
  * dataset) and derives the cards client-side, so the page costs one request.
+ * The + New reservation button opens the shell-hosted modal; a save bumps the
+ * shell's revision and reloads this snapshot.
  */
 
 interface Stat {
@@ -33,6 +37,7 @@ interface Stat {
 }
 
 export default function AdminOverview() {
+  const { openNewReservation, reservationsRevision } = useNewReservationDialog()
   const [bookings, setBookings] = useState<AdminBooking[]>([])
   const [studioToday, setStudioToday] = useState('')
   const [loading, setLoading] = useState(true)
@@ -61,7 +66,7 @@ export default function AdminOverview() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [reservationsRevision])
 
   async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
     if (actingId) return
@@ -109,11 +114,7 @@ export default function AdminOverview() {
   ]
 
   if (loading) {
-    return (
-      <p role="status" className="text-sm text-text-muted">
-        Loading the admin console…
-      </p>
-    )
+    return <OverviewSkeleton />
   }
 
   return (
@@ -125,12 +126,13 @@ export default function AdminOverview() {
             {studioToday ? `Studio day · ${formatDay(studioToday)}` : 'Studio control room'}
           </p>
         </div>
-        <Link
-          to="/admin/bookings/new"
+        <button
+          type="button"
+          onClick={openNewReservation}
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover"
         >
           + New reservation
-        </Link>
+        </button>
       </header>
 
       {loadError && (

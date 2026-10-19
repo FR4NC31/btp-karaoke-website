@@ -165,12 +165,18 @@ test.describe('booking for others', () => {
     const guestName = `E2E Guest ${Date.now()}`
     const serviceId = await serviceIdByCode(request, 'CUT-MASTERING')
 
-    await page.goto('/admin/bookings/new')
-    await page.getByRole('button', { name: 'Guest name' }).click()
-    await page.getByLabel('Guest name').fill(guestName)
-    await page.getByLabel('Service').selectOption(serviceId)
-    await page.getByLabel('Session date').fill(farFutureDay())
-    await page.getByRole('button', { name: 'Save reservation' }).click()
+    // The + New reservation button opens the modal in place — there is no
+    // create page, and the URL never leaves the desk.
+    await page.goto('/admin')
+    await page.getByRole('button', { name: '+ New reservation' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('heading', { name: 'New reservation' })).toBeVisible()
+
+    await dialog.getByRole('button', { name: 'Guest name' }).click()
+    await dialog.getByLabel('Guest name').fill(guestName)
+    await dialog.getByLabel('Service').selectOption(serviceId)
+    await dialog.getByLabel('Session date').fill(farFutureDay())
+    await dialog.getByRole('button', { name: 'Save reservation' }).click()
 
     const flash = flashWith(page, 'reference')
     await expect(flash).toBeVisible()
@@ -179,8 +185,12 @@ test.describe('booking for others', () => {
     await expect(flash).toContainText('confirmed')
     await expect(flash).toContainText(guestName)
 
+    // The success panel routes back to the list and the modal closes.
+    await page.getByRole('link', { name: 'View reservations' }).click()
+    await expect(page).toHaveURL('/admin/bookings')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
     // The row shows up in the list, marked as a guest booking.
-    await page.goto('/admin/bookings')
     await page.getByLabel('Search').fill(referenceCode)
     await page.getByRole('button', { name: 'Search' }).click()
 
@@ -199,22 +209,31 @@ test.describe('booking for others', () => {
   test('ADMIN-005: the admin tags a registered customer instead of a guest', { tag: '@p1' }, async ({ page, request }) => {
     const serviceId = await serviceIdByCode(request, 'FILSCAP-PORTAL')
 
-    await page.goto('/admin/bookings/new')
-    // 'Registered customer' is the default mode; tag the shared QA user.
-    await page.getByLabel('Find an account').fill(TEST_USER.email)
-    await page.getByRole('button').filter({ hasText: TEST_USER.email }).click()
-    await page.getByLabel('Service').selectOption(serviceId)
-    await page.getByLabel('Session date').fill(farFutureDay())
-    await page.getByRole('button', { name: 'Save reservation' }).click()
+    // Same modal from the Reservations header; 'Registered customer' is the
+    // default mode — tag the shared QA user.
+    await page.goto('/admin/bookings')
+    await page.getByRole('button', { name: '+ New reservation' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('heading', { name: 'New reservation' })).toBeVisible()
+
+    await dialog.getByLabel('Find an account').fill(TEST_USER.email)
+    await dialog.getByRole('button').filter({ hasText: TEST_USER.email }).click()
+    await dialog.getByLabel('Service').selectOption(serviceId)
+    await dialog.getByLabel('Session date').fill(farFutureDay())
+    await dialog.getByRole('button', { name: 'Save reservation' }).click()
 
     const flash = flashWith(page, 'reference')
     await expect(flash).toBeVisible()
     const referenceCode = referenceFrom(await flash.innerText())
     await expect(flash).toContainText('confirmed')
 
+    // Close the modal: the list behind it already reloaded on the shell's
+    // revision bump.
+    await page.getByRole('link', { name: 'View reservations' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
     // The reservation belongs to the account — it shows the email, not a
     // guest badge.
-    await page.goto('/admin/bookings')
     await page.getByLabel('Search').fill(referenceCode)
     await page.getByRole('button', { name: 'Search' }).click()
 
