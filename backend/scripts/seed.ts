@@ -5,9 +5,10 @@ import { mediaItem, service } from '../src/schema.ts'
 /**
  * Sample service catalog for the booking prototype.
  *
- * The eight rows mirror the service wings rendered on /services, priced with
- * placeholders that sit inside the "24–97K PHP" band the marketing rate strip
- * advertises. Paid rates replace these whenever finance signs off.
+ * The eight rows mirror the service wings rendered on /services. Most are
+ * priced with placeholders drawn from the marketing rate card ("24–97K PHP");
+ * the tutorial and FILSCAP rows sit below that band on purpose (they are
+ * entry-level services). Paid rates replace these whenever finance signs off.
  *
  *   cd backend && npm run seed
  *
@@ -20,8 +21,9 @@ import { mediaItem, service } from '../src/schema.ts'
  * It also seeds the ONE media row that maps to a real local file: the karaoke
  * video master this repo ships (frontend/src/assets/video_local/the-reason.mp4).
  * The rest of the media hub catalog is administered from /admin/media —
- * deliberately no mockup rows. Re-running refreshes that row's copy but never
- * touches isActive or sortOrder: admin curation wins.
+ * deliberately no mockup rows. Re-running refreshes that row's copy and its
+ * `section` (it is definitionally the video master) but never touches isActive
+ * or sortOrder: admin curation wins.
  *
  * Safe to run against a database that already has bookings: existing rows keep
  * their ids, and nothing here touches the booking table.
@@ -169,14 +171,17 @@ try {
     console.log(`  ${row.code.padEnd(24)} ${row.price} PHP`)
   }
 
-  // Upsert on the stable id. Only the copy fields refresh — isActive and
-  // sortOrder belong to the admin console once the row exists.
+  // Upsert on the stable id. The copy fields refresh, and so does `section`:
+  // this row is definitionally the video master, so a stray move must not
+  // leave it classified as music/radio while still playing the video file.
+  // isActive and sortOrder stay admin curation once the row exists.
   await db
     .insert(mediaItem)
     .values(mediaCatalog)
     .onConflictDoUpdate({
       target: mediaItem.id,
       set: {
+        section: sql`excluded."section"`,
         title: sql`excluded."title"`,
         subtitle: sql`excluded."subtitle"`,
         artist: sql`excluded."artist"`,

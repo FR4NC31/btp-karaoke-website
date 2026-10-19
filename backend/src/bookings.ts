@@ -90,12 +90,24 @@ function addDays(isoDate: string, days: number): string {
   return shifted.toISOString().slice(0, 10)
 }
 
-/** 23505 is unique_violation. Drizzle rethrows the driver error, but a wrapped
- * cause is checked too so this keeps working if that ever changes. */
-function isUniqueViolation(err: unknown): boolean {
-  const codeOf = (value: unknown) =>
-    typeof value === 'object' && value !== null ? (value as { code?: string }).code : undefined
-  return codeOf(err) === '23505' || codeOf((err as { cause?: unknown })?.cause) === '23505'
+/**
+ * The constraint name behind a 23505 (unique_violation), or null when `err`
+ * is not one. `booking` carries two unique constraints and they mean very
+ * different things: `booking_active_unique_idx` is the caller's duplicate
+ * booking, while `booking_referenceCode_unique` is a random code collision
+ * that has nothing to do with the request. Drizzle rethrows the driver
+ * error, but a wrapped cause is checked too so this keeps working if that
+ * ever changes.
+ */
+function uniqueViolationConstraint(err: unknown): string | null {
+  const infoOf = (value: unknown) =>
+    typeof value === 'object' && value !== null
+      ? (value as { code?: string; constraint?: string })
+      : undefined
+  const direct = infoOf(err)
+  const cause = infoOf((err as { cause?: unknown })?.cause)
+  const violation = direct?.code === '23505' ? direct : cause?.code === '23505' ? cause : undefined
+  return violation?.constraint ?? null
 }
 
 /** Columns the API exposes for a booking, joined with its service. */
@@ -200,6 +212,39 @@ function makeReferenceCode(): string {
   return `BTP-${code}`
 }
 
+/** How many times an insert retries when the random reference code collided. */
+const REFERENCE_CODE_ATTEMPTS = 3
+
+/**
+ * Inserts one booking row, regenerating the reference code if the
+ * (vanishingly unlikely) random collision trips its unique constraint.
+ * Anything else — including the duplicate-booking index — is rethrown for
+ * the caller to classify.
+ */
+async function insertBookingRow(
+  values: Omit<typeof booking.$inferInsert, 'id' | 'referenceCode'>,
+): Promise<string> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const inserted = await db
+        .insert(booking)
+        .values({ id: randomUUID(), referenceCode: makeReferenceCode(), ...values })
+        .returning({ id: booking.id })
+
+      const row = inserted[0]
+      // An insert without a returning row is a server-side inconsistency, not
+      // caller input — a plain Error surfaces as a 500.
+      if (!row) throw new Error('The booking insert returned no row.')
+      return row.id
+    } catch (err) {
+      const retryable =
+        uniqueViolationConstraint(err) === 'booking_referenceCode_unique' &&
+        attempt < REFERENCE_CODE_ATTEMPTS - 1
+      if (!retryable) throw err
+    }
+  }
+}
+
 export interface CreateBookingInput {
   userId: string
   serviceId: string
@@ -290,33 +335,25 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   await assertServiceAvailable(input.serviceId)
 
   try {
-    const inserted = await db
-      .insert(booking)
-      .values({
-        id: randomUUID(),
-        referenceCode: makeReferenceCode(),
-        userId: input.userId,
-        serviceId: input.serviceId,
-        bookingDate,
-        status: 'pending',
-        notes,
-      })
-      .returning({ id: booking.id })
+    const bookingId = await insertBookingRow({
+      userId: input.userId,
+      serviceId: input.serviceId,
+      bookingDate,
+      status: 'pending',
+      notes,
+    })
 
-    const insertedRow = inserted[0]
-    if (!insertedRow) {
-      throw new BookingError('The booking could not be saved.', 400)
-    }
-
-    const created = await findBookingForUser(insertedRow.id, input.userId)
+    const created = await findBookingForUser(bookingId, input.userId)
     if (!created) {
-      throw new BookingError('The booking could not be read back after saving.', 400)
+      // A row that vanished between insert and read-back is our fault, not the
+      // caller's — a plain Error surfaces as a 500.
+      throw new Error('The booking could not be read back after saving.')
     }
     return created
   } catch (err) {
-    // The only unique index a user can trip here is booking_active_unique_idx,
-    // so the message can be specific.
-    if (isUniqueViolation(err)) {
+    // Only booking_active_unique_idx means "duplicate booking"; a reference
+    // code collision was already retried by insertBookingRow.
+    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
       throw new BookingError('You already have a booking for that service on that day.', 409)
     }
     throw err
@@ -350,7 +387,7 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
 
   const cancelled = await findBookingForUser(bookingId, userId)
   if (!cancelled) {
-    throw new BookingError('The booking could not be read back after cancelling.', 400)
+    throw new Error('The booking could not be read back after cancelling.')
   }
   return cancelled
 }
@@ -570,32 +607,22 @@ export async function createBookingForOthers(
   await assertServiceAvailable(input.serviceId)
 
   try {
-    const inserted = await db
-      .insert(booking)
-      .values({
-        id: randomUUID(),
-        referenceCode: makeReferenceCode(),
-        userId,
-        guestName: userId ? null : guestName,
-        serviceId: input.serviceId,
-        bookingDate,
-        status: 'confirmed',
-        notes,
-      })
-      .returning({ id: booking.id })
+    const bookingId = await insertBookingRow({
+      userId,
+      guestName: userId ? null : guestName,
+      serviceId: input.serviceId,
+      bookingDate,
+      status: 'confirmed',
+      notes,
+    })
 
-    const insertedRow = inserted[0]
-    if (!insertedRow) {
-      throw new BookingError('The reservation could not be saved.', 400)
-    }
-
-    const created = await findBookingByIdForAdmin(insertedRow.id)
+    const created = await findBookingByIdForAdmin(bookingId)
     if (!created) {
-      throw new BookingError('The reservation could not be read back after saving.', 400)
+      throw new Error('The reservation could not be read back after saving.')
     }
     return created
   } catch (err) {
-    if (isUniqueViolation(err)) {
+    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
       // Only booking_active_unique_idx applies to a tagged user; guest rows
       // never enter it, so this fires only for the registered-customer path.
       throw new BookingError(
@@ -641,7 +668,7 @@ export async function adminSetBookingStatus(
 
   const result = await findBookingByIdForAdmin(bookingId)
   if (!result) {
-    throw new BookingError('The reservation could not be read back after updating.', 400)
+    throw new Error('The reservation could not be read back after updating.')
   }
   return result
 }

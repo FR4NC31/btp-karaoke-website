@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { asc, eq, sql } from 'drizzle-orm'
+import { asc, eq, or, sql } from 'drizzle-orm'
 import { db } from './db.ts'
 import { mediaItem } from './schema.ts'
 import { isUploadedImageUrl, isUploadedMediaUrl, removeUploadedMedia } from './uploads.ts'
@@ -487,4 +487,29 @@ export async function deleteMediaItem(id: string): Promise<MediaItem> {
   }
   await Promise.all([removeUploadedMedia(row.sourceUrl), removeUploadedMedia(row.coverUrl)])
   return toMediaItem(row)
+}
+
+/**
+ * Removes one upload that no catalog row references — the editor's cleanup
+ * when a save failed after it had already uploaded a file. A URL some row
+ * still references is left alone: a lost response must never delete a file
+ * the hub still plays. Best-effort delete, like every other cleanup path.
+ */
+export async function discardUpload(url: unknown): Promise<void> {
+  if (typeof url !== 'string') {
+    throw new MediaError('The upload URL must be text.', 400)
+  }
+  const trimmed = url.trim()
+  if (!isUploadedMediaUrl(trimmed) && !isUploadedImageUrl(trimmed)) {
+    throw new MediaError('That upload is not ours to discard.', 400)
+  }
+
+  const referenced = await db
+    .select({ id: mediaItem.id })
+    .from(mediaItem)
+    .where(or(eq(mediaItem.sourceUrl, trimmed), eq(mediaItem.coverUrl, trimmed)))
+    .limit(1)
+
+  if (referenced.length > 0) return
+  await removeUploadedMedia(trimmed)
 }

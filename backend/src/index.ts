@@ -25,6 +25,7 @@ import {
   MediaError,
   createMediaItem,
   deleteMediaItem,
+  discardUpload,
   listMediaForAdmin,
   listPublicMedia,
   moveMediaItem,
@@ -398,8 +399,19 @@ adminApi.post('/media', async (c) => {
 // editor saves its url on the row via create/update.
 adminApi.post('/media/upload', async (c) => {
   try {
+    // The editor percent-encodes X-File-Name: raw characters above U+00FF
+    // (curly quotes, CJK, emoji) make fetch reject the header before it is
+    // sent. Decode best-effort — a value that is not valid percent-encoding
+    // passes through untouched.
+    const headerName = c.req.header('x-file-name') ?? ''
+    let originalName = headerName
+    try {
+      originalName = decodeURIComponent(headerName)
+    } catch {
+      originalName = headerName
+    }
     const file = await storeMediaUpload({
-      originalName: c.req.header('x-file-name') ?? '',
+      originalName,
       contentType: c.req.header('content-type') ?? '',
       contentLength: c.req.header('content-length'),
       body: c.req.raw.body,
@@ -407,6 +419,28 @@ adminApi.post('/media/upload', async (c) => {
     return c.json({ file }, 201)
   } catch (err) {
     if (err instanceof UploadError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Discard one upload the editor made but could not save on a row. A URL some
+// row still references is left alone — a lost response must never delete a
+// file the hub still plays. 204 whether or not a file was removed.
+adminApi.post('/media/upload/discard', async (c) => {
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  try {
+    await discardUpload((body as { url?: unknown } | null)?.url)
+    return c.body(null, 204)
+  } catch (err) {
+    if (err instanceof MediaError) {
       return c.json({ error: err.message }, err.status)
     }
     throw err
