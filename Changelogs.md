@@ -32,6 +32,7 @@ Last updated: October 19, 2026
 
 ### Bug Fixes
 
+- fix(studio): resume skips from a removed row's slot (10a4166)
 - fix(studio): harden queue playback and staff previews (426cfe6)
 - fix(auth): route signed-in users to their own dashboard (58d4591)
 - fix(studio): real track metadata, logout bounce gate, LFS video (a363aeb)
