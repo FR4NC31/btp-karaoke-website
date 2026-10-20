@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix(studio): align console tab title with the fallback track (c519a74)
 - fix(studio): address PR review feedback (a7363c5)
 - fix(studio): polish console playback and media rails (2cc8598)
 - fix(ci): generate disposable Postgres password per run (e6ff240)
