@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix(ci): close review hardening gaps (18f0a75)
 - fix(ci): isolate PR smoke from live secrets (2ad4389)
 - fix: complete PR #16 review follow-ups (f6e82a0)
 - fix(admin): disambiguate overview stat headings (bad7b00)
@@ -70,6 +71,7 @@ Last updated: October 20, 2026
 
 ### Other Changes
 
+- Merge pull request #19 from FR4NC31/fix/pr-smoke-disposable-db (a0dd29d)
 - Merge pull request #18 from FR4NC31/fix/pr16-review-followups (1ab9066)
 - Merge pull request #17 from FR4NC31/refactor/full-app (99cf7dc)
 - refactor: split heavy pages and backend modules (e2492bb)
