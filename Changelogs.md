@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix(ci): generate disposable Postgres password per run (e6ff240)
 - fix(ci): remove disposable Postgres password literal (af8ec72)
 - fix(ci): close review hardening gaps (18f0a75)
 - fix(ci): isolate PR smoke from live secrets (2ad4389)
@@ -72,6 +73,7 @@ Last updated: October 20, 2026
 
 ### Other Changes
 
+- Merge pull request #21 from FR4NC31/fix/gitguardian-pr-smoke-literal (50c9a94)
 - Merge pull request #20 from FR4NC31/fix/pr-smoke-hardening (dec9eab)
 - Merge pull request #19 from FR4NC31/fix/pr-smoke-disposable-db (a0dd29d)
 - Merge pull request #18 from FR4NC31/fix/pr16-review-followups (1ab9066)
