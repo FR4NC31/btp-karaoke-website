@@ -24,23 +24,6 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    services:
-      # Disposable database for untrusted pull-request code. Trust auth is
-      # scoped to this throwaway container, so the workflow does not need a
-      # hardcoded password (which secret scanners correctly flag).
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_HOST_AUTH_METHOD: trust
-          POSTGRES_DB: btp_e2e
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d btp_e2e"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,6 +55,31 @@ jobs:
             fi
           done
 
+      # The service-container syntax cannot interpolate a generated password,
+      # so start Postgres directly. The password exists only for this run and
+      # is not a repository secret; the port is bound to loopback.
+      - name: Start disposable PostgreSQL
+        run: |
+          DB_PASSWORD="$(openssl rand -hex 16)"
+          echo "E2E_DB_PASSWORD=$DB_PASSWORD" >> "$GITHUB_ENV"
+          docker run --detach \
+            --name btp-e2e-postgres \
+            --env POSTGRES_USER=postgres \
+            --env POSTGRES_PASSWORD="$DB_PASSWORD" \
+            --env POSTGRES_DB=btp_e2e \
+            --publish 127.0.0.1:5432:5432 \
+            postgres:16
+          for attempt in $(seq 1 60); do
+            if docker exec btp-e2e-postgres \
+              psql -U postgres -d btp_e2e -tAc 'SELECT 1' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Disposable PostgreSQL did not become ready."
+          docker logs btp-e2e-postgres
+          exit 1
+
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -97,12 +105,17 @@ jobs:
         run: npm ci
 
       # backend/.env is gitignored. This job never reads repository secrets:
-      # the database is the disposable service above, and both auth values are
-      # dummy test values. A malicious PR can read this file and learn nothing
-      # that reaches the live QA database or can forge a real session.
+      # the database is the disposable container above, and auth values are
+      # generated or dummy test values. A malicious PR can read this file and
+      # learn nothing that reaches the live QA database or can forge a real
+      # session.
       - name: Write disposable backend/.env
         working-directory: backend
         run: |
+          if [ -z "${E2E_DB_PASSWORD:-}" ]; then
+            echo "::error::E2E_DB_PASSWORD is not set; refusing to write a passwordless DATABASE_URL."
+            exit 1
+          fi
           {
             echo "PORT=3000"
             echo "FRONTEND_ORIGIN=http://localhost:5173"
@@ -112,8 +125,9 @@ jobs:
             echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
             echo "BETTER_AUTH_URL=http://localhost:3000"
             echo "BETTER_AUTH_API_KEY="
-            # Trust auth means no password in the connection URL.
-            echo "DATABASE_URL=postgresql://postgres@127.0.0.1:5432/btp_e2e"
+            # The password is generated for this run and protects only the
+            # disposable local container; it is not a repository credential.
+            echo "DATABASE_URL=postgresql://postgres:${E2E_DB_PASSWORD}@127.0.0.1:5432/btp_e2e"
             echo "DB_CA_FILE="
             # Dummy non-empty values: AUTH-008 stubs the Google page itself,
             # so the backend only needs *some* client id to build the OAuth
@@ -161,6 +175,10 @@ jobs:
             frontend/playwright-report/
             frontend/test-results/
           retention-days: 14
+
+      - name: Stop disposable PostgreSQL
+        if: always()
+        run: docker rm --force btp-e2e-postgres || true
 
   # Full regression suite against the live QA environment. This is the only
   # job with repository secrets, and it never runs for a pull_request or a
