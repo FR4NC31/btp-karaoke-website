@@ -1,14 +1,18 @@
 name: E2E tests
 
-# PR flow: lint + typecheck + build + credential-free Playwright smoke
-# (fast feedback; the admin secret is never exposed to pull_request code).
-# Push to main/develop (or manual): full Playwright regression suite.
+# PR flow: lint + typecheck + build + Playwright smoke against a disposable
+# local Postgres. No repository secret is exposed to pull_request code.
+# Push to main/develop (or a manual dispatch on those branches): full Playwright
+# regression suite against the live QA environment.
 # The existing changelog workflow is untouched.
 on:
   pull_request:
   push:
     branches: [main, develop]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -20,10 +24,49 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      # Disposable database for untrusted pull-request code. The password is
+      # intentionally a throwaway value on an isolated service container.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: btp_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d btp_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Verify runtime env files are ignored
+        run: |
+          git check-ignore -q .env
+          git check-ignore -q backend/.env
+          git check-ignore -q backend/.env.local
+          git check-ignore -q frontend/.env
+          git check-ignore -q frontend/.env.local
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '\.env\.example$'; then
+            echo "::error::A runtime .env file is tracked. Remove it from the index; only .env.example belongs in Git."
+            exit 1
+          fi
+
+      # This is the guard that would have caught the previous design: the PR
+      # job must not inherit any live credential from the workflow environment.
+      - name: Verify no live credentials are present
+        run: |
+          for name in DATABASE_URL BETTER_AUTH_SECRET BETTER_AUTH_API_KEY TEST_ADMIN_PASSWORD; do
+            if [ -n "${!name:-}" ]; then
+              echo "::error::$name is present in the pull-request job; remove it from the workflow."
+              exit 1
+            fi
+          done
 
       - uses: actions/setup-node@v4
         with:
@@ -49,25 +92,22 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      # backend/.env is gitignored; CI rebuilds it from repo secrets.
-      # Set them with `gh secret set <NAME>` (values never appear in chat,
-      # logs, or the repo). Source: backend/.env.example.
-      - name: Write backend/.env
+      # backend/.env is gitignored. This job never reads repository secrets:
+      # the database is the disposable service above, and both auth values are
+      # dummy test values. A malicious PR can read this file and learn nothing
+      # that reaches the live QA database or can forge a real session.
+      - name: Write disposable backend/.env
         working-directory: backend
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BETTER_AUTH_API_KEY: ${{ secrets.BETTER_AUTH_API_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           {
             echo "PORT=3000"
             echo "FRONTEND_ORIGIN=http://localhost:5173"
             echo "EXTRA_TRUSTED_ORIGINS="
-            echo "BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}"
+            echo "BETTER_AUTH_SECRET=e2e-only-not-a-real-secret-please-ignore"
             echo "BETTER_AUTH_URL=http://localhost:3000"
-            echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
-            echo "DATABASE_URL=${DATABASE_URL}"
-            echo "DB_CA_FILE=./ca.pem"
+            echo "BETTER_AUTH_API_KEY="
+            echo "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/btp_e2e"
+            echo "DB_CA_FILE="
             # Dummy non-empty values: AUTH-008 stubs the Google page itself,
             # so the backend only needs *some* client id to build the OAuth
             # redirect URL. Empty values make Better Auth 500 the handoff.
@@ -79,6 +119,16 @@ jobs:
         working-directory: backend
         run: npm run typecheck
 
+      - name: Initialize disposable test database
+        working-directory: backend
+        env:
+          E2E_DB_SETUP: '1'
+        run: |
+          npm run db:auth-migrate
+          npm run migrate
+          npm run seed
+          npm run seed:e2e
+
       - name: Build (frontend)
         working-directory: frontend
         run: npm run build
@@ -89,11 +139,10 @@ jobs:
 
       - name: Playwright smoke suite
         working-directory: frontend
-        # Deliberately no TEST_ADMIN_* here: pull_request code is not trusted
-        # with the live admin credential. playwright.config.ts then leaves
-        # admin.setup.ts out of the setup project, and the smoke suite runs on
-        # the shared user session instead. Admin E2E runs in full-e2e, which
-        # only executes on trusted pushes (or a manual dispatch).
+        # Deliberately no live credentials: pull_request code is not trusted.
+        # playwright.config.ts leaves admin.setup.ts out when TEST_ADMIN_* is
+        # absent, and the smoke suite runs on the disposable QA user instead.
+        # Admin E2E runs in full-e2e, which is restricted to trusted branches.
         run: npm run test:e2e:smoke
 
       - name: Upload Playwright report
@@ -106,9 +155,14 @@ jobs:
             frontend/test-results/
           retention-days: 14
 
-  # Full regression suite after merge / on demand (release confidence).
+  # Full regression suite against the live QA environment. This is the only
+  # job with repository secrets, and it never runs for a pull_request or a
+  # manual dispatch from a feature branch.
   full-e2e:
-    if: github.event_name != 'pull_request'
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -132,7 +186,8 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      # Same secrets-built .env as pr-checks (see above).
+      # Trusted full-suite job only: live QA database + auth secrets. The
+      # disposable PR job above never receives these values.
       - name: Write backend/.env
         working-directory: backend
         env:

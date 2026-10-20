@@ -18,9 +18,10 @@ import { db, pool } from '../src/db.ts'
  * Deliberately NOT `drizzle-kit migrate`: that opens its own connection and
  * would bypass the Aiven CA + `sslmode` handling in src/db.ts.
  *
- * Scope: this only creates the tables Drizzle owns (service, booking). The
- * Better Auth tables come from `bun x auth@latest migrate` and are referenced, never
- * created, from here.
+ * Scope: this only creates the tables Drizzle owns (service, booking, media_item).
+ * The Better Auth tables come from `better-auth_migrations/` (via
+ * `bun x auth@latest migrate` or the CI-only `npm run db:auth-migrate`) and are
+ * referenced, never created, from here.
  */
 
 const migrationsFolder = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'drizzle')

@@ -59,6 +59,12 @@ npm run migrate -- --status   # what has been applied
 point at until that table exists. `drizzle/0000_*.sql` has the `CREATE TABLE
 "user"` statement deliberately removed for the same reason.
 
+For a disposable test database, the checked-in Better Auth SQL can be applied
+without the CLI: `E2E_DB_SETUP=1 npm run db:auth-migrate`. The PR E2E workflow
+uses that command, then `npm run migrate`, `npm run seed`, and
+`npm run seed:e2e` (which creates the shared `qa@example.com` Playwright user).
+The guard keeps these bootstrap scripts away from a live database.
+
 `user.role` (the admin flag) is the one deliberate exception to the ownership
 table above: the column is declared in `src/schema.ts` and added by
 `drizzle/0001_*.sql`, while Better Auth reads it through
