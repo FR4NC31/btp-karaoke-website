@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   MusicNote01Icon,
@@ -23,9 +22,15 @@ function formatTime(seconds: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
-export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
-  const [liked, setLiked] = useState(false)
-
+export default function PlayerBar({
+  player,
+  liked,
+  onToggleLiked,
+}: {
+  player: KaraokeVideoApi
+  liked: boolean
+  onToggleLiked: () => void
+}) {
   const playing = player.playing
   const progress = player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
   const current = formatTime(player.currentTime)
@@ -93,7 +98,7 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
         </div>
         <button
           type="button"
-          onClick={() => setLiked((v) => !v)}
+          onClick={onToggleLiked}
           aria-label="Like"
           className={`ml-1 shrink-0 transition ${liked ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}`}
         >

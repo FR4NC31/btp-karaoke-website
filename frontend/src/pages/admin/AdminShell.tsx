@@ -12,14 +12,22 @@ import ProfileMenu from '../studio/components/ProfileMenu'
 import NewReservationDialog from './NewReservationDialog'
 
 
+/**
+ * Admin console shell: top bar, navigation and the shared new-reservation
+ * dialog. Access control lives in `<RequireAdmin />` and the backend's
+ * `requireAdmin`; nothing here checks roles.
+ */
+
 const navLinks = [
   { to: '/admin', label: 'Overview', icon: DashboardSquare01Icon, end: true },
   { to: '/admin/bookings', label: 'Reservations', icon: CalendarCheck01Icon, end: true },
+  // Keep Media Hub active while editing a row at /admin/media/:id.
   { to: '/admin/media', label: 'Media Hub', icon: MusicNote01Icon, end: false },
 ]
 
 export default function AdminShell() {
   const [newReservationOpen, setNewReservationOpen] = useState(false)
+  // Incremented after a desk reservation is created so the list refetches.
   const [reservationsRevision, setReservationsRevision] = useState(0)
 
   return (

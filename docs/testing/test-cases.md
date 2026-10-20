@@ -307,6 +307,43 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ---
 
+## Tab titles — `frontend/tests/e2e/navigation/tab-titles.spec.ts`
+
+### TITLE-001
+
+- **Title:** Public pages set their tab titles
+- **Priority:** P2
+- **Steps:** 1. Visit `/`, `/about`, `/services`, `/contact`, `/signin`,
+  `/signup`, and an unknown route.
+- **Expected:** Each page title is `{route title} | BTP Karaoke` (the unknown
+  route uses `Page Not Found`).
+- **Automation:** Playwright — **Status: Automated**
+
+### TITLE-002
+
+- **Title:** Studio pages set their tab titles
+- **Priority:** P2
+- **Steps:** 1. Visit `/studio`, `/studio/profile`, `/studio/bookings` and
+  `/studio/player-queue` directly. 2. Return to `/studio` and play the
+  featured video.
+- **Expected:** The hub uses `Studio`, Profile `My Account`, Bookings
+  `Booking Desk`; a direct console visit keeps the generic `Studio` title,
+  while the console opened from a media card uses the playing track title.
+- **Automation:** Playwright — **Status: Automated**
+
+### TITLE-003
+
+- **Title:** Admin pages set their tab titles
+- **Priority:** P2
+- **Preconditions:** Signed in as an admin (`ADMIN_STORAGE_STATE`).
+- **Steps:** 1. Visit `/admin`, `/admin/bookings`, `/admin/media` and
+  `/admin/media/new`.
+- **Expected:** Titles are `Admin Overview`, `Reservations`, `Media Hub` and
+  `New Media`, each suffixed with `| BTP Karaoke`.
+- **Automation:** Playwright — **Status: Automated**
+
+---
+
 ## Karaoke discovery — `frontend/tests/e2e/karaoke/discovery.spec.ts`
 
 ### KARAOKE-001
@@ -797,8 +834,8 @@ desk: every test-created reservation is driven to a terminal state
 - **Title:** Media rows can be hidden, reordered, and edited
 - **Priority:** P2
 - **Preconditions:** Creates two video rows through the admin API; both are deleted in `finally`.
-- **Steps:** 1. Hide one in the console, then check `/studio`. 2. Show it again. 3. Move it up. 4. Open its editor, retitle it, save.
-- **Expected:** Hidden rows keep a Hidden chip in the console but vanish from `/studio`; Show restores them; Move swaps one slot earlier; the editor pre-fills and saving shows the Saved flash and the new title in the list. API cleanup runs even if the UI half fails.
+- **Steps:** 1. Hide one in the console, then check `/studio`. 2. Show it again. 3. Move it earlier. 4. Open its editor, retitle it, save.
+- **Expected:** Hidden rows keep a Hidden chip in the console but vanish from `/studio`; Show restores them; Move shifts one slot earlier; the editor pre-fills and saving shows the Saved flash and the new title in the list. API cleanup runs even if the UI half fails.
 - **Automation:** Playwright — **Status: Automated**
 
 ### ADMIN-009

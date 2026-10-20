@@ -13,12 +13,14 @@ const SKELETON_MS = 3500
 
 export default function StudioShell() {
   const [loading, setLoading] = useState(true)
+  const [liked, setLiked] = useState(false)
   const player = useKaraokeVideo()
   const queue = useLoungeQueueState()
   const { pathname } = useLocation()
 
-  const skipSkeleton = pathname.startsWith('/studio/player-queue')
-  const showPlayerBar = player.started || pathname === '/studio/player-queue'
+  const onConsole = pathname.startsWith('/studio/player-queue')
+  const skipSkeleton = onConsole
+  const showPlayerBar = player.started || onConsole
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), SKELETON_MS)
@@ -43,7 +45,13 @@ export default function StudioShell() {
         </main>
       </div>
 
-      {showPlayerBar && <PlayerBar player={player} />}
+      {showPlayerBar && (
+        <PlayerBar
+          player={player}
+          liked={liked}
+          onToggleLiked={() => setLiked((value) => !value)}
+        />
+      )}
       <StudioBgm player={player} />
       <StudioPip player={player} />
     </div>

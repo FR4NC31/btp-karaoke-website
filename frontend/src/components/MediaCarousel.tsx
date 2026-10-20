@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
@@ -23,7 +23,7 @@ export default function MediaCarousel({
   itemClassName = '[&>*]:w-[min(100%,20rem)]',
 }: MediaCarouselProps) {
   const railRef = useRef<HTMLDivElement | HTMLUListElement | null>(null)
-  const [edges, setEdges] = useState({ left: false, right: true })
+  const [edges, setEdges] = useState({ left: false, right: false })
   const hasItems = count !== 0
 
   const measure = useCallback(() => {
@@ -34,10 +34,17 @@ export default function MediaCarousel({
     setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }))
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const el = railRef.current
     measure()
+    if (!el) return
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
     window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
   }, [measure, children])
 
   function scroll(direction: -1 | 1) {

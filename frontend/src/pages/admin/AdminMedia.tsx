@@ -96,7 +96,7 @@ export default function AdminMedia() {
       item,
       async () => {
         await adminMediaMove(item.id, direction)
-        setFlash(`${item.title} moved ${direction}.`)
+        setFlash(`${item.title} moved ${direction === 'up' ? 'earlier' : 'later'}.`)
       },
       'The item could not be moved.',
     )

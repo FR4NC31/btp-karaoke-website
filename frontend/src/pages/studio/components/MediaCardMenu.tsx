@@ -125,7 +125,7 @@ export default function MediaCardMenu({
       collisionPadding={12}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      className="w-72 overflow-hidden border border-border bg-surface p-0 text-text-primary shadow-2xl"
+      className="max-h-[calc(100dvh-1.5rem)] w-72 max-w-[calc(100vw-1.5rem)] overflow-x-hidden overflow-y-auto border border-border bg-surface p-0 text-text-primary shadow-2xl"
     >
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         {coverUrl && failedCoverUrl !== coverUrl ? (

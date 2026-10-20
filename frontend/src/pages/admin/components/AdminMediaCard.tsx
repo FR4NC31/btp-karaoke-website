@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
 import {
-  ArrowDown01Icon,
-  ArrowUp01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
   Delete01Icon,
   MusicNote01Icon,
   PencilEdit01Icon,
@@ -193,18 +193,18 @@ export default function AdminMediaCard({
           </Link>
         )}
         <RowButton
-          label={`Move ${item.title} up`}
+          label={`Move ${item.title} earlier`}
           disabled={busy || index === 0}
           onClick={() => onMove(item, 'up')}
         >
-          <HugeiconsIcon icon={ArrowUp01Icon} size={13} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
         </RowButton>
         <RowButton
-          label={`Move ${item.title} down`}
+          label={`Move ${item.title} later`}
           disabled={busy || index === count - 1}
           onClick={() => onMove(item, 'down')}
         >
-          <HugeiconsIcon icon={ArrowDown01Icon} size={13} />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
         </RowButton>
         <RowButton
           label={item.isActive ? `Hide ${item.title}` : `Show ${item.title}`}

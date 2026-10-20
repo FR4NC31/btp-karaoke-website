@@ -305,8 +305,8 @@ test.describe('media hub catalog', () => {
       await expect(shownRow).toContainText('Live')
 
       const before = await rowIndexOf(beta)
-      await shownRow.getByRole('button', { name: `Move ${beta} up` }).click()
-      await expect(flashWith(page, `${beta} moved up.`)).toBeVisible()
+      await shownRow.getByRole('button', { name: `Move ${beta} earlier` }).click()
+      await expect(flashWith(page, `${beta} moved earlier.`)).toBeVisible()
       await expect.poll(() => rowIndexOf(beta)).toBeLessThan(before)
 
       await page.locator('main li').filter({ hasText: beta }).getByRole('link', { name: `Edit ${beta}` }).click()
