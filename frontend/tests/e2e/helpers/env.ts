@@ -1,12 +1,3 @@
-/**
- * Central place for non-secret test environment URLs.
- *
- * Defaults match the local development servers started by
- * playwright.config.ts. Override only with environment variables —
- * never hard-code other hosts, and never point at production:
- * a non-local BACKEND_BASE_URL requires the same explicit
- * PLAYWRIGHT_ALLOW_EXTERNAL=1 opt-in as playwright.config.ts.
- */
 
 const backendFromEnv = process.env.BACKEND_BASE_URL
 

@@ -7,7 +7,6 @@ type SectionHeaderProps = {
   meta?: string
 }
 
-/** Shared About section heading: eyebrow, title, and an optional blurb/meta. */
 export default function SectionHeader({ eyebrow, title, desc, meta }: SectionHeaderProps) {
   return (
     <div data-about-reveal className="flex flex-wrap items-end justify-between gap-4">

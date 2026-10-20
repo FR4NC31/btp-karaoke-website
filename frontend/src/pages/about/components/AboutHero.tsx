@@ -1,7 +1,6 @@
 import BrandLogo from '../../../components/BrandLogo'
 import SectionEyebrow from '../../../components/SectionEyebrow'
 
-/** About hero: the BTP name story next to the accreditation card. */
 export default function AboutHero() {
   return (
     <section data-about-hero className="mt-8">

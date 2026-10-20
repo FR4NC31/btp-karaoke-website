@@ -13,26 +13,13 @@ type Props = {
   onSwitch: (mode: AuthMode) => void
 }
 
-/**
- * Landing-page auth modal. Renders the same form components as the
- * /signin and /signup fallback pages, with the cross-links switching
- * modes in place instead of routing.
- */
 export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const open = mode !== null
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { data: session, isPending } = useSession()
-  // Held here so a typed email survives switching between sign-in and
-  // sign-up (the forms unmount on switch and would drop their own state).
   const [email, setEmail] = useState('')
 
-  // Same contract as RequireGuest: wait for the session check so a
-  // signed-in user is bounced to their landing page — announced by role,
-  // so an admin always lands on the console, never the customer studio —
-  // instead of being handed a form they don't need. A parked `?next=`
-  // target wins (validated in landingPathFor), and the dialog stays closed
-  // while the session check runs.
   useEffect(() => {
     if (open && !isPending && session) {
       onClose()

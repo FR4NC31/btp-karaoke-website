@@ -1,13 +1,6 @@
 import { test, expect } from '../fixtures'
 import { TEST_USER } from '../helpers/auth'
 
-/**
- * PROFILE — the /studio/profile account page reached from the profile menu.
- *
- * Identity fields render from the live session (name/email/phone), so the
- * test pins the controlled account's email rather than prototype copy.
- * Edit/Update actions are visual-only.
- */
 test.describe('profile', () => {
   test('PROFILE-001: profile menu opens the account page', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio')

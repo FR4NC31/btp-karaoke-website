@@ -1,17 +1,7 @@
-/**
- * Loading skeletons for the admin desk. Shape mirrors each page's real
- * layout (StudioSkeleton's language: pulsing bars, `motion-reduce` honored),
- * so the placeholder and the content it becomes share one geometry.
- *
- * Pure divs on purpose: no headings, lists, buttons or roles inside that E2E
- * pins could match before the real content lands. The wrapper carries the
- * `status` announcement instead.
- */
 function Bar({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse motion-reduce:animate-none rounded-md bg-surface-elevated ${className}`} />
 }
 
-/** One reservation row placeholder: customer + status chip, service line, reference line. */
 function ReservationRowSkeleton() {
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
@@ -25,7 +15,6 @@ function ReservationRowSkeleton() {
   )
 }
 
-/** The Reservations page's list region while the API filters + rows load. */
 export function ReservationRowsSkeleton() {
   return (
     <div role="status" aria-label="Loading reservations" className="space-y-3">
@@ -36,7 +25,6 @@ export function ReservationRowsSkeleton() {
   )
 }
 
-/** The Overview page's whole body: header, stat cards, one approvals section. */
 export function OverviewSkeleton() {
   return (
     <div role="status" aria-label="Loading the admin console" className="space-y-8">

@@ -2,7 +2,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { commitments } from '../data'
 import SectionHeader from './SectionHeader'
 
-/** Guiding-principles card grid. */
 export default function Commitments() {
   return (
     <section className="mt-16">

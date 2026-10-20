@@ -2,11 +2,6 @@ import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
 import { ANONYMOUS } from '../helpers/auth'
 
-/**
- * Registration writes a real row to the database, and `user.email` is unique.
- * A fixed email would make the second run fail with "already exists", so
- * every call gets a fresh one unless the test overrides it.
- */
 let emailCounter = 0
 function uniqueEmail() {
   emailCounter += 1
@@ -33,8 +28,6 @@ async function fillSignUpForm(page: Page, overrides: Partial<Record<string, stri
 }
 
 test.describe('registration', () => {
-  // Registering while already signed in would hide whether sign-up actually
-  // issues the session that the /studio guard depends on.
   test.use({ storageState: ANONYMOUS })
 
   test('AUTH-010: valid registration reaches the studio', { tag: '@p0' }, async ({ page }) => {

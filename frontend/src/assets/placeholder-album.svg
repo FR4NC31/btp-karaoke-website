@@ -12,7 +12,6 @@
   <rect width="800" height="800" fill="url(#bg)"/>
   <rect width="800" height="800" fill="url(#stripes)"/>
 
-  <!-- music note -->
   <g fill="#70747a" opacity="0.85">
     <ellipse cx="282" cy="562" rx="74" ry="56" transform="rotate(-18 282 562)"/>
     <ellipse cx="562" cy="502" rx="74" ry="56" transform="rotate(-18 562 502)"/>

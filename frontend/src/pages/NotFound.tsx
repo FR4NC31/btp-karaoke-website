@@ -9,8 +9,6 @@ export default function NotFound() {
       <h1 className="font-heading text-5xl">404 - PAGE NOT FOUND</h1>
       <button
         type="button"
-        // 'default' key = first entry in this tab's history (e.g. a pasted
-        // bad URL), where navigate(-1) would silently no-op — go home instead.
         onClick={() => (location.key === 'default' ? navigate('/') : navigate(-1))}
         className="rounded-lg bg-primary px-6 py-3 font-medium text-text-primary transition hover:bg-primary-hover"
       >

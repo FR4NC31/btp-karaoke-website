@@ -14,18 +14,6 @@ import OverviewSummary, { type OverviewStat } from './components/overview/Overvi
 import PendingApprovals from './components/overview/PendingApprovals'
 import TodayAtStudio from './components/overview/TodayAtStudio'
 
-/**
- * /admin — the work queue.
- *
- * Pending reservations come first: they are the only rows with actions, and
- * the reason this page exists. Below them, "today at the studio" answers the
- * one question worth asking on arrival — who is coming in today.
- *
- * Reads the full list (this is a single studio's calendar, not a paginated
- * dataset) and derives the cards client-side, so the page costs one request.
- * The + New reservation button opens the shell-hosted modal; a save bumps the
- * shell's revision and reloads this snapshot.
- */
 
 export default function AdminOverview() {
   const { openNewReservation, reservationsRevision } = useNewReservationDialog()
@@ -35,7 +23,6 @@ export default function AdminOverview() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
-  /** Which action the acting row is running, so only that button says Working. */
   const [actingAction, setActingAction] = useState<'confirm' | 'reject' | null>(null)
 
   useEffect(() => {
@@ -47,7 +34,6 @@ export default function AdminOverview() {
         if (!alive) return
         setBookings(result.bookings)
         setStudioToday(result.studioToday)
-        // A successful reload clears a stale error from an earlier attempt.
         setLoadError('')
       } catch (err) {
         if (!alive) return
@@ -63,7 +49,6 @@ export default function AdminOverview() {
     }
   }, [reservationsRevision])
 
-  /** Re-reads the snapshot — used best-effort after a failed action. */
   async function refresh() {
     const result = await fetchAdminBookings()
     setBookings(result.bookings)
@@ -78,20 +63,16 @@ export default function AdminOverview() {
     setLoadError('')
     try {
       const { booking: updated } = await adminBookingAction(booking.id, action)
-      // Swap the one row; the day never changes, so list order holds until
-      // the next load re-sorts.
       setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
       setFlash(
         `${updated.referenceCode} ${updated.status} — ${updated.customerName}, ${updated.serviceName}.`,
       )
     } catch (err) {
       setLoadError(describeBookingError(err, 'The reservation could not be updated.'))
-      // The action may have lost a race (409) — re-read so the queue matches
-      // the server even though the action itself reported an error.
       try {
         await refresh()
       } catch {
-        // Keep the action's error; the reload is best-effort.
+        return
       }
     } finally {
       setActingId('')

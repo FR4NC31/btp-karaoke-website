@@ -16,23 +16,7 @@ import BookingServiceCard from './components/booking/BookingServiceCard'
 import BookingsPanel from './components/booking/BookingsPanel'
 import { WING_LABELS } from './components/booking/constants'
 
-/**
- * /studio/bookings — the booking desk.
- *
- * Day-only prototype: pick a service from the catalog and claim a whole day.
- * There is no time slot or time block yet — that arrives as its own migration,
- * and `service.durationDays` is turnaround metadata, not a claim on extra days.
- *
- * Every booking is created `pending`, which is the state an admin will later
- * confirm or reject (no online payment). The status column already carries
- * that workflow, so accepting a booking needs no schema change.
- *
- * Services and bookings both come from the backend (`/api/services`,
- * `/api/bookings`) — the catalog is real data, not the static module in
- * `data.ts`, so prices live in one place.
- */
 
-/** The API's list order: newest session day first, then newest booking first. */
 function byNewest(a: Booking, b: Booking): number {
   if (a.bookingDate !== b.bookingDate) return a.bookingDate < b.bookingDate ? 1 : -1
   if (a.createdAt === b.createdAt) return 0
@@ -57,7 +41,6 @@ export default function BookingPage() {
   const [loadError, setLoadError] = useState('')
   const [wing, setWing] = useState('all')
 
-  // Booking form — `selected` doubles as "the form is open".
   const [selected, setSelected] = useState<Service | null>(null)
   const [bookingDate, setBookingDate] = useState('')
   const [notes, setNotes] = useState('')
@@ -90,28 +73,21 @@ export default function BookingPage() {
     }
   }, [])
 
-  /** Re-reads just the booking list — used after creating a row. */
   async function refreshBookings() {
     const result = await fetchBookings()
     setBookings(result.bookings)
   }
 
-  /**
-   * Best-effort re-read after a mutation. The mutation already produced its
-   * own outcome (success flash or error message), so a failed refresh must not
-   * replace it — the next visit reads fresh rows anyway.
-   */
   async function refreshBookingsQuietly() {
     try {
       await refreshBookings()
     } catch {
-      // Keep the mutation's outcome on screen.
+      return
     }
   }
 
   function startBooking(service: Service) {
     setSelected(service)
-    // Pre-fill with the studio's today so the field is never empty on open.
     setBookingDate(studioToday)
     setNotes('')
     setFormError('')
@@ -136,8 +112,6 @@ export default function BookingPage() {
         bookingDate,
         notes: notes.trim() || undefined,
       })
-      // Show the new row immediately, in the server's order, rather than
-      // waiting on a second request; the quiet refresh reconciles the list.
       setBookings((prev) => [booking, ...prev].sort(byNewest))
       setSelected(null)
       setNotes('')
@@ -159,14 +133,11 @@ export default function BookingPage() {
     setLoadError('')
     try {
       const { booking: updated } = await cancelBooking(booking.id)
-      // Swap the one row: bookingDate is unchanged, so the list order holds.
       setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
       setFlash(`Cancelled ${updated.referenceCode}.`)
     } catch (err) {
       setFlash('')
       setLoadError(describeError(err, 'The booking could not be cancelled.'))
-      // A 409/404 means this list is stale — re-read it so the row shows its
-      // real state instead of a Cancel button the server will keep refusing.
       if (err instanceof BookingApiError && (err.status === 409 || err.status === 404)) {
         void refreshBookingsQuietly()
       }
@@ -217,7 +188,6 @@ export default function BookingPage() {
         </p>
       )}
 
-      {/* ------------------------------- catalog ------------------------------ */}
       <section>
         <div className="flex flex-wrap items-center gap-2">
           {wings.map((w) => (
@@ -240,7 +210,6 @@ export default function BookingPage() {
           </span>
         </div>
 
-        {/* Booking form — opens when a service is chosen. */}
         {selected && (
           <BookingForm
             service={selected}
@@ -275,7 +244,6 @@ export default function BookingPage() {
         )}
       </section>
 
-      {/* ------------------------------ my bookings --------------------------- */}
       <BookingsPanel
         bookings={bookings}
         loadError={loadError}

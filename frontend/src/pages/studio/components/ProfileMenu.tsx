@@ -7,16 +7,6 @@ import { signOut, useSession } from '../../../lib/auth-client'
 import { readableError, unexpectedError } from '../../../lib/auth-errors'
 import { markSessionExit } from '../../../lib/session-exit'
 
-/**
- * Avatar button + dropdown in the studio top bar. Owns its own open state,
- * the Escape-key listener and the sign-out flow — the top bar only has to
- * render <ProfileMenu />.
- *
- * Name and email come from the live Better Auth session, so the menu always
- * reflects the account that signed in (first/last name recorded at sign-up;
- * the single `name` column is the fallback). Profile picture shows session
- * `user.image` (Google OAuth) or the striped placeholder.
- */
 export default function ProfileMenu() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
@@ -42,24 +32,15 @@ export default function ProfileMenu() {
     if (signingOut) return
     setSignOutError('')
     setSigningOut(true)
-    // Flag the deliberate exit before the atom can turn null, so RequireAuth
-    // stops aiming its no-session bounce at /signin while we navigate to /.
     markSessionExit(true)
     try {
-      // Clear the backend session before leaving; navigating
-      // alone would leave the cookie valid.
       const { error } = await signOut()
       if (error) {
-        // Stay put. Leaving would put a still-valid cookie behind /signin,
-        // where RequireGuest sends us straight back to the studio — a logout
-        // that looks like it silently did nothing.
         markSessionExit(false)
         setSignOutError(readableError(error))
         return
       }
     } catch (err) {
-      // Rejected rather than answered: the server never saw the request, so
-      // the cookie is still live. Report it instead of pretending it worked.
       markSessionExit(false)
       setSignOutError(unexpectedError('sign-out', err))
       return
@@ -67,8 +48,6 @@ export default function ProfileMenu() {
       setSigningOut(false)
     }
     setProfileOpen(false)
-    // Land on the public landing page, not /signin — RequireGuest would be
-    // fine either way, but the visitor is free now, not mid-auth-flow.
     navigate('/')
   }
 

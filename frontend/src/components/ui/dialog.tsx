@@ -77,8 +77,6 @@ function DialogContent({
             </Button>
           </DialogPrimitive.Close>
         )}
-        {/* Scrollable region: the close button lives outside it so it stays
-            pinned while long content (e.g. sign-up form) scrolls beneath. */}
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">{children}</div>
       </DialogPrimitive.Content>
     </DialogPortal>

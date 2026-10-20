@@ -16,7 +16,6 @@ export const STATUS_FILTERS: Array<{ value: BookingStatus | 'all'; label: string
   { value: 'cancelled', label: 'Cancelled' },
 ]
 
-/** The buttons a row shows, per current status. */
 export const ROW_ACTIONS: Record<string, BookingRowAction[]> = {
   pending: [
     { action: 'confirm', label: 'Confirm', kind: 'primary' },

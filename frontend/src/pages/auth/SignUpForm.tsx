@@ -8,19 +8,12 @@ import { readableError, unexpectedError } from '../../lib/auth-errors'
 import type { AuthMode } from '../../lib/auth-dialog'
 
 type Props = {
-  /** Modal context: swap modes in place instead of routing. */
   onSwitch?: (mode: AuthMode) => void
-  /** Called right before the post-auth redirect (lets a modal close first). */
   onSuccess?: () => void
-  /** Modal context: email lifted to AuthDialog so it survives mode switches. */
   email?: string
   onEmailChange?: (email: string) => void
 }
 
-/**
- * Sign-up form logic shared by the /signup page and the auth modal.
- * Headings live in the wrappers, not here.
- */
 export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEmailChange }: Props) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -58,7 +51,6 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
 
     try {
       const { error: signUpError } = await signUp.email({
-        // Better Auth stores a single `name`; we keep the split fields too.
         name: `${firstName} ${lastName}`.trim(),
         email,
         password,
@@ -77,8 +69,6 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
     } catch (err) {
       setError(unexpectedError('sign-up', err))
     } finally {
-      // Runs on every path, including an unexpected rejection — otherwise the
-      // button stays stuck on "Creating account…" with no way to retry.
       setSubmitting(false)
     }
   }

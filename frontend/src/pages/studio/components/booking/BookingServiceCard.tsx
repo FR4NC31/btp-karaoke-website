@@ -4,12 +4,10 @@ import { WING_LABELS } from './constants'
 
 type BookingServiceCardProps = {
   service: Service
-  /** A save is in flight — the card cannot start another. */
   disabled: boolean
   onBook: (service: Service) => void
 }
 
-/** One catalog card: wing, price, name, unit, description and the book CTA. */
 export default function BookingServiceCard({ service, disabled, onBook }: BookingServiceCardProps) {
   return (
     <li>

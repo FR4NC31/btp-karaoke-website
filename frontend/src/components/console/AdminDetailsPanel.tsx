@@ -10,18 +10,11 @@ interface AdminFact {
   value: ReactNode
 }
 
-/**
- * The staff-only facts about the on-air row — the catalog fields the public
- * hub never shows (file and cover references, timestamps, the section's own
- * numbers). Only what the entry point carried renders: a row opened from the
- * hub has no bookkeeping, so those lines simply stay away.
- */
 function adminFacts(item: PreviewItem): AdminFact[] {
   const facts: AdminFact[] = [{ label: 'Catalog ID', value: item.id }]
   if (item.artist) facts.push({ label: 'Artist', value: item.artist })
   if (item.album) facts.push({ label: 'Album', value: item.album })
   if (item.subtitle) {
-    // The shared "subtitle" column wears a section name everywhere else too.
     facts.push({
       label: item.section === 'radio' ? 'Genre' : item.section === 'music' ? 'Description' : 'Subtitle',
       value: item.subtitle,
@@ -96,13 +89,6 @@ function AdminFactItem({ label, children }: { label: string; children: ReactNode
   )
 }
 
-/**
- * Staff-only "Admin details" panel under the console stage: the catalog row
- * behind the current song — artist/album/tempo, file and cover references,
- * visibility, timestamps, lyrics. The page resolves which row it describes
- * (entry point, then the admin catalog after a skip) and only renders this
- * for signed-in admins.
- */
 export default function AdminDetailsPanel({ item }: { item: PreviewItem }) {
   return (
     <section

@@ -20,7 +20,6 @@ export default defineConfig([
     },
   },
   {
-    // shadcn/ui components co-export variants/helpers (buttonVariants, etc.)
     files: ['src/components/ui/**/*.{ts,tsx}'],
     rules: {
       'react-refresh/only-export-components': 'off',
@@ -33,7 +32,6 @@ export default defineConfig([
     },
     rules: {
       'react-refresh/only-export-components': 'off',
-      // Playwright fixtures take a `use` callback — not React.
       'react-hooks/rules-of-hooks': 'off',
       'react-hooks/exhaustive-deps': 'off',
     },

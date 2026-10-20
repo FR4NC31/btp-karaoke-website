@@ -5,16 +5,7 @@ import MusicPlayerSection from './components/MusicPlayerSection'
 import RadioSection from './components/RadioSection'
 import StudioSkeleton from './components/StudioSkeleton'
 
-/**
- * /studio index: the studio media hub, fed by the admin-managed catalog
- * (/api/media, curated from /admin/media). Sections render top to bottom —
- * Video Song, Music Player, Radio — and a section with no published rows
- * disappears until the studio publishes something. Only the seeded local
- * master ("The Reason") ships with a fresh database; everything else is
- * added from the admin console.
- */
 export default function StudioHome() {
-  /** null = still loading. */
   const [items, setItems] = useState<MediaItem[] | null>(null)
   const [loadError, setLoadError] = useState('')
 
@@ -48,9 +39,6 @@ export default function StudioHome() {
   }
 
   if (!items) {
-    // Reuse the shell skeleton, so the simulated shell delay and the real
-    // catalog fetch read as one continuous loading state (same shape as the
-    // hub they resolve into).
     return <StudioSkeleton />
   }
 
@@ -72,7 +60,6 @@ export default function StudioHome() {
 
   return (
     <div className="space-y-8">
-      {/* Keep the page's h1 present even while the video section is empty. */}
       {video.length === 0 && <h1 className="sr-only">Media Hub</h1>}
       <VideoSongSection items={video} />
       <MusicPlayerSection items={music} />

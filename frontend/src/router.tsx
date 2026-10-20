@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router"
 import RootLayout from './layouts/RootLayout'
+import DocumentTitle from "./components/DocumentTitle"
 import RequireAdmin from "./components/RequireAdmin"
 import RequireAuth from "./components/RequireAuth"
 import RequireGuest from "./components/RequireGuest"
@@ -24,10 +25,7 @@ import AdminMediaForm from "./pages/admin/AdminMediaForm"
 
 export const router = createBrowserRouter([
     {
-        // The four branches below are *siblings*, so an error thrown inside
-        // one cannot bubble into another — without a shared parent each would
-        // fall back to React Router's stock boundary. Wrapping them in one
-        // pathless route gives them all a single place to bubble to.
+        element: <DocumentTitle />,
         errorElement: <RouteError />,
         children: [
             {
@@ -35,77 +33,77 @@ export const router = createBrowserRouter([
                 children: [
                     {
                         path: "/",
+                        handle: { title: 'Home' },
                         element: <LandingPage />,
                     },
                     {
                         path: "/about",
+                        handle: { title: 'About' },
                         element: <About />,
                     },
                     {
                         path: "/contact",
+                        handle: { title: 'Contact' },
                         element: <Contact />,
                     },
                     {
                         path: "/services",
+                        handle: { title: 'Services' },
                         element: <Services />,
                     },
                 ]
             },
             {
-                // Everything nested under RequireAuth needs a live session.
-                // Add future protected pages as siblings of /studio here.
                 element: <RequireAuth />,
                 children: [
                     {
                         path: "/studio",
+                        handle: { title: 'Studio' },
                         element: <StudioShell />,
                         children: [
                             { index: true, element: <StudioHome /> },
-                            { path: "profile", element: <ProfilePage /> },
+                            { path: "profile", handle: { title: 'My Account' }, element: <ProfilePage /> },
                             { path: "player-queue", element: <PlayerQueue /> },
-                            { path: "bookings", element: <BookingPage /> },
+                            { path: "bookings", handle: { title: 'Booking Desk' }, element: <BookingPage /> },
                         ],
                     },
                 ]
             },
             {
-                // ...and everything nested under RequireGuest must not have
-                // one, so a signed-in user who lands here is sent back to the
-                // studio rather than handed a login form they don't need.
                 element: <RequireGuest />,
                 children: [
                     {
                         path: "/signin",
+                        handle: { title: 'Sign In' },
                         element: <SignIn />,
                     },
                     {
                         path: "/signup",
+                        handle: { title: 'Sign Up' },
                         element: <SignUp />,
                     },
                 ]
             },
             {
-                // The admin console: sessions with role === 'admin' only.
-                // RequireAdmin is navigation UX — every endpoint the console
-                // calls is gated by `requireAdmin` on the backend, which is
-                // the real boundary.
                 element: <RequireAdmin />,
                 children: [
                     {
                         path: "/admin",
+                        handle: { title: 'Admin Overview' },
                         element: <AdminShell />,
                         children: [
                             { index: true, element: <AdminOverview /> },
-                            { path: "bookings", element: <AdminBookings /> },
-                            { path: "media", element: <AdminMedia /> },
-                            { path: "media/new", element: <AdminMediaForm /> },
-                            { path: "media/:id", element: <AdminMediaForm /> },
+                            { path: "bookings", handle: { title: 'Reservations' }, element: <AdminBookings /> },
+                            { path: "media", handle: { title: 'Media Hub' }, element: <AdminMedia /> },
+                            { path: "media/new", handle: { title: 'New Media' }, element: <AdminMediaForm /> },
+                            { path: "media/:id", handle: { title: 'Edit Media' }, element: <AdminMediaForm /> },
                         ],
                     },
                 ]
             },
             {
                 path: "*",
+                handle: { title: 'Page Not Found' },
                 element: <NotFound />,
             },
         ]

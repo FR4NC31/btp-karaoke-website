@@ -10,12 +10,6 @@ interface UserAvatarProps {
   alt?: string
 }
 
-/**
- * Session-aware avatar. Renders the Better Auth `user.image` URL when set
- * (Google OAuth stores a googleusercontent profile pic; password users have
- * null and get the striped placeholder instead). Falls back to the placeholder
- * if the image fails to load.
- */
 export default function UserAvatar({
   image,
   icon,

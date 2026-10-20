@@ -1,10 +1,3 @@
-/**
- * The two full-screen states the route guards share.
- *
- * Extracted so `RequireAuth` and `RequireGuest` describe a session exactly the
- * same way — if they ever drift, a user could be told two different things
- * about why they are or aren't being let through.
- */
 export function SessionChecking() {
   return (
     <div className="grid min-h-dvh place-items-center bg-background text-text-primary">

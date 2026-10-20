@@ -16,12 +16,7 @@ import ProfileMenu from './ProfileMenu'
 
 export default function StudioTopBar() {
   const { pathname } = useLocation()
-  // Back to the hub from any page that is not the hub itself (console,
-  // profile) — the sidebar selection is cosmetic, so this is the way back.
   const showBack = pathname !== '/studio'
-  // The sidebar is hidden below md, so the Admin Console link lives here too;
-  // shown only for admins (see StudioSidebar for why this is convenience, not
-  // a gate).
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
@@ -76,9 +71,6 @@ export default function StudioTopBar() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        {/* The sidebar is hidden below md, so this is the only always-visible
-            route to the booking desk. Label collapses on small screens; the
-            aria-label keeps the accessible name intact. */}
         <Link
           to="/studio/bookings"
           aria-label="Bookings"

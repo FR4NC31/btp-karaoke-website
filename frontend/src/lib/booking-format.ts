@@ -1,11 +1,6 @@
 import type { BookingStatus } from './booking-api'
 
-/**
- * Display helpers shared by the customer booking desk and the admin console —
- * extracted so a status badge or a date reads identically in both.
- */
 
-/** Badge styles per booking status (border + background + text). */
 export const STATUS_STYLES: Record<BookingStatus, string> = {
   pending: 'border-warning/40 bg-warning/10 text-warning',
   confirmed: 'border-success/40 bg-success/10 text-success',
@@ -16,10 +11,6 @@ export const STATUS_STYLES: Record<BookingStatus, string> = {
 
 export const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' })
 
-/**
- * A booking day is a calendar day, not an instant. Parsing it as UTC keeps the
- * displayed date from sliding a day backwards for anyone west of Manila.
- */
 const dayFormat = new Intl.DateTimeFormat('en-PH', {
   weekday: 'short',
   day: 'numeric',

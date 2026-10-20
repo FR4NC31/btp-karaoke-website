@@ -12,13 +12,11 @@ import UserAvatar from '../../../../components/UserAvatar'
 import DetailField from './DetailField'
 import type { ProfileIdentity } from './types'
 
-/** My Account tab: identity card, personal details, singing preferences. */
 export default function AccountTab({ identity }: { identity: ProfileIdentity }) {
   const { image, fullName, email, emailVerified, phone, handle, memberSince } = identity
 
   return (
     <>
-      {/* Profile card */}
       <section className="flex flex-wrap items-start gap-5 rounded-xl border border-border bg-surface p-6">
         <div className="relative shrink-0">
           <UserAvatar
@@ -64,7 +62,6 @@ export default function AccountTab({ identity }: { identity: ProfileIdentity }) 
         </div>
       </section>
 
-      {/* Personal details */}
       <section className="rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -106,7 +103,6 @@ export default function AccountTab({ identity }: { identity: ProfileIdentity }) 
         </div>
       </section>
 
-      {/* Singing & audio preferences */}
       <section className="rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

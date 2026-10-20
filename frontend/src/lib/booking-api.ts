@@ -1,15 +1,3 @@
-/**
- * Client for the booking API (backend/src/index.ts).
- *
- * Plain `fetch` to same-origin `/api/*`, which Vite proxies to the Hono
- * backend — the session cookie rides along without CORS, exactly like the
- * Better Auth client. Errors are normalised into `BookingApiError` so the page
- * can render `err.message` directly instead of digging through a Response.
- *
- * `request` and `BookingApiError` are also the base the admin client
- * (lib/admin-api.ts) builds on — one error shape and one fetch policy for the
- * whole booking surface.
- */
 
 export interface Service {
   id: string
@@ -33,7 +21,6 @@ export interface Booking {
   serviceName: string
   serviceUnit: string
   pricePhp: number
-  /** Whole day, `YYYY-MM-DD` — no time component yet. */
   bookingDate: string
   status: BookingStatus
   notes: string | null
@@ -50,11 +37,6 @@ export class BookingApiError extends Error {
   }
 }
 
-/**
- * One readable message for anything the booking surface can throw. Shared by
- * the customer desk and the admin console so a session expiry reads the same
- * in both.
- */
 export function describeBookingError(err: unknown, fallback: string): string {
   if (err instanceof BookingApiError) {
     if (err.status === 401) {
@@ -80,8 +62,6 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       },
     })
   } catch {
-    // fetch only rejects when the request never completed — server down,
-    // offline, DNS. Worth its own message; a 500 answers instead.
     throw new BookingApiError('Cannot reach the server. Check your connection and try again.', 0)
   }
 
@@ -101,10 +81,6 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new BookingApiError(message, response.status)
   }
 
-  // Every endpoint this helper calls answers with JSON. A 2xx that carries
-  // nothing — or something unparseable — is a broken server, not a success:
-  // returning null here used to surface later as a crash on destructuring,
-  // far from the cause.
   if (payload === null) {
     throw new BookingApiError('The server returned an empty response.', response.status)
   }

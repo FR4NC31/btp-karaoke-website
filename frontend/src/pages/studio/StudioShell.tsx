@@ -9,43 +9,16 @@ import StudioSkeleton from './components/StudioSkeleton'
 import { useKaraokeVideo } from '../../lib/karaoke-player'
 import { LoungeQueueProvider, useLoungeQueueState } from '../../lib/lounge-queue'
 
-/** Simulated load time for the /studio content skeleton (3.5 s). */
 const SKELETON_MS = 3500
 
-/**
- * Studio layout shell: top bar, sidebar, scrolling main region (the routed
- * page renders through <Outlet/>) and the player bar.
- *
- * Extracted so /studio (discovery), /studio/profile (account) and
- * /studio/player-queue (console) share one chrome. PlayerBar stays a direct
- * child of the shell root so its <footer> keeps role contentinfo (E2E pin).
- *
- * The shell owns the video transport state (useKaraokeVideo): the routed page
- * registers its <video> through the outlet context and PlayerBar drives it.
- * It also owns the lounge queue (useLoungeQueueState), handed to the routed
- * pages through its own provider, so a card's "Add to queue" on the hub and
- * the console's own queue edits share one list.
- * It also mounts StudioBgm — lobby background music, scoped to /studio routes
- * and silenced on the console where the karaoke video takes over.
- *
- * On first mount the main region shows StudioSkeleton for 3.5 s, then the
- * real route content. Chrome (top bar, sidebar, player) stays live the whole
- * time so E2E pins for those regions never wait.
- *
- * The console route (/studio/player-queue) is exempt: its content renders
- * immediately, without the (hub-shaped) skeleton flash.
- */
 export default function StudioShell() {
   const [loading, setLoading] = useState(true)
   const player = useKaraokeVideo()
   const queue = useLoungeQueueState()
   const { pathname } = useLocation()
 
-  // Temporary: the console skips the simulated skeleton delay — the
-  // placeholder is shaped like the media hub, so it never matched the
-  // console anyway. Restore by removing this guard (then the console waits
-  // out SKELETON_MS like every other studio route).
   const skipSkeleton = pathname.startsWith('/studio/player-queue')
+  const showPlayerBar = player.started || pathname === '/studio/player-queue'
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), SKELETON_MS)
@@ -63,8 +36,6 @@ export default function StudioShell() {
           {loading && !skipSkeleton ? (
             <StudioSkeleton />
           ) : (
-            // The queue rides on its own context (stable across transport
-            // ticks); the outlet context carries only the player API.
             <LoungeQueueProvider api={queue}>
               <Outlet context={player} />
             </LoungeQueueProvider>
@@ -72,7 +43,7 @@ export default function StudioShell() {
         </main>
       </div>
 
-      <PlayerBar player={player} />
+      {showPlayerBar && <PlayerBar player={player} />}
       <StudioBgm player={player} />
       <StudioPip player={player} />
     </div>

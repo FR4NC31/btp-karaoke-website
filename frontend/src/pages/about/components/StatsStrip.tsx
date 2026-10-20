@@ -1,6 +1,5 @@
 import { stats } from '../data'
 
-/** The four-cell credential strip under the hero. */
 export default function StatsStrip() {
   return (
     <section className="mt-14 border-y border-border">

@@ -6,7 +6,6 @@ import placeholderVideo from '../../assets/placeholder-video.svg'
 import placeholderAlbum from '../../assets/placeholder-album.svg'
 
 type StageSectionProps = {
-  /** The console's <video>; the page attaches it to the shell transport. */
   videoRef: RefObject<HTMLVideoElement | null>
   source: string
   coverSrc: string | null
@@ -14,25 +13,13 @@ type StageSectionProps = {
   trackTitle: string
   trackSubtitle: string | null
   playing: boolean
-  /** Stage click — the shared transport's play/pause. */
   onToggle: () => void
-  /** Song finished — the page rolls onto the next queued row. */
   onEnded: () => void
   onMediaError: () => void
   onMediaLoaded: () => void
-  /** Arm the shell's floating mini player and leave for the hub. */
   onEnterPip: () => void
 }
 
-/**
- * Console video stage: mode chips + on-air title, the stage itself (click
- * toggles via the transport), the play/pause badge and the PiP hand-off.
- *
- * The badge mirrors the video state: while playing it auto-hides after 2s
- * (back on stage hover); while paused it stays — it is the play affordance.
- * The stage click is the control; the bottom PlayerBar has the accessible
- * button.
- */
 export default function StageSection({
   videoRef,
   source,
@@ -98,11 +85,12 @@ export default function StageSection({
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="relative mt-3 aspect-[16/9] bg-background sm:aspect-[21/9]"
+        className={`relative mt-3 bg-background ${
+          audioMode
+            ? 'mx-auto aspect-square w-full max-w-[31rem]'
+            : 'aspect-[16/9] sm:aspect-[21/9]'
+        }`}
       >
-        {/* Console stage — the shared bottom PlayerBar is its transport
-            (play/pause, seek, volume); clicking the stage toggles
-            play/pause like a regular player. */}
         <video
           ref={videoRef}
           src={source}
@@ -118,10 +106,10 @@ export default function StageSection({
           }}
           onError={onMediaError}
           onLoadedData={onMediaLoaded}
-          className="absolute inset-0 h-full w-full cursor-pointer object-contain"
+          className={`absolute inset-0 h-full w-full cursor-pointer ${
+            audioMode ? 'object-cover' : 'object-contain'
+          }`}
         />
-        {/* Play/pause badge — mirrors the video state. The stage click (video
-            element) is the control, the bar has the accessible button. */}
         <div
           className={`pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300 ${
             badgeVisible ? '' : 'opacity-0'
@@ -135,10 +123,6 @@ export default function StageSection({
             <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={22} />
           </span>
         </div>
-        {/* In-app PiP: arm the shell's floating mini player and drop back to
-            the hub — the song keeps playing in the corner (KARAOKE-011); the
-            mini's up-arrow expands back here. Audio-only tracks skip it: a
-            floating black square is not a player. */}
         {!audioMode && (
           <button
             type="button"

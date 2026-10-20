@@ -35,16 +35,10 @@ function ActionButton({
 
 type AdminBookingRowProps = {
   booking: AdminBooking
-  /** This row's action is in flight. */
   busy: boolean
   onAction: (booking: AdminBooking, action: AdminBookingAction) => void
 }
 
-/**
- * One reservation row: customer, status (plus the Guest chip), service/day/
- * price, reference + contact, notes, and the status's contextual actions.
- * Completed rows show the Done marker instead.
- */
 export default function AdminBookingRow({ booking, busy, onAction }: AdminBookingRowProps) {
   return (
     <li className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-surface p-4">

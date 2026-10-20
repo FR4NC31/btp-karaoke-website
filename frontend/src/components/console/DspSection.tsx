@@ -14,7 +14,6 @@ const soundFx = [
   { icon: WhistleIcon, label: 'Whistle' },
 ]
 
-/** Lounge DSP & Sound FX strip — visual-only pads, reverb/echo readouts. */
 export default function DspSection() {
   return (
     <section className="rounded-2xl border border-border bg-surface px-4 py-3.5">

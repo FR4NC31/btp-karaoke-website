@@ -3,10 +3,6 @@ import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import SectionEyebrow from '../../../components/SectionEyebrow'
 import type { Wing } from '../data'
 
-/**
- * One service wing: header (icon, name, eyebrow, description), the service
- * cards grid (with the Learn aside when present) and the footer action row.
- */
 export default function ServiceWing({ wing }: { wing: Wing }) {
   return (
     <section className="mt-14">

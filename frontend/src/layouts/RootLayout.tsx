@@ -8,8 +8,6 @@ import SiteFooter from './SiteFooter'
 import { useSession } from '../lib/auth-client'
 import type { AuthMode } from '../lib/auth-dialog'
 
-// `to` set = routable link; missing = planned section without a page yet —
-// shown, but honestly inert.
 const navItems: { label: string; to?: string }[] = [
   { label: 'Home', to: '/' },
   { label: 'Songs' },
@@ -23,14 +21,8 @@ export default function RootLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const { data: session, isPending } = useSession()
-  // Auth lives in a modal now (opened from the landing hero or the header);
-  // the /signin and /signup routes remain as fallbacks for direct URLs.
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
 
-  // Close the modal on navigation (Back/Forward included): RootLayout stays
-  // mounted across child routes, so plain useState would follow along and a
-  // stale entry would even reopen the dialog on Back. Clear during render
-  // (React's "adjust state when props change" pattern) — no post-paint flash.
   const [settledPath, setSettledPath] = useState(location.pathname)
   if (settledPath !== location.pathname) {
     setSettledPath(location.pathname)
@@ -39,9 +31,6 @@ export default function RootLayout() {
 
   const openAuth = (mode: AuthMode) => setAuthMode(mode)
 
-  // Signed-in users already have the profile menu; /signin and /signup have
-  // their own forms; the landing hero has its own CTAs. The secondary pages
-  // (/about, /contact, /services) are the ones that need a header entry point.
   const onContentPage =
     location.pathname === '/about' || location.pathname === '/contact' || location.pathname === '/services'
   const showHeaderAuth = !isPending && session == null && onContentPage
@@ -74,8 +63,6 @@ export default function RootLayout() {
     <div className="min-h-dvh bg-background text-text-primary">
       <header className="border-b border-border bg-surface px-4 py-3 sm:px-6">
         <div className="flex items-center gap-4 sm:gap-6">
-          {/* aria-label keeps the accessible name "BTP KARAOKE" even though
-              the visible brand now has a logo and a second line of text. */}
           <Link to="/" aria-label="BTP KARAOKE" className="flex shrink-0 items-center gap-2.5">
             <BrandLogo className="size-9" />
             <span className="hidden leading-tight sm:block">
@@ -86,7 +73,6 @@ export default function RootLayout() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
           <nav aria-label="Primary" className="hidden flex-1 items-center justify-between sm:flex">
             <ul className="flex items-center gap-1">
               {navItems.map((item) =>
@@ -134,7 +120,6 @@ export default function RootLayout() {
             </div>
           </nav>
 
-          {/* Mobile hamburger */}
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -147,7 +132,6 @@ export default function RootLayout() {
           </button>
         </div>
 
-        {/* Mobile nav dropdown */}
         {menuOpen && (
           <nav id="mobile-nav" className="mt-4 space-y-4 sm:hidden" aria-label="Mobile navigation">
             <ul className="space-y-3">

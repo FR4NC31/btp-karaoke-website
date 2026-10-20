@@ -12,18 +12,6 @@ import {
 import { useSession } from '../../../lib/auth-client'
 import { sidebarSections, studioTools } from '../data'
 
-/**
- * Studio sidebar: desk navigation (real routes) on top, then the catalog
- * stacks (filter selections — still cosmetic, they only set local state) and
- * the quick tools grid.
- *
- * The sidebar is `hidden md:flex`, so below 768 px none of this renders. Every
- * destination here must therefore also be reachable from StudioTopBar, which
- * is visible at every width — keep the two lists in sync when adding a page.
- *
- * Admin Console appears only for `role === 'admin'` — a convenience link, not
- * a gate: /admin guards itself (RequireAdmin) and the API enforces access.
- */
 
 const deskLinks = [
   { to: '/studio', label: 'Media Hub', icon: DashboardSquare01Icon, end: true },

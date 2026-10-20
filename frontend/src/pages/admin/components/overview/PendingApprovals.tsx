@@ -5,17 +5,11 @@ import { STATUS_STYLES, formatDay } from '../../../../lib/booking-format'
 
 type PendingApprovalsProps = {
   pending: AdminBooking[]
-  /** The row whose action is in flight. */
   actingId: string
-  /** The action it is running — only that button shows the busy label. */
   actingAction: 'confirm' | 'reject' | null
   onAction: (booking: AdminBooking, action: 'confirm' | 'reject') => void
 }
 
-/**
- * The work queue's first section: every pending reservation with Reject /
- * Confirm actions. The page swaps the updated row in place.
- */
 export default function PendingApprovals({
   pending,
   actingId,
