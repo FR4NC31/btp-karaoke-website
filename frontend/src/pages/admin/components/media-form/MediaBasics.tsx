@@ -3,7 +3,6 @@ import { INPUT_CLASSES, LABEL_CLASSES, SECTION_COPY, SECTION_ORDER } from './hel
 
 type MediaBasicsProps = {
   section: MediaSection
-  /** The page owns the picker's side effects (dropping stale picks/files). */
   onSectionChange: (next: MediaSection) => void
   tag: string
   onTagChange: (value: string) => void
@@ -17,12 +16,6 @@ type MediaBasicsProps = {
   onAlbumChange: (value: string) => void
 }
 
-/**
- * Shared catalog fields: type picker + tag chip, title and performer (or the
- * station's genre), then the video/music-only description + album row. The
- * labels follow the section (Title / Station name, Artist / Genre) while the
- * payload stays flat.
- */
 export default function MediaBasics({
   section,
   onSectionChange,

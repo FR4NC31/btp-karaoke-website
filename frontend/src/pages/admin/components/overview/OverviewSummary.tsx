@@ -4,7 +4,6 @@ export type OverviewStat = {
   hint: string
 }
 
-/** The three summary cards under the overview header. */
 export default function OverviewSummary({ stats }: { stats: OverviewStat[] }) {
   return (
     <section aria-label="Summary" className="grid gap-4 sm:grid-cols-3">

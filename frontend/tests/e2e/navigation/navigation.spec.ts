@@ -2,21 +2,16 @@ import { test, expect } from '../fixtures'
 import { ANONYMOUS } from '../helpers/auth'
 
 test.describe('navigation', () => {
-  // The landing auth buttons open modals, and the /signin + /signup
-  // fallback routes still send a signed-in user to /studio (AUTH-017).
-  // Asserting either requires starting signed out.
   test.use({ storageState: ANONYMOUS })
 
   test('NAV-001: landing auth buttons open sign-up and sign-in modals', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/')
 
-    // Get Started → sign-up modal
     await page.getByRole('button', { name: 'Get Started' }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
     await expect(page).toHaveURL('/')
 
-    // Modal cross-links switch modes in place — both directions
     await dialog.getByRole('button', { name: 'Sign in' }).click()
     await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Sign up' }).click()
@@ -25,7 +20,6 @@ test.describe('navigation', () => {
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
 
-    // Hero Sign In → sign-in modal
     await page.getByRole('button', { name: 'Sign In', exact: true }).click()
     await expect(page.getByRole('dialog').getByRole('heading', { name: 'Welcome back' })).toBeVisible()
     await expect(page).toHaveURL('/')

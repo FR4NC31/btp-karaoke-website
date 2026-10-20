@@ -10,7 +10,6 @@ type DetailFieldProps = {
   verified?: boolean
 }
 
-/** One label/value/hint cell in the profile detail grids. */
 export default function DetailField({ icon, label, value, hint, verified }: DetailFieldProps) {
   return (
     <div className="rounded-lg border border-border bg-surface-elevated p-4">

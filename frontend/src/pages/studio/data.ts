@@ -1,10 +1,3 @@
-/**
- * Static chrome data for the studio shell: the sidebar's "Catalog Stacks"
- * and the quick-tools list. Both are cosmetic (no handlers).
- *
- * The hub's actual media catalog lives in the database now — the sections
- * render rows managed from /admin/media via the API (lib/media-api.ts).
- */
 
 interface SidebarItem {
   name: string

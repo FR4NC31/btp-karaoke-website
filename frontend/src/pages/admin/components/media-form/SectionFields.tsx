@@ -5,7 +5,6 @@ type ValueProps = {
   onChange: (value: string) => void
 }
 
-/** Video-only numbers: the play counter. */
 export function VideoFields({ value, onChange }: ValueProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -36,7 +35,6 @@ type MusicFieldsProps = {
   onSongKeyChange: (value: string) => void
 }
 
-/** Music-only metadata: tempo and key. */
 export function MusicFields({ tempo, onTempoChange, songKey, onSongKeyChange }: MusicFieldsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -68,7 +66,6 @@ export function MusicFields({ tempo, onTempoChange, songKey, onSongKeyChange }: 
   )
 }
 
-/** Music-only lyrics box — line breaks kept, blank clears the column. */
 export function LyricsField({ value, onChange }: ValueProps) {
   return (
     <div>
@@ -97,7 +94,6 @@ type RadioFieldsProps = {
   onListenersChange: (value: string) => void
 }
 
-/** Radio-only numbers: dial frequency and listener count. */
 export function RadioFields({ freq, onFreqChange, listeners, onListenersChange }: RadioFieldsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">

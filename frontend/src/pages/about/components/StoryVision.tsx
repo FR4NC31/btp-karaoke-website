@@ -1,7 +1,6 @@
 import { storyColumns } from '../data'
 import SectionHeader from './SectionHeader'
 
-/** Two-column story / vision archive. */
 export default function StoryVision() {
   return (
     <section className="mt-16">

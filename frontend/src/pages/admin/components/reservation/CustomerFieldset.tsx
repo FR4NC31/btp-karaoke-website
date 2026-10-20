@@ -6,26 +6,18 @@ import type { CustomerMode } from './types'
 type CustomerFieldsetProps = {
   mode: CustomerMode
   onModeChange: (mode: CustomerMode) => void
-  /** Registered-customer side. */
   selectedUser: TagUser | null
   onClearUser: () => void
   userQuery: string
-  /** Also resets "Searching…"/error and drops stale results. */
   onUserQueryChange: (value: string) => void
   searchingUsers: boolean
   userSearchError: string
   userResults: TagUser[]
   onPickUser: (user: TagUser) => void
-  /** Guest side. */
   guestName: string
   onGuestNameChange: (value: string) => void
 }
 
-/**
- * "Who is it for?" — registered-account search (tag one) or a typed guest
- * name, never both. A failed search says so instead of reading as no match,
- * so a registered customer is never quietly booked as a guest.
- */
 export default function CustomerFieldset({
   mode,
   onModeChange,
@@ -112,9 +104,6 @@ export default function CustomerFieldset({
                   value={userQuery}
                   onChange={(e) => onUserQueryChange(e.target.value)}
                   onKeyDown={(e) => {
-                    // Enter has nothing to select here; without this it
-                    // submits the whole reservation form and reports
-                    // "Pick a customer" instead of finishing the search.
                     if (e.key === 'Enter') e.preventDefault()
                   }}
                   className="w-full rounded-lg border border-border bg-background py-2 pr-3 pl-9 text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"

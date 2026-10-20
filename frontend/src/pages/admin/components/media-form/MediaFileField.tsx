@@ -3,26 +3,17 @@ import type { MediaSection } from '../../../../lib/media-api'
 import { LABEL_CLASSES, formatFileSize } from './helpers'
 
 type MediaFileFieldProps = {
-  /** File sections only — radio rows carry no upload. */
   section: Extract<MediaSection, 'video' | 'music'>
-  /** The stored upload (server truth) — preview + remove. */
   sourceUrl: string | null
   sourceName: string | null
-  /** The freshly picked file, if any. */
   file: File | null
   scanningFile: boolean
-  /** Runtime read off the picked/stored file ("3:54"). */
   duration: string
   fileInputRef: RefObject<HTMLInputElement | null>
   onChange: (event: ChangeEvent<HTMLInputElement>) => void
   onRemoveStored: () => void
 }
 
-/**
- * The MP4/MP3 upload box: stored-file preview/remove, the picker (accept
- * follows the section), and the picked file's name/size, scan and runtime
- * readouts.
- */
 export default function MediaFileField({
   section,
   sourceUrl,

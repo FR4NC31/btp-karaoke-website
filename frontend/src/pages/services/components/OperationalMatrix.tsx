@@ -1,7 +1,6 @@
 import SectionEyebrow from '../../../components/SectionEyebrow'
 import { matrix } from '../data'
 
-/** The quick service matrix table at the bottom of the page. */
 export default function OperationalMatrix() {
   return (
     <section className="mt-16">

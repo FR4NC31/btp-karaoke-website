@@ -2,7 +2,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { services } from '../data'
 import SectionHeader from './SectionHeader'
 
-/** Capabilities & Services card grid. */
 export default function WhatWeDo() {
   return (
     <section className="mt-16">

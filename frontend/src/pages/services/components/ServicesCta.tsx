@@ -3,7 +3,6 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import SectionEyebrow from '../../../components/SectionEyebrow'
 
-/** Closing CTA band — production pitch plus the contact-desk link. */
 export default function ServicesCta() {
   return (
     <section data-services-reveal className="-mx-6 mt-16 border-y border-border bg-surface px-6 py-14">

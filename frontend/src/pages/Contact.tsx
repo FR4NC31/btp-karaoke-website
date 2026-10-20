@@ -85,7 +85,6 @@ export default function Contact() {
 
   return (
     <div ref={pageRef} className="py-6 sm:py-8">
-      {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="text-xs font-semibold tracking-widest uppercase">
         <Link to="/" className="text-primary hover:text-primary-hover">
           Home
@@ -93,7 +92,6 @@ export default function Contact() {
         <span className="text-text-muted"> / Contact Us</span>
       </nav>
 
-      {/* Hero */}
       <section data-contact-hero className="mt-3 text-center">
         <div className="flex justify-center">
           <SectionEyebrow>Official Channels</SectionEyebrow>
@@ -107,7 +105,6 @@ export default function Contact() {
         </p>
       </section>
 
-      {/* Channels */}
       <section className="mt-7 grid gap-4 md:grid-cols-3">
         {channels.map((channel) => (
           <article

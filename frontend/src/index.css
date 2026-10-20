@@ -4,7 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Barlow Condensed — Headings */
 @font-face {
   font-family: 'Barlow Condensed';
   src: url('./assets/Fonts/barlow_condensed/BarlowCondensed-Regular.ttf') format('truetype');
@@ -29,7 +28,6 @@
   font-display: swap;
 }
 
-/* Plus Jakarta Sans — Body / UI */
 @font-face {
   font-family: 'Plus Jakarta Sans';
   src: url('./assets/Fonts/plus_jakartan_sans/PlusJakartaSans-Regular.ttf') format('truetype');
@@ -66,7 +64,6 @@
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --font-heading: 'Barlow Condensed', ui-sans-serif, sans-serif;
 
-  /* Colors */
   --color-background: #0f1011;
   --color-surface: #17191b;
   --color-surface-elevated: #202326;
@@ -106,7 +103,6 @@
   }
 }
 
-/* shadcn theme tokens — only additions; project tokens in @theme above stay authoritative */
 @theme inline {
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -138,7 +134,6 @@
   --color-foreground: var(--foreground);
 }
 
-/* Dark-only app: shadcn vars carry BTP palette at :root (no .dark class used) */
 :root {
   --background: #0f1011;
   --foreground: #f4f4f2;

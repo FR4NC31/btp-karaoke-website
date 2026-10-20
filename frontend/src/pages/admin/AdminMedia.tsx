@@ -10,27 +10,9 @@ import {
 } from '../../lib/admin-api'
 import { describeBookingError } from '../../lib/booking-api'
 import { MEDIA_SECTION_LABELS, type AdminMediaItem, type MediaSection } from '../../lib/media-api'
+import MediaCarousel from '../../components/MediaCarousel'
 import AdminMediaCard from './components/AdminMediaCard'
 
-/**
- * /admin/media — the media hub catalog behind /studio.
- *
- * Cards are grouped by section in hub order (video → music → radio) and take
- * the studio hub's card shape — cover artwork (striped default without one),
- * tag chip, title and artist — while keeping the console's full information:
- * the MP3/MP4 + cover + Live/Hidden chips, the section's meta line, and every
- * action. Play hands the row to the studio console for a staff preview —
- * offered exactly where users can play it: video rows (bundled-master
- * fallback included) and music rows with an upload; the console answers with
- * its staff-only Admin details panel. The other actions are POSTs to
- * /api/admin/media/*: hide/show pulls a row from the public feed without
- * deleting it, move swaps it with its neighbour, edit opens the full editor,
- * and delete is permanent — so it asks first (the delete icon turns into a
- * Confirm/Cancel pair; the row's uploaded file is deleted with it). The list
- * reloads after every action — the server owns the order, so the buttons'
- * edge states (first row can't move up, last can't move down) always follow
- * the reload.
- */
 
 const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
 
@@ -44,9 +26,6 @@ export default function AdminMedia() {
   const [loadFailed, setLoadFailed] = useState(false)
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
-  // Delete is permanent, so it is a two-step: the icon arms confirmation for
-  // one row at a time, Confirm runs the delete, Cancel (or any other action)
-  // disarms it.
   const [confirmingId, setConfirmingId] = useState('')
 
   useEffect(() => {
@@ -80,12 +59,6 @@ export default function AdminMedia() {
     setItems(result.items)
   }
 
-  /**
-   * Runs one row action, then reloads either way: a failed action may still
-   * have changed server state (a 409 means another tab acted first), and a
-   * successful one needs the server's order. The action's own error wins when
-   * both the action and the reload fail.
-   */
   async function runAction(item: AdminMediaItem, action: () => Promise<void>, fallback: string) {
     if (actingId) return
     setActingId(item.id)
@@ -123,7 +96,7 @@ export default function AdminMedia() {
       item,
       async () => {
         await adminMediaMove(item.id, direction)
-        setFlash(`${item.title} moved ${direction}.`)
+        setFlash(`${item.title} moved ${direction === 'up' ? 'earlier' : 'later'}.`)
       },
       'The item could not be moved.',
     )
@@ -183,40 +156,41 @@ export default function AdminMedia() {
             const sectionItems = items.filter((item) => item.section === section)
             return (
               <section key={section}>
-                <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <h2 className="font-heading text-lg font-bold tracking-wide uppercase">
-                    {MEDIA_SECTION_LABELS[section]}s
-                  </h2>
-                  <span className="rounded border border-border bg-surface-elevated px-2 py-0.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
-                    {sectionItems.length} row{sectionItems.length === 1 ? '' : 's'}
-                  </span>
-                </div>
+                <MediaCarousel
+                  as="ul"
+                  label={`${MEDIA_SECTION_LABELS[section]}s`}
+                  count={sectionItems.length}
+                  itemClassName="[&>*]:w-[min(100%,24rem)]"
+                  header={
+                    <h2 className="font-heading text-lg font-bold tracking-wide uppercase">
+                      {MEDIA_SECTION_LABELS[section]}s
+                    </h2>
+                  }
+                  aside={
+                    <span className="rounded border border-border bg-surface-elevated px-2 py-0.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
+                      {sectionItems.length} row{sectionItems.length === 1 ? '' : 's'}
+                    </span>
+                  }
+                >
+                  {sectionItems.map((item, index) => (
+                    <AdminMediaCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      count={sectionItems.length}
+                      busy={actingId === item.id}
+                      confirmingDelete={confirmingId === item.id}
+                      onMove={handleMove}
+                      onVisibility={handleVisibility}
+                      onArmDelete={setConfirmingId}
+                      onCancelDelete={() => setConfirmingId('')}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </MediaCarousel>
 
-                {sectionItems.length === 0 ? (
-                  // A failed initial load already shows its alert; "none yet"
-                  // would falsely claim the catalog is empty. Action errors do
-                  // not suppress this because the catalog itself is known.
-                  !loadFailed && (
-                    <p className="text-sm text-text-muted">No items in this section yet.</p>
-                  )
-                ) : (
-                  <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {sectionItems.map((item, index) => (
-                      <AdminMediaCard
-                        key={item.id}
-                        item={item}
-                        index={index}
-                        count={sectionItems.length}
-                        busy={actingId === item.id}
-                        confirmingDelete={confirmingId === item.id}
-                        onMove={handleMove}
-                        onVisibility={handleVisibility}
-                        onArmDelete={setConfirmingId}
-                        onCancelDelete={() => setConfirmingId('')}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-                  </ul>
+                {sectionItems.length === 0 && !loadFailed && (
+                  <p className="text-sm text-text-muted">No items in this section yet.</p>
                 )}
               </section>
             )

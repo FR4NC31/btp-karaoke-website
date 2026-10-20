@@ -2,25 +2,11 @@ import { expect, request as rawRequest } from '@playwright/test'
 import type { APIRequestContext } from '@playwright/test'
 import { TEST_ADMIN } from './auth'
 
-/**
- * Direct admin-API helpers for the media hub catalog (/api/admin/media).
- *
- * The karaoke suite uses these to prove /studio renders published catalog
- * rows: music and radio sections have no seeded copy by design (only the one
- * real local master, "The Reason", ships with the database), so a test
- * creates exactly the row under assertion and deletes it afterwards.
- *
- * Same contract as admin.spec.ts's API helpers — a throwaway context that
- * signs in as the promoted QA admin. The Origin header mirrors a browser:
- * Better Auth's CSRF middleware requires it on credentialed POSTs made by
- * clients that send sec-fetch-mode (Playwright's request contexts do).
- */
 
 interface MediaSeedInput {
   section: 'video' | 'music' | 'radio'
   title: string
   subtitle?: string
-  /** Performer under the title (video and music rows). */
   artist?: string
   tag?: string
   duration?: string
@@ -29,14 +15,10 @@ interface MediaSeedInput {
   songKey?: string
   freq?: string
   listeners?: number
-  /** Upload reference from uploadMediaFileAsAdmin (music/video rows). */
   sourceUrl?: string
   sourceName?: string
-  /** Album/collection as shown on the hub and in the editor. */
   album?: string
-  /** Staff-only track lyrics (music rows; the public feed omits them). */
   lyrics?: string
-  /** Cover-image reference from uploadMediaFileAsAdmin (image upload). */
   coverUrl?: string
   coverName?: string
 }
@@ -61,7 +43,6 @@ async function withAdminApi<T>(
   }
 }
 
-/** Creates one catalog row — live on the hub immediately. Returns its id. */
 export async function createMediaItemAsAdmin(
   baseURL: string | undefined,
   input: MediaSeedInput,
@@ -74,7 +55,6 @@ export async function createMediaItemAsAdmin(
   })
 }
 
-/** Cleanup twin. Idempotent: an already-deleted row (404) is fine. */
 export async function deleteMediaItemAsAdmin(
   baseURL: string | undefined,
   id: string,
@@ -87,7 +67,6 @@ export async function deleteMediaItemAsAdmin(
   })
 }
 
-/** Reads one catalog row back through the staff API (bookkeeping + lyrics). */
 export async function getMediaItemAsAdmin(
   baseURL: string | undefined,
   id: string,
@@ -105,7 +84,6 @@ export async function getMediaItemAsAdmin(
   })
 }
 
-/** What the uploader answers: the stored file, or the rejection message. */
 export interface UploadResult {
   status: number
   body: {
@@ -114,12 +92,6 @@ export interface UploadResult {
   }
 }
 
-/**
- * Posts one raw upload as the QA admin — the same raw-body contract the
- * editor uses (`data` as the body, X-File-Name for the display copy). Also
- * the negative-path probe: bad extensions and type mismatches answer 4xx
- * without a session ever being needed to clean up.
- */
 export async function uploadMediaFileAsAdmin(
   baseURL: string | undefined,
   file: { name: string; mimeType: string; data: Buffer | string },

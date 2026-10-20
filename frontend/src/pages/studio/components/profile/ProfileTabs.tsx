@@ -3,7 +3,6 @@ type ProfileTabsProps = {
   onTabChange: (tab: 'account' | 'profile') => void
 }
 
-/** Tab switcher + the mockup's static member ID. */
 export default function ProfileTabs({ tab, onTabChange }: ProfileTabsProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border">

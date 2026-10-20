@@ -32,6 +32,9 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix(studio): align console tab title with the fallback track (c519a74)
+- fix(studio): address PR review feedback (a7363c5)
+- fix(studio): polish console playback and media rails (2cc8598)
 - fix(ci): generate disposable Postgres password per run (e6ff240)
 - fix(ci): remove disposable Postgres password literal (af8ec72)
 - fix(ci): close review hardening gaps (18f0a75)
@@ -73,6 +76,8 @@ Last updated: October 20, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into fix/UI-polished (970550c)
+- Merge pull request #22 from FR4NC31/fix/pr-smoke-generated-db-password (0732ee2)
 - Merge pull request #21 from FR4NC31/fix/gitguardian-pr-smoke-literal (50c9a94)
 - Merge pull request #20 from FR4NC31/fix/pr-smoke-hardening (dec9eab)
 - Merge pull request #19 from FR4NC31/fix/pr-smoke-disposable-db (a0dd29d)

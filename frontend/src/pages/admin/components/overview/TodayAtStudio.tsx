@@ -4,7 +4,6 @@ import { CalendarCheck01Icon } from '@hugeicons/core-free-icons'
 import type { AdminBooking } from '../../../../lib/admin-api'
 import { STATUS_STYLES } from '../../../../lib/booking-format'
 
-/** Today's live schedule — who is coming in, and their status. */
 export default function TodayAtStudio({ today }: { today: AdminBooking[] }) {
   return (
     <section>

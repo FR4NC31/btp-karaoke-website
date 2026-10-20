@@ -1,18 +1,7 @@
-/**
- * Loading skeleton for the /studio main region. Shape mirrors the current
- * media hub (section header → MediaCard grids for Video Song / Music Player /
- * Radio), so the placeholder and the real content it becomes share one
- * layout. StudioHome also renders it while the catalog fetch is in flight,
- * so the shell's simulated delay and the real load read as one state.
- *
- * Pure divs on purpose: no h1/h2/article/button/role inside, so pinned E2E
- * a11y assertions only ever match the real content underneath.
- */
 function Bar({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse motion-reduce:animate-none rounded-md bg-surface-elevated ${className}`} />
 }
 
-/** One MediaCard-shaped tile: cover area, title/subtitle block, meta footer. */
 function CardSkeleton() {
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface">
@@ -30,7 +19,6 @@ function CardSkeleton() {
   )
 }
 
-/** Section header (◆ + heading + sub-label + counter) over a card grid. */
 function SectionSkeleton({
   headingWidth,
   labelWidth,

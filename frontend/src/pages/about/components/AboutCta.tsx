@@ -1,7 +1,6 @@
 import { Link } from 'react-router'
 import SectionEyebrow from '../../../components/SectionEyebrow'
 
-/** Full-bleed-ish closing CTA band (inset inside the page wrapper). */
 export default function AboutCta() {
   return (
     <section data-about-reveal className="-mx-6 mt-16 border-y border-border bg-surface px-6 py-14 text-center">

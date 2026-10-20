@@ -1,7 +1,6 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon } from '@hugeicons/core-free-icons'
 
-/** User Profile tab — public-facing view (prototype placeholder). */
 export default function PublicProfileTab() {
   return (
     <section className="rounded-xl border border-border bg-surface p-6">

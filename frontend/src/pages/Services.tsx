@@ -55,7 +55,6 @@ export default function Services() {
 
   return (
     <div ref={pageRef} className="py-8">
-      {/* Breadcrumb + accreditation pill */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav aria-label="Breadcrumb" className="text-xs font-semibold tracking-widest uppercase">
           <Link to="/" className="text-primary hover:text-primary-hover">
@@ -68,7 +67,6 @@ export default function Services() {
         </p>
       </div>
 
-      {/* Hero */}
       <section data-services-hero className="mt-8">
         <h1 className="font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
           BTP Music Production
@@ -84,7 +82,6 @@ export default function Services() {
 
       <RateStrip />
 
-      {/* Filter tabs */}
       <div role="tablist" aria-label="Service categories" className="mt-12 flex flex-wrap gap-3">
         {filters.map((f) => (
           <button

@@ -8,17 +8,12 @@ type SessionFieldsetProps = {
   serviceId: string
   onServiceChange: (value: string) => void
   bookingDate: string
-  /** The studio's today — the date input's min and the reset default. */
   studioToday: string
   onDateChange: (value: string) => void
   notes: string
   onNotesChange: (value: string) => void
 }
 
-/**
- * "The session" — service picker (with the selected service's unit/price
- * line), session date and optional notes. The desk books whole days.
- */
 export default function SessionFieldset({
   services,
   serviceId,

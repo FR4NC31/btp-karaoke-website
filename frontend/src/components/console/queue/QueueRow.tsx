@@ -8,7 +8,6 @@ type QueueRowProps = {
   row: QueueItem
   index: number
   playing: boolean
-  /** The bar's Shuffle is on: drag-reorder is paused. */
   shuffle: boolean
   dragging: boolean
   onDragStart: (event: DragEvent<HTMLButtonElement>) => void
@@ -18,7 +17,6 @@ type QueueRowProps = {
   onRemove: () => void
 }
 
-/** One queue row: grip, position, cover, title/meta/tags + remove. */
 export default function QueueRow({
   row,
   index,

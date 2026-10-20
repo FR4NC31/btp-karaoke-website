@@ -5,17 +5,11 @@ import { STATUS_STYLES, formatDay, peso } from '../../../../lib/booking-format'
 
 type BookingsPanelProps = {
   bookings: Booking[]
-  /** A load/action failure — never claim "no bookings" while the list is unknown. */
   loadError: string
-  /** The row whose cancel request is in flight. */
   cancellingId: string
   onCancel: (booking: Booking) => void
 }
 
-/**
- * "My bookings" — the singer's own reservation rows (day, price, reference,
- * status, notes) with a Cancel action only while the row is pending.
- */
 export default function BookingsPanel({
   bookings,
   loadError,

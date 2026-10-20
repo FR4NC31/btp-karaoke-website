@@ -30,14 +30,6 @@ const columns = [
   },
 ]
 
-/**
- * Site-wide footer (Home, About, … — everything under RootLayout).
- * /studio has its own player footer and does not use this component.
- *
- * All entries are visual only for now: destinations for catalog / rooms /
- * bookings do not exist yet, so they render as styled spans instead of dead
- * links.
- */
 export default function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background">

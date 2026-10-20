@@ -7,20 +7,13 @@ type CoverFieldProps = {
   coverUrl: string | null
   coverName: string | null
   coverFile: File | null
-  /** Fresh pick → file-carried cover → stored cover (null = default art). */
   coverPreview: string | null
-  /** The source file's own cover (embedded art or grabbed frame), if any. */
   autoCover: AutoCover | null
   coverInputRef: RefObject<HTMLInputElement | null>
   onChange: (event: ChangeEvent<HTMLInputElement>) => void
   onRemove: () => void
 }
 
-/**
- * Thumbnail / cover art box: current preview (or the default-art tile),
- * remove action, picker and the line explaining what will be applied on
- * save (picked image, the file's own art, the stored cover, or nothing).
- */
 export default function CoverField({
   section,
   coverUrl,

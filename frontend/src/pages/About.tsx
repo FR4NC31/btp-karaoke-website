@@ -19,7 +19,6 @@ export default function About() {
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const animation = gsap.context(() => {
-      // Hero plays on load; everything below reveals as it scrolls into view.
       gsap.fromTo(
         '[data-about-hero] > *',
         { autoAlpha: 0, y: 24 },
@@ -35,7 +34,6 @@ export default function About() {
             y: 0,
             duration: 0.6,
             ease: 'power3.out',
-            // Stagger siblings that enter together (e.g. card grids).
             delay: (i % 4) * 0.08,
             scrollTrigger: {
               trigger: el,
@@ -52,7 +50,6 @@ export default function About() {
 
   return (
     <div ref={pageRef} className="py-8">
-      {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="text-xs font-semibold tracking-widest uppercase">
         <Link to="/" className="text-primary hover:text-primary-hover">
           Home

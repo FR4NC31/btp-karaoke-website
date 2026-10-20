@@ -6,7 +6,6 @@ import { peso } from '../../../../lib/booking-format'
 import { NOTES_MAX } from '../../../../lib/booking-constants'
 
 type BookingFormProps = {
-  /** The service the singer picked — also shown in the form header. */
   service: Service
   studioToday: string
   bookingDate: string
@@ -19,10 +18,6 @@ type BookingFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 
-/**
- * Inline reservation form that opens under the service filters when a card's
- * "Book this service" is picked. Day-only: one date, optional notes.
- */
 export default function BookingForm({
   service,
   studioToday,

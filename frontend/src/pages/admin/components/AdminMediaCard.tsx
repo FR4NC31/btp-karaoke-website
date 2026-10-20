@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
 import {
-  ArrowDown01Icon,
-  ArrowUp01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
   Delete01Icon,
   MusicNote01Icon,
   PencilEdit01Icon,
@@ -20,14 +20,12 @@ const STATUS_STYLES: Record<'live' | 'hidden', string> = {
   hidden: 'border-border bg-surface-elevated text-text-muted',
 }
 
-/** Section icons for the default (coverless) artwork, same as the hub cards. */
 const SECTION_ICONS: Record<MediaSection, IconSvgElement> = {
   video: PlayIcon,
   music: MusicNote01Icon,
   radio: Radio01Icon,
 }
 
-/** The meta strip under a row — only the columns its section actually uses. */
 function metaParts(item: AdminMediaItem): string[] {
   const parts: string[] = []
   if (item.section === 'video') {
@@ -45,7 +43,6 @@ function metaParts(item: AdminMediaItem): string[] {
   return parts
 }
 
-/** Attachment chip (file / cover) in the hub cards' primary chip style. */
 function AttachmentChip({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <span
@@ -90,12 +87,9 @@ function RowButton({
 
 type AdminMediaCardProps = {
   item: AdminMediaItem
-  /** Position in its section — drives the up/down edge states. */
   index: number
   count: number
-  /** A row action is in flight (for this row). */
   busy: boolean
-  /** The row's delete confirmation is armed. */
   confirmingDelete: boolean
   onMove: (item: AdminMediaItem, direction: 'up' | 'down') => void
   onVisibility: (item: AdminMediaItem) => void
@@ -104,13 +98,6 @@ type AdminMediaCardProps = {
   onDelete: (item: AdminMediaItem) => void
 }
 
-/**
- * One catalog card in /admin/media: hub-shaped artwork (cover or the striped
- * section-icon default), tag + Live/Hidden chips, title/artist, attachment
- * and meta strips, then the action row — Play (staff console preview, only
- * where users can reach it), move up/down, hide/show, edit and the two-step
- * delete.
- */
 export default function AdminMediaCard({
   item,
   index,
@@ -125,19 +112,13 @@ export default function AdminMediaCard({
 }: AdminMediaCardProps) {
   const parts = metaParts(item)
   const SectionIcon = SECTION_ICONS[item.section]
-  // Same reachability users have: video rows always play (bundled-master
-  // fallback), music rows only with an upload; radio carries no media file.
   const previewable = item.section === 'video' || (item.section === 'music' && item.sourceUrl !== null)
-  // A stored cover can rot (deleted upload, hand-edited row). Swap the broken
-  // image for the same striped default the hub uses instead of leaving a hole.
   const coverUrl = item.coverUrl
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
   const showCover = coverUrl !== null && coverUrl !== failedCoverUrl
 
   return (
     <li className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface">
-      {/* Artwork, mirroring the studio hub card: the row's cover when it has
-          one, else the striped default. */}
       <div className="relative">
         {showCover ? (
           <img
@@ -177,8 +158,6 @@ export default function AdminMediaCard({
         <p className="line-clamp-2 font-heading text-base leading-tight font-bold tracking-wide uppercase">
           {item.title}
         </p>
-        {/* Under the title: the artist, else the subtitle (music description,
-            radio genre). */}
         {(item.artist ?? item.subtitle) && (
           <p className="mt-0.5 truncate text-[10px] text-text-muted">
             {item.artist ?? item.subtitle}
@@ -214,18 +193,18 @@ export default function AdminMediaCard({
           </Link>
         )}
         <RowButton
-          label={`Move ${item.title} up`}
+          label={`Move ${item.title} earlier`}
           disabled={busy || index === 0}
           onClick={() => onMove(item, 'up')}
         >
-          <HugeiconsIcon icon={ArrowUp01Icon} size={13} />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
         </RowButton>
         <RowButton
-          label={`Move ${item.title} down`}
+          label={`Move ${item.title} later`}
           disabled={busy || index === count - 1}
           onClick={() => onMove(item, 'down')}
         >
-          <HugeiconsIcon icon={ArrowDown01Icon} size={13} />
+          <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
         </RowButton>
         <RowButton
           label={item.isActive ? `Hide ${item.title}` : `Show ${item.title}`}

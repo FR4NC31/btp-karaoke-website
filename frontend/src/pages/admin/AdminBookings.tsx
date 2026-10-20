@@ -13,20 +13,6 @@ import { ReservationRowsSkeleton } from './AdminSkeletons'
 import AdminBookingRow from './components/bookings/AdminBookingRow'
 import BookingsFilters from './components/bookings/BookingsFilters'
 
-/**
- * /admin/bookings — every reservation, across all customers.
- *
- * Filters (status / day / free-text) are applied in SQL by the API, so this
- * page never pulls rows it will not show. Actions are contextual: a pending
- * reservation can be confirmed or rejected, a confirmed one completed or
- * cancelled — exactly the transitions the backend's ADMIN_ACTIONS allows.
- * A 409 ("already confirmed by someone else") surfaces as a flash, and the
- * list reloads so the row shows its real state.
- *
- * The + New reservation button opens the shell-hosted modal (no create page);
- * the shell bumps `reservationsRevision` when it saves, which reloads this
- * list behind the modal.
- */
 
 export default function AdminBookings() {
   const { openNewReservation, reservationsRevision } = useNewReservationDialog()
@@ -40,13 +26,8 @@ export default function AdminBookings() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
-  // Bumped whenever a filter (or the shell's save revision) starts a new load.
-  // Action handlers capture it so a slower response cannot overwrite rows that
-  // belong to a newer filter.
   const filterGeneration = useRef(0)
 
-  // Reload whenever a filter changes (the API does the filtering) or the
-  // modal saves a reservation.
   useEffect(() => {
     const generation = ++filterGeneration.current
     let alive = true
@@ -90,14 +71,8 @@ export default function AdminBookings() {
         setFlash(`${updated.referenceCode} is now ${updated.status}.`)
       }
     } catch (err) {
-      // A 409 here is normal life (another tab acted first) — the reload below
-      // shows the row's true state instead of a stale button set.
       failure = describeBookingError(err, 'The reservation could not be updated.')
     }
-    // Reload rather than patch in place: the active filter may no longer match
-    // the row (e.g. "pending" after a confirm), and the server is the source of
-    // truth for order + filters. The reload is best-effort — the action's own
-    // error stays on screen when it fails too.
     try {
       const result = await fetchAdminBookings({
         status: status === 'all' ? undefined : status,
@@ -147,7 +122,6 @@ export default function AdminBookings() {
         </p>
       )}
 
-      {/* ------------------------------- filters ------------------------------ */}
       <BookingsFilters
         status={status}
         onStatusChange={setStatus}
@@ -165,7 +139,6 @@ export default function AdminBookings() {
         }}
       />
 
-      {/* ------------------------------- rows -------------------------------- */}
       {loading ? (
         <ReservationRowsSkeleton />
       ) : bookings.length === 0 && !loadError ? (

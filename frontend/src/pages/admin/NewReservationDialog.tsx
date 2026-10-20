@@ -8,20 +8,9 @@ import {
 } from '../../components/ui/dialog'
 import NewReservationForm from './components/reservation/NewReservationForm'
 
-/**
- * "New reservation" modal — take a reservation for someone else without
- * leaving the desk page. Hosted by AdminShell (lib/new-reservation-dialog.ts
- * exposes it through the outlet context) and opened by the + New reservation
- * buttons on Overview and Reservations; the old /admin/bookings/new page is
- * gone.
- *
- * The dialog owns only the open/busy contract; the form itself lives in
- * components/reservation (customer picker, session fields, save pipeline).
- */
 type NewReservationDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Fired after a save — AdminShell bumps its reservation revision. */
   onCreated: () => void
 }
 
@@ -30,8 +19,6 @@ export default function NewReservationDialog({
   onOpenChange,
   onCreated,
 }: NewReservationDialogProps) {
-  // Keep the modal open while a save is in flight: dismissing it mid-request
-  // would hide the result (or error) after the booking may already exist.
   const [busy, setBusy] = useState(false)
 
   return (
@@ -52,8 +39,6 @@ export default function NewReservationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Radix unmounts the content while closed, so the form remounts fresh
-            (service catalog refetched included) every time it opens. */}
         <NewReservationForm
           onClose={() => onOpenChange(false)}
           onCreated={onCreated}

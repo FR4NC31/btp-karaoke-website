@@ -1,21 +1,12 @@
+import { useEffect } from 'react'
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router'
 
-/**
- * Rendered for any error thrown while rendering a route.
- *
- * Without this, a crash inside a page component falls through to React
- * Router's stock boundary: the app's own chrome disappears and the cause is
- * only visible in the console. Route errors also do *not* bubble to a React
- * error boundary wrapped around `<RouterProvider>` — React Router catches
- * them first and hands them to `errorElement` — so the router is the only
- * place this can be handled.
- *
- * The technical detail is shown rather than hidden: a white screen with a
- * console entry is precisely the failure mode we're removing, and QA needs
- * the cause on screen to file it.
- */
 export default function RouteError() {
   const error = useRouteError()
+
+  useEffect(() => {
+    document.title = 'Something went wrong | BTP Karaoke'
+  }, [])
 
   const detail = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`

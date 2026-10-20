@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   MusicNote01Icon,
@@ -17,26 +16,21 @@ import {
 import Placeholder from '../../../components/Placeholder'
 import type { KaraokeVideoApi } from '../../../lib/karaoke-player'
 
-/** m:ss readout for the player bar. */
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
   const total = Math.floor(seconds)
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
-/**
- * Studio player bar. The shell transport registers up to three sources — the
- * console's karaoke <video>, the floating PiP mini player (StudioPip) and
- * the lobby music <audio> (StudioBgm), in that priority. The bar drives
- * whichever source is active: play/pause, the full-width top-edge seek strip
- * (native slider with a thumb circle — slide it or click the track to scrub;
- * mouse, touch and arrow keys) and volume. Track metadata follows the
- * transport's on-air track (a catalog row's uploaded file, or the bundled
- * master / lobby default "The Reason" when nothing is on air).
- */
-export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
-  const [liked, setLiked] = useState(false)
-
+export default function PlayerBar({
+  player,
+  liked,
+  onToggleLiked,
+}: {
+  player: KaraokeVideoApi
+  liked: boolean
+  onToggleLiked: () => void
+}) {
   const playing = player.playing
   const progress = player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
   const current = formatTime(player.currentTime)
@@ -52,9 +46,6 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
       : 'Karaoke master · MP4'
     : '24-Bit · WAV · FLAC'
 
-  // Repeat cycles off → all → one (RepeatOff / Repeat / RepeatOne01 icons).
-  // The mode lives in the shared transport: 'all' wraps the console's queue
-  // at either end, 'one' loops the video element itself.
   const repeat = player.repeatMode
   const repeatLabel = repeat === 'one' ? 'Repeat one' : repeat === 'all' ? 'Repeat all' : 'Repeat off'
   const repeatIcon = repeat === 'one' ? RepeatOne01Icon : repeat === 'all' ? RepeatIcon : RepeatOffIcon
@@ -65,9 +56,6 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
 
   return (
     <footer className="relative flex h-20 shrink-0 items-center gap-3 bg-surface px-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:px-4">
-      {/* Seek strip — doubles as the bar's top border. Native range slider:
-          drag the thumb circle, click the track or use arrow keys to scrub;
-          the red fill mirrors the live transport position. */}
       <div className="absolute top-0 left-0 z-10 h-3 w-full">
         <div className="absolute top-1 left-0 h-1 w-full bg-border">
           <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
@@ -89,7 +77,6 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
           }`}
         />
       </div>
-      {/* Track info */}
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         {onAir?.coverUrl ? (
           <img
@@ -111,7 +98,7 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
         </div>
         <button
           type="button"
-          onClick={() => setLiked((v) => !v)}
+          onClick={onToggleLiked}
           aria-label="Like"
           className={`ml-1 shrink-0 transition ${liked ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}`}
         >
@@ -119,7 +106,6 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
         </button>
       </div>
 
-      {/* Controls + time readout */}
       <div className="flex min-w-0 flex-1 flex-col items-center gap-2 sm:w-[min(36rem,40vw)] sm:flex-none">
         <div className="flex items-center gap-3 sm:gap-4">
           <button
@@ -175,7 +161,6 @@ export default function PlayerBar({ player }: { player: KaraokeVideoApi }) {
         </div>
       </div>
 
-      {/* Extra player controls */}
       <div className="hidden shrink-0 items-center justify-end gap-2 sm:flex">
         <span className="rounded border border-border px-2 py-1 text-[10px] font-bold text-text-secondary">A-B</span>
         <span className="flex items-center gap-1 rounded border border-border px-2 py-1 text-[10px] font-semibold text-text-secondary">

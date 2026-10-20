@@ -1,7 +1,6 @@
 import { test, expect } from '../fixtures'
 import { BACKEND_URL } from '../helpers/env'
 
-/** Key pages checked by the error-state health tests. */
 const KEY_PAGES = ['/', '/signin', '/signup', '/studio', '/this-route-does-not-exist']
 
 test.describe('error states and app health', () => {
@@ -11,8 +10,6 @@ test.describe('error states and app health', () => {
   })
 
   test('ERROR-002: key pages load without console or page errors', { tag: '@p1' }, async ({ page, appEvidence }) => {
-    // Five cold page loads against the dev server: give this smoke test
-    // triple budget so full-suite load can never flake it.
     test.slow()
 
     for (const path of KEY_PAGES) {
@@ -24,7 +21,6 @@ test.describe('error states and app health', () => {
   })
 
   test('ERROR-003: key pages load without failed or 4xx/5xx requests', { tag: '@p1' }, async ({ page, appEvidence }) => {
-    // Same cold-load budget as ERROR-002 — see the note there.
     test.slow()
 
     for (const path of KEY_PAGES) {
@@ -32,15 +28,12 @@ test.describe('error states and app health', () => {
       await expect(page.locator('#root')).not.toBeEmpty()
     }
 
-    // SPA navigations legitimately abort in-flight requests (ERR_ABORTED).
     const realFailures = appEvidence.failedRequests.filter((line) => !line.includes('ERR_ABORTED'))
     expect(realFailures, 'failed network requests while browsing key pages').toEqual([])
     expect(appEvidence.badResponses, 'HTTP 4xx/5xx responses while browsing key pages').toEqual([])
   })
 
   test('ERROR-004: unknown backend route returns 404 (backend error handling)', { tag: '@p2' }, async ({ request }) => {
-    // Backend error-handling probe; also confirms the QA layer can tell a
-    // backend outage (BLOCKED) apart from an application bug.
     const res = await request.get(`${BACKEND_URL}/definitely-not-a-route`)
     expect(res.status(), 'unknown backend route should 404').toBe(404)
   })

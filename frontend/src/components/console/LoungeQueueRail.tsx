@@ -1,65 +1,29 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import {
-  Cancel01Icon,
-  PlusSignIcon,
-  Queue01Icon,
-} from '@hugeicons/core-free-icons'
+import { Cancel01Icon, Queue01Icon } from '@hugeicons/core-free-icons'
 import type { QueueItem } from '../../lib/lounge-queue'
-import QueueAddForm from './queue/QueueAddForm'
 import QueueRow from './queue/QueueRow'
 
 type LoungeQueueRailProps = {
-  /** Rows in display order — the stored queue, or its shuffled permutation. */
   rows: QueueItem[]
-  /** Stored row count (header badge + disabled states). */
   totalCount: number
   playingRowId: string | null
-  /** The bar's Shuffle is on: the order is derived, so drag-reorder pauses. */
   shuffle: boolean
-  onAdd: (title: string, artist: string) => void
   onRemove: (id: string) => void
   onClear: () => void
   onMove: (from: number, to: number) => void
 }
 
-/**
- * Upcoming Lounge Queue — the console's right rail and the transport's
- * playlist. Add a custom track (header or empty state), remove a row, clear
- * all, or drag the grip handle to reorder — paused while the bar's Shuffle
- * shows a random order.
- */
 export default function LoungeQueueRail({
   rows,
   totalCount,
   playingRowId,
   shuffle,
-  onAdd,
   onRemove,
   onClear,
   onMove,
 }: LoungeQueueRailProps) {
-  const [addingTrack, setAddingTrack] = useState(false)
-  const [draftTitle, setDraftTitle] = useState('')
-  const [draftArtist, setDraftArtist] = useState('')
   const [dragIndex, setDragIndex] = useState<number | null>(null)
-
-  function addTrack(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const title = draftTitle.trim()
-    if (!title) return
-    onAdd(title, draftArtist.trim())
-    setDraftTitle('')
-    setDraftArtist('')
-    setAddingTrack(false)
-  }
-
-  function cancelAdd() {
-    setAddingTrack(false)
-    setDraftTitle('')
-    setDraftArtist('')
-  }
 
   return (
     <section className="min-w-0 rounded-2xl border border-border bg-surface px-3.5 py-3.5 lg:col-start-2 lg:row-start-1 lg:self-start">
@@ -73,39 +37,25 @@ export default function LoungeQueueRail({
         </span>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          aria-expanded={addingTrack || totalCount === 0}
-          onClick={() => setAddingTrack((open) => !open)}
-          disabled={totalCount === 0}
-          className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-text-secondary uppercase transition hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <HugeiconsIcon icon={PlusSignIcon} size={13} />
-          Add Custom Track
-        </button>
-        <button
-          type="button"
-          onClick={onClear}
-          disabled={totalCount === 0}
-          className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted transition hover:text-error disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={13} />
-          Clear All
-        </button>
-      </div>
-
-      {(totalCount === 0 || addingTrack) && (
-        <QueueAddForm
-          totalCount={totalCount}
-          addingTrack={addingTrack}
-          draftTitle={draftTitle}
-          draftArtist={draftArtist}
-          onDraftTitleChange={setDraftTitle}
-          onDraftArtistChange={setDraftArtist}
-          onSubmit={addTrack}
-          onCancel={cancelAdd}
-        />
+      {totalCount === 0 ? (
+        <div className="mt-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-border px-4 py-8 text-center">
+          <HugeiconsIcon icon={Queue01Icon} size={22} className="text-text-muted" />
+          <p className="mt-2 text-xs font-semibold">The lounge queue is empty</p>
+          <p className="mt-1 max-w-56 text-[10px] leading-relaxed text-text-muted">
+            Pick a song from the media hub to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-2 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={onClear}
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted transition hover:text-error"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={13} />
+            Clear All
+          </button>
+        </div>
       )}
 
       {totalCount > 0 && (
@@ -125,8 +75,6 @@ export default function LoungeQueueRail({
               }}
               onDragOver={(event) => {
                 event.preventDefault()
-                // Reordering edits the stored arrangement, so it is
-                // paused while shuffle shows a derived order.
                 if (shuffle || dragIndex === null) return
                 event.dataTransfer.dropEffect = 'move'
                 if (dragIndex !== index) {

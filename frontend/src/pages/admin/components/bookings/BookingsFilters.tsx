@@ -8,7 +8,6 @@ type BookingsFiltersProps = {
   onStatusChange: (value: BookingStatus | 'all') => void
   date: string
   onDateChange: (value: string) => void
-  /** The live search box; `query` is the committed one. */
   queryInput: string
   onQueryInputChange: (value: string) => void
   query: string
@@ -16,10 +15,6 @@ type BookingsFiltersProps = {
   onClear: () => void
 }
 
-/**
- * Status pills + day picker + free-text search. The page owns the state; the
- * API applies the filters in SQL, so pressing Search commits `queryInput`.
- */
 export default function BookingsFilters({
   status,
   onStatusChange,

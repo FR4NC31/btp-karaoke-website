@@ -10,19 +10,12 @@ import { oauthError, readableError, unexpectedError } from '../../lib/auth-error
 import type { AuthMode } from '../../lib/auth-dialog'
 
 type Props = {
-  /** Modal context: swap modes in place instead of routing. */
   onSwitch?: (mode: AuthMode) => void
-  /** Called right before the post-auth redirect (lets a modal close first). */
   onSuccess?: () => void
-  /** Modal context: email lifted to AuthDialog so it survives mode switches. */
   email?: string
   onEmailChange?: (email: string) => void
 }
 
-/**
- * Sign-in form logic shared by the /signin page and the auth modal.
- * Headings live in the wrappers, not here.
- */
 export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEmailChange }: Props) {
   const [internalEmail, setInternalEmail] = useState('')
   const email = emailProp ?? internalEmail
@@ -35,13 +28,6 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
     onEmailChange?.(value)
   }
 
-  // A failed Google flow never rejects a request — Better Auth redirects back
-  // to `errorCallbackURL` with a machine code in the query string, so if we
-  // ignore it the user lands on a silently blank form.
-  //
-  // Read once in the state initializer instead of an effect: this arrives via
-  // a full-page redirect, so there is no later change to subscribe to, and an
-  // effect calling setError would trip react-hooks/set-state-in-effect.
   const [error, setError] = useState(() => {
     const code = searchParams.get('error')
     return code ? oauthError(code, searchParams.get('error_description')) : ''
@@ -62,29 +48,18 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
-      // Route by role: admins to the console, everyone else to the studio —
-      // unless one of the guards parked a `?next=` target here, which wins
-      // (validated in landingPathFor; it rides in a URL). The fresh session
-      // read is what carries `role`; a failed read degrades to /studio,
-      // which is always a safe landing.
-      //
-      // Nothing to settle first: RequireAuth revalidates before it will
-      // redirect, so it can never act on the pre-login session value the
-      // atom still holds here.
       let role: string | undefined
       try {
         const { data: freshSession } = await authClient.getSession()
         role = freshSession?.user.role ?? undefined
       } catch {
-        // Fall through with no role — land in the studio.
+        role = undefined
       }
       onSuccess?.()
       navigate(landingPathFor(role, searchParams.get('next')))
     } catch (err) {
       setError(unexpectedError('sign-in', err))
     } finally {
-      // Runs on every path, including an unexpected rejection — otherwise the
-      // button stays stuck on "Signing in…" with no way to retry.
       setSubmitting(false)
     }
   }
@@ -94,20 +69,7 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
     setError('')
 
     try {
-      // Both targets must be absolute. Google hands the browser back to the
-      // backend (`BETTER_AUTH_URL`/api/auth/callback/google), and Better Auth
-      // then 302s to `callbackURL` verbatim — a relative "/studio" would
-      // resolve against localhost:3000 and hit the API, not the SPA.
-      //
-      // Success lands on /signin, not /studio: RequireGuest owns the
-      // guest-only route and bounces the finished session to its landing
-      // page by role (admins → /admin, everyone else → /studio). Jumping
-      // straight to /studio dropped admin sign-ins into the customer view.
       const origin = window.location.origin
-      // Carry any parked `?next=` through the OAuth round trip. Without it an
-      // admin bounced from a deep /admin page lands on the console overview
-      // instead of the page they asked for. landingPathFor validates the value
-      // again on arrival, so nothing new is trusted here.
       const next = searchParams.get('next')
       const callback = next
         ? `${origin}/signin?next=${encodeURIComponent(next)}`
@@ -118,16 +80,10 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
         errorCallbackURL: callback,
       })
 
-      // On success Better Auth returns a `url` and its client-side redirect
-      // plugin navigates straight to Google, so reaching this line means the
-      // flow never started. Report it instead of leaving a dead button.
       if (socialError) {
         setError(readableError(socialError))
         setGoogleSubmitting(false)
       }
-      // On success the browser is leaving for Google — keep the flag set so
-      // the "Redirecting to Google…" state holds and the button can't be
-      // re-clicked mid-redirect. Only failure paths re-enable it.
     } catch (err) {
       setError(unexpectedError('Google sign-in', err))
       setGoogleSubmitting(false)
