@@ -25,16 +25,6 @@ export const requireSession = createMiddleware<AuthEnv>(async (c, next) => {
   await next()
 })
 
-/** Same as above, but always continues — use when the session is optional. */
-export const attachSession = createMiddleware<AuthEnv>(async (c, next) => {
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  })
-
-  c.set('session', session)
-  await next()
-})
-
 /**
  * The authorization boundary for every /api/admin/* route.
  *

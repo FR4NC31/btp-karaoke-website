@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import {
   BookingApiError,
   cancelBooking,
   createBooking,
+  describeBookingError,
   fetchBookings,
   fetchServices,
   type Booking,
@@ -39,16 +40,6 @@ function byNewest(a: Booking, b: Booking): number {
   return a.createdAt < b.createdAt ? 1 : -1
 }
 
-function describeError(err: unknown, fallback: string): string {
-  if (err instanceof BookingApiError) {
-    if (err.status === 401) {
-      return 'Your session has expired. Sign in again to manage bookings.'
-    }
-    return err.message
-  }
-  return err instanceof Error ? err.message : fallback
-}
-
 export default function BookingPage() {
   const [services, setServices] = useState<Service[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -65,6 +56,9 @@ export default function BookingPage() {
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [cancellingId, setCancellingId] = useState('')
+  // Bumped when a mutation starts, so a refresh that was already in flight
+  // cannot overwrite the row set the mutation just produced.
+  const bookingGeneration = useRef(0)
 
   useEffect(() => {
     let alive = true
@@ -78,7 +72,7 @@ export default function BookingPage() {
         setBookings(bookingResult.bookings)
       } catch (err) {
         if (!alive) return
-        setLoadError(describeError(err, 'Could not load the booking desk.'))
+        setLoadError(describeBookingError(err, 'Could not load the booking desk.'))
       } finally {
         if (alive) setLoading(false)
       }
@@ -92,7 +86,9 @@ export default function BookingPage() {
 
   /** Re-reads just the booking list — used after creating a row. */
   async function refreshBookings() {
+    const generation = bookingGeneration.current
     const result = await fetchBookings()
+    if (generation !== bookingGeneration.current) return
     setBookings(result.bookings)
   }
 
@@ -127,6 +123,7 @@ export default function BookingPage() {
       return
     }
 
+    bookingGeneration.current += 1
     setSubmitting(true)
     setFormError('')
     setLoadError('')
@@ -146,7 +143,7 @@ export default function BookingPage() {
       )
       void refreshBookingsQuietly()
     } catch (err) {
-      setFormError(describeError(err, 'The booking could not be saved.'))
+      setFormError(describeBookingError(err, 'The booking could not be saved.'))
     } finally {
       setSubmitting(false)
     }
@@ -154,6 +151,7 @@ export default function BookingPage() {
 
   async function handleCancel(booking: Booking) {
     if (cancellingId) return
+    bookingGeneration.current += 1
     setCancellingId(booking.id)
     setFlash('')
     setLoadError('')
@@ -164,7 +162,7 @@ export default function BookingPage() {
       setFlash(`Cancelled ${updated.referenceCode}.`)
     } catch (err) {
       setFlash('')
-      setLoadError(describeError(err, 'The booking could not be cancelled.'))
+      setLoadError(describeBookingError(err, 'The booking could not be cancelled.'))
       // A 409/404 means this list is stale — re-read it so the row shows its
       // real state instead of a Cancel button the server will keep refusing.
       if (err instanceof BookingApiError && (err.status === 409 || err.status === 404)) {

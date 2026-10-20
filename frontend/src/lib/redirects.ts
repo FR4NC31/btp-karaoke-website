@@ -16,8 +16,8 @@
  *     parsing it. So `/<LF>//evil.example` passes `startsWith('/')` and misses
  *     both the `//` and the `/\` tests (there is only one slash so far), then
  *     normalises to `///evil.example` — whose run of slashes the URL parser
- *     skips before reading `evil.example` as the authority, i.e.
- *     http://evil.example/. Reachable because React Router percent-decodes
+ *     skips before reading `evil.example` as the authority, i.e. an
+ *     `http(s)://evil.example/` origin. Reachable because React Router percent-decodes
  *     `?next=`, so `%2F%0A%2F%2Fevil.example` arrives here as a real newline
  *     rather than as the literal `%0A`.
  *

@@ -48,6 +48,11 @@ export const TEST_USER = {
  * by playwright.config.ts); in CI it is the `TEST_ADMIN_PASSWORD` repo
  * secret. Rotating the password means updating both places, nothing here.
  *
+ * The values are read lazily (getters), not at import time: the PR smoke run
+ * has no admin credential, and helpers/auth.ts is imported by suites that only
+ * need TEST_USER. Accessing a field is what enforces the requirement, so the
+ * credential-free run can import this module safely and skip the admin setup.
+ *
  * Unlike TEST_USER this account cannot be (re)seeded through the sign-up API
  * alone: the role is server-managed (`input: false`), so promotion is a CLI
  * step. setup/admin.setup.ts performs both automatically when they are
@@ -71,8 +76,12 @@ function requiredEnv(name: string): string {
 }
 
 export const TEST_ADMIN = {
-  email: requiredEnv('TEST_ADMIN_EMAIL'),
-  password: requiredEnv('TEST_ADMIN_PASSWORD'),
+  get email(): string {
+    return requiredEnv('TEST_ADMIN_EMAIL')
+  },
+  get password(): string {
+    return requiredEnv('TEST_ADMIN_PASSWORD')
+  },
 }
 
 /**

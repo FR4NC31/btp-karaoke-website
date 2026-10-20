@@ -38,6 +38,10 @@ export default function AdminMedia() {
   const [items, setItems] = useState<AdminMediaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  // Distinguishes a failed initial load from an action error: an action error
+  // leaves the known catalog on screen, so its sections may legitimately be
+  // empty. Only the initial failure makes "No items" a lie.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
   // Delete is permanent, so it is a two-step: the icon arms confirmation for
@@ -55,9 +59,11 @@ export default function AdminMedia() {
         if (!alive) return
         setItems(result.items)
         setLoadError('')
+        setLoadFailed(false)
       } catch (err) {
         if (!alive) return
         setLoadError(describeBookingError(err, 'Could not load the media catalog.'))
+        setLoadFailed(true)
       } finally {
         if (alive) setLoading(false)
       }
@@ -187,9 +193,12 @@ export default function AdminMedia() {
                 </div>
 
                 {sectionItems.length === 0 ? (
-                  // A load failure already shows its alert; "none yet" would
-                  // falsely claim the catalog is empty.
-                  !loadError && <p className="text-sm text-text-muted">No items in this section yet.</p>
+                  // A failed initial load already shows its alert; "none yet"
+                  // would falsely claim the catalog is empty. Action errors do
+                  // not suppress this because the catalog itself is known.
+                  !loadFailed && (
+                    <p className="text-sm text-text-muted">No items in this section yet.</p>
+                  )
                 ) : (
                   <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {sectionItems.map((item, index) => (

@@ -101,10 +101,14 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new BookingApiError(message, response.status)
   }
 
-  // Every endpoint this helper calls answers with JSON. A 2xx that carries
-  // nothing — or something unparseable — is a broken server, not a success:
-  // returning null here used to surface later as a crash on destructuring,
-  // far from the cause.
+  // 204 No Content is a valid empty success — the upload-discard cleanup
+  // answers with one. Every other 2xx from this surface must carry JSON; an
+  // empty or unparseable body there is a broken server, not a success.
+  // Returning null used to surface later as a crash on destructuring, far from
+  // the cause.
+  if (response.status === 204) {
+    return undefined as T
+  }
   if (payload === null) {
     throw new BookingApiError('The server returned an empty response.', response.status)
   }

@@ -126,6 +126,8 @@ export default function NewReservationForm({
     setSelectedUser(null)
     setUserQuery('')
     setUserResults([])
+    setSearchingUsers(false)
+    setUserSearchError('')
     setGuestName('')
     setServiceId('')
     setNotes('')
@@ -134,10 +136,16 @@ export default function NewReservationForm({
     setCreated(null)
   }
 
-  /** Switching customer kinds drops the previous kind's validation error. */
+  /**
+   * Switching customer kinds drops the previous kind's validation error,
+   * including a search failure: the submit path reads `userSearchError`, so
+   * leaving it behind would blame a search the admin has already left.
+   */
   function handleModeChange(next: CustomerMode) {
     setMode(next)
     setFormError('')
+    setUserSearchError('')
+    setSearchingUsers(next === 'user' && userQuery.trim().length > 0 && !selectedUser)
   }
 
   /** Mirrors the search dropdown's immediate states; the request follows. */
@@ -153,11 +161,16 @@ export default function NewReservationForm({
   function handlePickUser(candidate: TagUser) {
     setSelectedUser(candidate)
     setUserResults([])
+    setSearchingUsers(false)
+    setUserSearchError('')
   }
 
   function handleClearUser() {
     setSelectedUser(null)
     setUserQuery('')
+    setUserResults([])
+    setSearchingUsers(false)
+    setUserSearchError('')
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -200,6 +213,8 @@ export default function NewReservationForm({
       setSelectedUser(null)
       setUserQuery('')
       setUserResults([])
+      setSearchingUsers(false)
+      setUserSearchError('')
       setGuestName('')
       setServiceId('')
       setNotes('')

@@ -3,7 +3,7 @@ import type { MediaSection } from '../../../../lib/media-api'
 /** The editor's picker order — video → music → radio, hub order. */
 export const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
 
-export interface SectionCopy {
+interface SectionCopy {
   titleLabel: string
   titlePlaceholder: string
   /** Copy for the subtitle box — Description (music) / Genre (radio). */

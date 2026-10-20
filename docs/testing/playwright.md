@@ -172,6 +172,10 @@ OAuth failures redirected back as query params are covered by AUTH-018.
   `qa-admin@example.com` row in the database, put the new password in
   `frontend/.env.local` (and update the repo secret), then run the suite —
   `setup/admin.setup.ts` recreates the account and re-promotes it.
+- The PR smoke job runs **without** the admin credential: `playwright.config.ts`
+  leaves `setup/admin.setup.ts` out of the setup project when
+  `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` are absent, so pull-request code never
+  receives the admin secret. The trusted full suite still runs it.
 - No real users, no production accounts, no production data, no secrets.
 - The backend **does** persist: sign-up/sign-in write rows, and a booking is a
   real row too. Tests stay re-runnable because they clean up what they create,
@@ -375,7 +379,9 @@ in Playwright config, tests or CI.
 `.github/workflows/e2e.yml` (the existing `changelog.yml` is untouched):
 
 - **Pull Request** → lint → typecheck (frontend + backend) → build →
-  Playwright **smoke** suite (fast feedback).
+  credential-free Playwright **smoke** suite (fast feedback). The live admin
+  credential is deliberately not supplied to pull-request code; admin suites
+  only run in the trusted full job below.
 - **Push to `main`/`develop` or manual dispatch** → **full** regression
   suite (release confidence).
 - Reports/traces upload as artifacts on failure; `github` reporter

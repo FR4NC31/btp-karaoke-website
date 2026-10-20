@@ -28,7 +28,7 @@ async function lockMediaCatalog(tx: MediaTx): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext('btp.media.catalog'))`)
 }
 
-/** A row read on the transaction's connection (same shape as findMediaById). */
+/** A row read on the transaction's connection, shaped like every other query. */
 async function findMediaRow(tx: MediaTx, id: string): Promise<MediaItem | null> {
   const rows = await tx.select().from(mediaItem).where(eq(mediaItem.id, id)).limit(1)
   const row = rows[0]
@@ -172,8 +172,6 @@ export async function setMediaVisibility(id: string, isActive: unknown): Promise
   }
   return toMediaItem(row)
 }
-
-export type MoveDirection = 'up' | 'down'
 
 /**
  * Swaps a row with its neighbour inside its section — the move-up /

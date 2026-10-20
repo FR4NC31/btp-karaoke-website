@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures'
-import { ANONYMOUS } from '../helpers/auth'
+import { ANONYMOUS, TEST_USER } from '../helpers/auth'
 
 /**
  * ADMIN API — the authorization boundary, pinned down.
@@ -160,7 +160,7 @@ test.describe('admin console route guard (UI)', () => {
  * strip ASCII tab/newline out of a URL *before* parsing it, so
  * `/<LF>//evil.example` normalises to `///evil.example`, whose run of slashes
  * the URL parser skips and then reads `evil.example` as an authority — i.e.
- * http://evil.example/. React Router percent-decodes `next`, so `%0A` arrives
+ * an `http(s)://evil.example/` origin. React Router percent-decodes `next`, so `%0A` arrives
  * as a real newline, and neither the `//` nor the `/\` test matches because
  * there is only one slash so far. `safeNextPath` is the layer that should
  * refuse it; leaving it to the router means depending on a version-specific
@@ -169,8 +169,22 @@ test.describe('admin console route guard (UI)', () => {
  * Both tests below assert observable behaviour — a successful navigation and
  * the absence of uncaught page errors — rather than React Router's error text,
  * so they keep their teeth if that message ever changes.
+ *
+ * Every target starts from a signed-out context and submits the real sign-in
+ * form. Merely opening /signin with an inherited session would bounce straight
+ * to /studio and never exercise the post-sign-in redirect at all.
  */
+async function signInWithNext(page: import('@playwright/test').Page, next: string) {
+  await page.context().clearCookies()
+  await page.goto(`/signin?next=${next}`)
+  await page.getByLabel('Email').fill(TEST_USER.email)
+  await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
+  await page.getByRole('button', { name: 'Sign In' }).click()
+}
+
 test.describe('post-sign-in redirect target', () => {
+  test.use({ storageState: ANONYMOUS })
+
   const craftedNextTargets: Array<[string, string]> = [
     ['%2F%0A%2F%2Fevil.example', 'the reported payload: "/" LF "//evil"'],
     ['%2F%0A%2Fevil.example', 'a single slash after the LF'],
@@ -189,7 +203,7 @@ test.describe('post-sign-in redirect target', () => {
 
     for (const [payload, label] of craftedNextTargets) {
       pageErrors.length = 0
-      await page.goto(`/signin?next=${payload}`)
+      await signInWithNext(page, payload)
 
       // toHaveURL resolves the expectation against baseURL, so this fails if we
       // ended up anywhere other than the studio.
@@ -201,7 +215,7 @@ test.describe('post-sign-in redirect target', () => {
   test('SEC-007: a legitimate ?next= still lands where it asked', { tag: '@p2' }, async ({ page }) => {
     // Refusing the crafted targets must not break the feature the parameter
     // exists for.
-    await page.goto('/signin?next=%2Fstudio%2Fbookings')
+    await signInWithNext(page, '%2Fstudio%2Fbookings')
 
     await expect(page).toHaveURL('/studio/bookings')
   })

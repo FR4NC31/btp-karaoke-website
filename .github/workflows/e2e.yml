@@ -1,6 +1,7 @@
 name: E2E tests
 
-# PR flow: lint + typecheck + build + Playwright smoke (fast feedback).
+# PR flow: lint + typecheck + build + credential-free Playwright smoke
+# (fast feedback; the admin secret is never exposed to pull_request code).
 # Push to main/develop (or manual): full Playwright regression suite.
 # The existing changelog workflow is untouched.
 on:
@@ -88,12 +89,11 @@ jobs:
 
       - name: Playwright smoke suite
         working-directory: frontend
-        env:
-          # helpers/auth.ts reads the QA admin credentials from the
-          # environment — the same contract as the local frontend/.env.local,
-          # with the password coming from the repo secret instead.
-          TEST_ADMIN_EMAIL: qa-admin@example.com
-          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+        # Deliberately no TEST_ADMIN_* here: pull_request code is not trusted
+        # with the live admin credential. playwright.config.ts then leaves
+        # admin.setup.ts out of the setup project, and the smoke suite runs on
+        # the shared user session instead. Admin E2E runs in full-e2e, which
+        # only executes on trusted pushes (or a manual dispatch).
         run: npm run test:e2e:smoke
 
       - name: Upload Playwright report

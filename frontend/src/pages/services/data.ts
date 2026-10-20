@@ -13,7 +13,7 @@ export const rateCards = [
   { label: 'Live Broadcasting', value: 'Dedicated Slots', desc: 'Online global streaming' },
 ]
 
-export type ServiceCard = {
+type ServiceCard = {
   tag: string
   badge: string
   title: string

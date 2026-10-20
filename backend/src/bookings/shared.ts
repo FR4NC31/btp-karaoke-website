@@ -153,6 +153,9 @@ export async function insertBookingRow(
  */
 export function isRealCalendarDay(day: string): boolean {
   if (!ISO_DATE.test(day)) return false
+  // JavaScript's Date accepts year 0000 (1 BC), but Postgres rejects '0000-01-01'
+  // as a `date` input. No booking can legitimately start there either.
+  if (Number(day.slice(0, 4)) < 1) return false
   const parsed = new Date(`${day}T00:00:00Z`)
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day
 }
