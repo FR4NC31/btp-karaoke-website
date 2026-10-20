@@ -76,6 +76,8 @@ Last updated: October 20, 2026
 
 ### Other Changes
 
+- test(karaoke): await queue popover close (284dec3)
+- Merge pull request #23 from FR4NC31/fix/UI-polished (e031c31)
 - Merge branch 'develop' into fix/UI-polished (970550c)
 - Merge pull request #22 from FR4NC31/fix/pr-smoke-generated-db-password (0732ee2)
 - Merge pull request #21 from FR4NC31/fix/gitguardian-pr-smoke-literal (50c9a94)
