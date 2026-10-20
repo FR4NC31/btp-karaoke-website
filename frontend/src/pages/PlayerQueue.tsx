@@ -1,39 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router'
-import { HugeiconsIcon } from '@hugeicons/react'
-import {
-  GripVerticalIcon,
-  Mic01Icon,
-  Clock01Icon,
-  Queue01Icon,
-  PartyPopperIcon,
-  Megaphone01Icon,
-  DrumIcon,
-  WhistleIcon,
-  MusicNote01Icon,
-  PlusSignIcon,
-  Cancel01Icon,
-  TextIcon,
-  Delete02Icon,
-  Shield01Icon,
-  PlayIcon,
-  PauseIcon,
-  PictureInPictureIcon,
-} from '@hugeicons/core-free-icons'
-import placeholderVideo from '../assets/placeholder-video.svg'
-import placeholderAlbum from '../assets/placeholder-album.svg'
+import { useLocation, useNavigate } from 'react-router'
 import localVideo from '../assets/video_local/the-reason.mp4'
+import AdminDetailsPanel from '../components/console/AdminDetailsPanel'
+import ConsoleStatusStrip from '../components/console/ConsoleStatusStrip'
+import DspSection from '../components/console/DspSection'
+import LoungeQueueRail from '../components/console/LoungeQueueRail'
+import StageSection from '../components/console/StageSection'
+import { seededShuffle } from '../components/console/playlist'
+import type { PreviewItem } from '../components/console/types'
 import { fetchAdminMedia } from '../lib/admin-api'
 import { useSession } from '../lib/auth-client'
 import { useKaraokeVideoControls } from '../lib/karaoke-player'
 import { resolveQueueSource, useLoungeQueue, type QueueItem } from '../lib/lounge-queue'
-import {
-  fetchMediaCatalog,
-  MEDIA_SECTION_LABELS,
-  type AdminMediaItem,
-  type MediaItem,
-} from '../lib/media-api'
+import { fetchMediaCatalog, type AdminMediaItem, type MediaItem } from '../lib/media-api'
 
 /**
  * /studio/player-queue: "Karaoke & Studio Audio Console" — karaoke video
@@ -88,138 +67,12 @@ import {
  * the next queued row on its own, autoplaying it (a row plays its uploaded
  * file when it has one, the bundled master otherwise); the row on air is
  * highlighted in the rail. DSP pads are visual-only.
+ *
+ * The presentational blocks live in components/console: status strip, stage
+ * (with its badge timer), admin panel, DSP strip and the queue rail. This
+ * page stays the state owner: the transport wiring, playlist resolution,
+ * shuffle round and drag/add/clear handlers.
  */
-
-const soundFx = [
-  { icon: PartyPopperIcon, label: 'Cheer & Clap' },
-  { icon: Megaphone01Icon, label: 'Airhorn' },
-  { icon: DrumIcon, label: 'Drum Roll' },
-  { icon: WhistleIcon, label: 'Whistle' },
-]
-
-/**
- * The catalog row the console is playing: the hub fields every entry point
- * carries, plus the admin bookkeeping the Media Hub's Play button adds
- * (`sourceName`, `coverName`, `isActive`, timestamps).
- */
-type PreviewItem = MediaItem & Partial<AdminMediaItem>
-
-interface AdminFact {
-  label: string
-  value: ReactNode
-}
-
-/**
- * The staff-only facts about the on-air row — the catalog fields the public
- * hub never shows (file and cover references, timestamps, the section's own
- * numbers). Only what the entry point carried renders: a row opened from the
- * hub has no bookkeeping, so those lines simply stay away.
- */
-function adminFacts(item: PreviewItem): AdminFact[] {
-  const facts: AdminFact[] = [{ label: 'Catalog ID', value: item.id }]
-  if (item.artist) facts.push({ label: 'Artist', value: item.artist })
-  if (item.album) facts.push({ label: 'Album', value: item.album })
-  if (item.subtitle) {
-    // The shared "subtitle" column wears a section name everywhere else too.
-    facts.push({
-      label: item.section === 'radio' ? 'Genre' : item.section === 'music' ? 'Description' : 'Subtitle',
-      value: item.subtitle,
-    })
-  }
-  if (item.tag) facts.push({ label: 'Tag', value: item.tag })
-
-  if (item.section === 'video') {
-    if (item.duration) facts.push({ label: 'Runtime', value: item.duration })
-    if (item.plays !== null) facts.push({ label: 'Plays', value: item.plays.toLocaleString() })
-  } else if (item.section === 'music') {
-    if (item.duration) facts.push({ label: 'Runtime', value: item.duration })
-    if (item.tempo) facts.push({ label: 'Tempo', value: item.tempo })
-    if (item.songKey) facts.push({ label: 'Key', value: item.songKey })
-  } else {
-    if (item.freq) facts.push({ label: 'Frequency', value: item.freq })
-    if (item.listeners !== null) {
-      facts.push({ label: 'Listeners', value: item.listeners.toLocaleString() })
-    }
-  }
-
-  facts.push({
-    label: 'Source file',
-    value: item.sourceUrl ? (
-      <a
-        href={item.sourceUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="underline underline-offset-2 transition hover:text-text-primary"
-      >
-        {item.sourceName ?? 'Open the uploaded file'}
-      </a>
-    ) : item.section === 'music' ? (
-      'None — the hub card stays visual-only'
-    ) : item.section === 'radio' ? (
-      'None — radio rows carry no file'
-    ) : (
-      'None — the stage falls back to the bundled master'
-    ),
-  })
-  facts.push({
-    label: 'Cover',
-    value: item.coverUrl ? (
-      <a
-        href={item.coverUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="underline underline-offset-2 transition hover:text-text-primary"
-      >
-        {item.coverName ?? 'Open the uploaded image'}
-      </a>
-    ) : (
-      'Default art'
-    ),
-  })
-  if (item.createdAt) {
-    facts.push({ label: 'Added', value: new Date(item.createdAt).toLocaleString() })
-  }
-  if (item.updatedAt) {
-    facts.push({ label: 'Updated', value: new Date(item.updatedAt).toLocaleString() })
-  }
-
-  return facts
-}
-
-function AdminFactItem({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[9px] font-bold tracking-widest text-text-muted uppercase">{label}</dt>
-      <dd className="mt-0.5 break-words text-text-secondary">{children}</dd>
-    </div>
-  )
-}
-
-/**
- * Fisher–Yates copy of the row ids, seeded by the transport's shuffle seed:
- * the console derives its shuffled queue from (ids, seed) while rendering, so
- * the order is random yet pure — the same seed always yields the same
- * permutation, and a fresh seed (every time shuffle switches on) reshuffles.
- */
-function seededShuffle(ids: string[], seed: number): string[] {
-  // mulberry32 — a tiny seeded PRNG.
-  let state = Math.floor(seed * 0x1_0000_0000) >>> 0 || 1
-  const random = () => {
-    state = (state + 0x6d2b_79f5) >>> 0
-    let t = state
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 0x1_0000_0000
-  }
-  const next = [...ids]
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1))
-    const swap = next[i]
-    next[i] = next[j]
-    next[j] = swap
-  }
-  return next
-}
 
 export default function PlayerQueue() {
   const {
@@ -258,10 +111,6 @@ export default function PlayerQueue() {
     clear: clearQueue,
     move: moveRow,
   } = useLoungeQueue()
-  const [addingTrack, setAddingTrack] = useState(false)
-  const [draftTitle, setDraftTitle] = useState('')
-  const [draftArtist, setDraftArtist] = useState('')
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
   // The queue row the console is playing — set by the bar's Previous/Next and
   // by the auto-advance when a song ends. Kept by id, so deleting or
   // reordering rows never switches the song under the singer.
@@ -420,28 +269,6 @@ export default function PlayerQueue() {
       null
     )
   }, [queuedPlay, item, adminCatalog, catalog])
-
-  // Stage badge visibility: while playing it auto-hides after 2s (the timer
-  // restarts on every play event) and returns on stage hover; while paused it
-  // stays (it is the play affordance).
-  const [hovered, setHovered] = useState(false)
-  const [badgeTimedOut, setBadgeTimedOut] = useState(false)
-  const badgeTimerRef = useRef<number | null>(null)
-  const badgeVisible = !playing || hovered || !badgeTimedOut
-
-  const handlePlay = () => {
-    setBadgeTimedOut(false)
-    if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
-    badgeTimerRef.current = window.setTimeout(() => setBadgeTimedOut(true), 2000)
-  }
-
-  const handleStop = () => {
-    if (badgeTimerRef.current !== null) {
-      window.clearTimeout(badgeTimerRef.current)
-      badgeTimerRef.current = null
-    }
-    setBadgeTimedOut(false)
-  }
 
   // Where the on-air row sat when it left the queue: the next skip (or the
   // end-of-song auto-advance) resumes from that slot instead of restarting
@@ -617,17 +444,14 @@ export default function PlayerQueue() {
     return () => el.removeEventListener('canplay', start)
   }, [playToken])
 
-  const addTrack = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const title = draftTitle.trim()
-    if (!title) return
-    // A new row invalidates the remembered removal slot — it must be reachable.
-    removedSlotRef.current = null
-    addQueueItem({ title, artist: draftArtist.trim() })
-    setDraftTitle('')
-    setDraftArtist('')
-    setAddingTrack(false)
-  }
+  /** Rail's add form — a new row invalidates the remembered removal slot. */
+  const handleAddTrack = useCallback(
+    (title: string, artist: string) => {
+      removedSlotRef.current = null
+      addQueueItem({ title, artist })
+    },
+    [addQueueItem],
+  )
 
   // Announce the on-air track to the shell transport: the bar shows its
   // metadata and the floating mini mirrors its source — the entry-point row
@@ -663,462 +487,73 @@ export default function PlayerQueue() {
     if (autoplay) void el.play().catch(() => {})
     return () => {
       detach()
-      if (badgeTimerRef.current !== null) window.clearTimeout(badgeTimerRef.current)
     }
   }, [attachVideo, autoplay])
 
+  // A queued song whose file is gone from the server hands over to the next
+  // playable row instead of parking on a dead stage. When every remaining row
+  // has failed too, it stops rather than looping through the same broken files.
+  const handleMediaError = useCallback(() => {
+    if (!queuedPlay) return
+    failedRowsRef.current.add(queuedPlay.row.id)
+    const remaining = playableIds.filter((id) => !failedRowsRef.current.has(id))
+    if (remaining.length === 0) return
+    advance(1)
+  }, [queuedPlay, playableIds, advance])
+
+  // A row that really loaded is healthy again — later rounds may retry it.
+  const handleMediaLoaded = useCallback(() => {
+    if (queuedPlay) failedRowsRef.current.delete(queuedPlay.row.id)
+  }, [queuedPlay])
+
+  // PiP hand-off: arm the shell's mini player and drop back to the hub.
+  const handleEnterPip = useCallback(() => {
+    enterPip()
+    navigate('/studio')
+  }, [enterPip, navigate])
+
   return (
     <div>
-      {/* Console status strip */}
-      <section className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border bg-surface px-4 py-3">
-        <h1 className="flex items-center gap-2.5 font-heading text-sm font-bold tracking-[0.2em] uppercase">
-          <span
-            aria-hidden="true"
-            className="grid size-5 shrink-0 place-items-center rounded-full border border-primary/60"
-          >
-            <span className="size-2 rounded-full bg-primary" />
-          </span>
-          Karaoke &amp; Studio Audio Console
-        </h1>
-
-        <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-3">
-          {/* Lounge / room */}
-          <span className="flex items-center gap-2">
-            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-success" />
-            <span className="flex flex-col leading-tight">
-              <span className="text-[11px] font-semibold">Solo 04+</span>
-              <span className="text-[9px] font-semibold tracking-widest text-text-muted uppercase">
-                Loops Lounge
-              </span>
-            </span>
-          </span>
-
-          {/* Tempo / clock readout */}
-          <span className="flex flex-col leading-tight">
-            <span className="text-[9px] font-semibold tracking-widest text-text-muted">Fn5</span>
-            <span className="text-[11px] font-semibold tabular-nums">78:23</span>
-          </span>
-
-          {/* Session */}
-          <span className="flex items-center gap-1.5">
-            <HugeiconsIcon icon={Clock01Icon} size={14} className="text-text-muted" />
-            <span className="text-[10px] font-semibold text-text-muted">Session Remaining:</span>
-            <span className="text-[11px] font-bold tabular-nums">01:18:17</span>
-          </span>
-
-          {/* Mic levels + queue */}
-          <span className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-2 py-1 text-[10px] font-bold text-success">
-            <HugeiconsIcon icon={Mic01Icon} size={12} />
-            Mic 1: 85%
-          </span>
-          <span className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-2 py-1 text-[10px] font-bold text-success">
-            <HugeiconsIcon icon={Mic01Icon} size={12} />
-            Mic 2: 50%
-          </span>
-          <span className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary-soft px-2 py-1 text-[10px] font-bold text-primary">
-            <HugeiconsIcon icon={Queue01Icon} size={12} />
-            Queue: {queueRows.length}/24
-          </span>
-        </div>
-      </section>
+      <ConsoleStatusStrip queueCount={queueRows.length} />
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Stage column — the player takes the wide left side. */}
         <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
-          {/* Video stage */}
-          <section className="overflow-hidden rounded-2xl border border-border bg-surface">
-            <div className="flex items-start justify-between gap-3 px-4 pt-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded border border-primary/60 bg-primary-soft/40 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary uppercase">
-                    {audioMode ? 'Studio Audio Mode' : 'Karaoke Video Mode'}
-                  </span>
-                  <span className="rounded border border-border px-2 py-0.5 text-[9px] font-bold tracking-widest text-text-muted uppercase">
-                    {audioMode ? 'Backing Track' : 'Live Voice'}
-                  </span>
-                </div>
-                <h2 className="mt-2 truncate font-heading text-xl font-bold tracking-wide">
-                  <span className="text-primary">{trackTitle}</span>
-                  {trackSubtitle && <span className="text-text-primary"> — {trackSubtitle}</span>}
-                </h2>
-              </div>
-              <button
-                type="button"
-                className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[10px] font-bold text-text-primary transition hover:bg-primary-hover"
-              >
-                Huddle Master 640p
-              </button>
-            </div>
-
-            <div
-              onMouseEnter={() => setHovered(true)}
-              onMouseLeave={() => setHovered(false)}
-              className="relative mt-3 aspect-[16/9] bg-background sm:aspect-[21/9]"
-            >
-              {/* Console stage — the shared bottom PlayerBar is its
-                  transport (play/pause, seek, volume); clicking the stage
-                  toggles play/pause like a regular player. */}
-              <video
-                ref={videoRef}
-                src={source}
-                poster={coverSrc ?? (audioMode ? placeholderAlbum : placeholderVideo)}
-                playsInline
-                preload="metadata"
-                onClick={() => toggle()}
-                onPlay={handlePlay}
-                onPause={handleStop}
-                onEnded={() => {
-                  handleStop()
-                  // Song over → roll onto the next queued row and start it.
-                  advance(1)
-                }}
-                onError={() => {
-                  // A queued song whose file is gone from the server hands over
-                  // to the next playable row instead of parking on a dead stage.
-                  // When every remaining row has failed too, it stops rather
-                  // than looping through the same broken files.
-                  if (!queuedPlay) return
-                  failedRowsRef.current.add(queuedPlay.row.id)
-                  const remaining = playableIds.filter((id) => !failedRowsRef.current.has(id))
-                  if (remaining.length === 0) return
-                  advance(1)
-                }}
-                onLoadedData={() => {
-                  // A row that really loaded is healthy again — later rounds
-                  // may retry it.
-                  if (queuedPlay) failedRowsRef.current.delete(queuedPlay.row.id)
-                }}
-                className="absolute inset-0 h-full w-full cursor-pointer object-contain"
-              />
-              {/* Play/pause badge — mirrors the video state. While playing it
-                  auto-hides after 2s (back on stage hover); while paused it
-                  stays. The stage click (video element) is the control, the
-                  bar has the accessible button. */}
-              <div
-                className={`pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300 ${
-                  badgeVisible ? '' : 'opacity-0'
-                }`}
-              >
-                <span
-                  className={`grid size-14 place-items-center rounded-full bg-primary text-text-primary shadow-lg ${
-                    playing ? 'opacity-60' : 'opacity-100'
-                  }`}
-                >
-                  <HugeiconsIcon icon={playing ? PauseIcon : PlayIcon} size={22} />
-                </span>
-              </div>
-              {/* In-app PiP: arm the shell's floating mini player and drop
-                  back to the hub — the song keeps playing in the corner
-                  (KARAOKE-011); the mini's up-arrow expands back here.
-                  Audio-only tracks skip it: a floating black square is not
-                  a player. */}
-              {!audioMode && (
-                <button
-                  type="button"
-                  aria-label="Picture in picture"
-                  onClick={() => {
-                    enterPip()
-                    navigate('/studio')
-                  }}
-                  className="absolute right-3 bottom-3 grid size-9 place-items-center rounded-lg bg-black/50 text-text-primary backdrop-blur transition hover:bg-primary"
-                >
-                  <HugeiconsIcon icon={PictureInPictureIcon} size={16} />
-                </button>
-              )}
-            </div>
-          </section>
+          <StageSection
+            videoRef={videoRef}
+            source={source}
+            coverSrc={coverSrc}
+            audioMode={audioMode}
+            trackTitle={trackTitle}
+            trackSubtitle={trackSubtitle}
+            playing={playing}
+            onToggle={toggle}
+            onEnded={() => advance(1)}
+            onMediaError={handleMediaError}
+            onMediaLoaded={handleMediaLoaded}
+            onEnterPip={handleEnterPip}
+          />
 
           {/* Staff-only: the catalog row behind the stage. The entry point's
               history state seeds it (a Media Hub Play click carries the full
               admin row, a hub card the public fields); after a skip the admin
               catalog resolves the row on stage. Regular users never render
               this. */}
-          {isAdmin && panelItem && (
-            <section
-              aria-label="Admin details"
-              className="rounded-2xl border border-primary/30 bg-surface px-4 py-4"
-            >
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h2 className="flex items-center gap-2 font-heading text-base font-bold tracking-wide uppercase">
-                  <HugeiconsIcon icon={Shield01Icon} size={15} className="text-primary" />
-                  Admin details
-                </h2>
-                <span className="rounded border border-primary/40 bg-primary-soft/40 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary uppercase">
-                  Staff only
-                </span>
-                <span className="text-[10px] font-semibold tracking-widest text-text-muted uppercase">
-                  {MEDIA_SECTION_LABELS[panelItem.section]}
-                  {panelItem.isActive !== undefined
-                    ? panelItem.isActive
-                      ? ' · Live on the hub'
-                      : ' · Hidden from the hub'
-                    : ''}
-                </span>
-                <Link
-                  to={`/admin/media/${panelItem.id}`}
-                  className="ml-auto text-[10px] font-bold tracking-widest text-primary uppercase transition hover:text-primary-hover"
-                >
-                  Edit item
-                </Link>
-              </div>
+          {isAdmin && panelItem && <AdminDetailsPanel item={panelItem} />}
 
-              <dl className="mt-4 grid gap-x-6 gap-y-3 text-[11px] sm:grid-cols-2 xl:grid-cols-3">
-                {adminFacts(panelItem).map((fact) => (
-                  <AdminFactItem key={fact.label} label={fact.label}>
-                    {fact.value}
-                  </AdminFactItem>
-                ))}
-              </dl>
-
-              {panelItem.lyrics && (
-                <details className="mt-4 rounded-lg border border-border bg-background">
-                  <summary className="cursor-pointer px-3.5 py-2.5 text-[10px] font-bold tracking-widest text-text-secondary uppercase">
-                    Lyrics — {panelItem.lyrics.split('\n').length} lines
-                  </summary>
-                  <p className="max-h-72 overflow-auto border-t border-border px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap text-text-secondary">
-                    {panelItem.lyrics}
-                  </p>
-                </details>
-              )}
-            </section>
-          )}
-
-          {/* Lounge DSP & Sound FX */}
-          <section className="rounded-2xl border border-border bg-surface px-4 py-3.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
-              <h2 className="flex items-center gap-2 font-heading text-base font-bold tracking-wide uppercase">
-                <HugeiconsIcon icon={MusicNote01Icon} size={15} className="text-primary" />
-                Lounge DSP &amp; Sound FX:
-              </h2>
-              {soundFx.map((fx) => (
-                <button
-                  key={fx.label}
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-surface-elevated px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition hover:border-primary/50 hover:text-text-primary"
-                >
-                  <HugeiconsIcon icon={fx.icon} size={13} className="text-primary" />
-                  {fx.label}
-                </button>
-              ))}
-              <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-                <span className="flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-[10px]">
-                  <span className="text-text-muted">Reverb:</span>
-                  <span className="font-bold text-text-secondary">Dark 51%</span>
-                </span>
-                <span className="flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-[10px]">
-                  <span className="text-text-muted">Echo:</span>
-                  <span className="font-bold text-text-secondary">Pop 42%</span>
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* Upcoming Lounge Queue moved to the right rail — see the section
-              below the stage column. */}
+          <DspSection />
         </div>
 
-        {/* Upcoming Lounge Queue — right rail. Local mockup state: add a
-            custom track (header or empty state), remove a row, clear all, or
-            drag the grip handle to reorder — paused while the bar's Shuffle
-            shows a random order. */}
-        <section className="min-w-0 rounded-2xl border border-border bg-surface px-3.5 py-3.5 lg:col-start-2 lg:row-start-1 lg:self-start">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <h2 className="flex items-center gap-2 font-heading text-base font-bold tracking-wide uppercase">
-              <HugeiconsIcon icon={Queue01Icon} size={15} className="text-primary" />
-              Upcoming Lounge Queue
-            </h2>
-            <span className="rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-text-primary">
-              {queueRows.length > 0 ? `+${queueRows.length} waiting` : 'Empty'}
-            </span>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              aria-expanded={addingTrack || queueRows.length === 0}
-              onClick={() => setAddingTrack((open) => !open)}
-              disabled={queueRows.length === 0}
-              className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-text-secondary uppercase transition hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <HugeiconsIcon icon={PlusSignIcon} size={13} />
-              Add Custom Track
-            </button>
-            <button
-              type="button"
-              onClick={handleClearQueue}
-              disabled={queueRows.length === 0}
-              className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted transition hover:text-error disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} size={13} />
-              Clear All
-            </button>
-          </div>
-
-          {(queueRows.length === 0 || addingTrack) && (
-            <div className="mt-3 rounded-lg border border-dashed border-border px-3 py-3">
-              {queueRows.length === 0 && (
-                <div className="text-center">
-                  <HugeiconsIcon icon={Queue01Icon} size={20} className="mx-auto text-text-muted" />
-                  <p className="mt-2 text-xs font-semibold">The lounge queue is empty</p>
-                  <p className="mt-0.5 text-[10px] leading-relaxed text-text-muted">
-                    Add the first song and keep the night moving.
-                  </p>
-                </div>
-              )}
-              <form
-                onSubmit={addTrack}
-                aria-label="Add a track to the queue"
-                className={`space-y-2 ${queueRows.length === 0 ? 'mt-3' : ''}`}
-              >
-                <label className="block">
-                  <span className="text-[9px] font-bold tracking-widest text-text-muted uppercase">Song title</span>
-                  <input
-                    required
-                    value={draftTitle}
-                    onChange={(event) => setDraftTitle(event.target.value)}
-                    placeholder="e.g. Beautiful Things"
-                    className="mt-1 w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[9px] font-bold tracking-widest text-text-muted uppercase">
-                    Artist (optional)
-                  </span>
-                  <input
-                    value={draftArtist}
-                    onChange={(event) => setDraftArtist(event.target.value)}
-                    placeholder="e.g. Benson Boone"
-                    className="mt-1 w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                  />
-                </label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[10px] font-bold text-text-primary transition hover:bg-primary-hover"
-                  >
-                    <HugeiconsIcon icon={PlusSignIcon} size={12} />
-                    Add to queue
-                  </button>
-                  {addingTrack && queueRows.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddingTrack(false)
-                        setDraftTitle('')
-                        setDraftArtist('')
-                      }}
-                      className="text-[10px] font-semibold text-text-muted transition hover:text-text-primary"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-          )}
-
-          {queueRows.length > 0 && (
-            <ul className="mt-3 space-y-2">
-              {rowsInOrder.map((row, index) => {
-                const meta = [row.artist, row.genre].filter(Boolean).join(' · ')
-                return (
-                  <li
-                    key={row.id}
-                    onDragOver={(event) => {
-                      event.preventDefault()
-                      // Reordering edits the stored arrangement, so it is
-                      // paused while shuffle shows a derived order.
-                      if (shuffle || dragIndex === null) return
-                      event.dataTransfer.dropEffect = 'move'
-                      if (dragIndex !== index) {
-                        handleMoveRow(dragIndex, index)
-                        setDragIndex(index)
-                      }
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault()
-                      setDragIndex(null)
-                    }}
-                    onDragEnd={() => setDragIndex(null)}
-                    className={`flex items-center gap-2 rounded-lg border px-2 py-2 transition ${
-                      row.id === playingRowId
-                        ? 'border-primary/60 bg-primary-soft/15'
-                        : 'border-border/60 bg-surface-elevated/40'
-                    } ${dragIndex === index ? 'opacity-60' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      draggable={!shuffle}
-                      aria-label={`Reorder ${row.title}`}
-                      aria-disabled={shuffle || undefined}
-                      title={shuffle ? 'Shuffle is on — turn it off to reorder' : 'Drag to reorder'}
-                      onDragStart={
-                        shuffle
-                          ? undefined
-                          : (event) => {
-                              setDragIndex(index)
-                              event.dataTransfer.effectAllowed = 'move'
-                              event.dataTransfer.setData('text/plain', row.id)
-                            }
-                      }
-                      className={`grid size-6 shrink-0 place-items-center rounded-md text-text-muted transition ${
-                        shuffle
-                          ? 'cursor-not-allowed opacity-40'
-                          : 'cursor-grab hover:bg-surface-elevated hover:text-text-primary active:cursor-grabbing'
-                      }`}
-                    >
-                      <HugeiconsIcon icon={GripVerticalIcon} size={13} />
-                    </button>
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary-soft text-[9px] font-bold text-primary tabular-nums">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <img src={row.coverUrl ?? placeholderAlbum} alt="" className="size-9 shrink-0 rounded-md object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold">{row.title}</p>
-                      <div className="mt-0.5 flex items-center gap-1.5">
-                        {meta && (
-                          <p className="truncate text-[9px] text-text-muted">
-                            {meta}
-                            {row.len ? ` (${row.len})` : ''}
-                          </p>
-                        )}
-                        {row.tags.map((tag) => (
-                          <span
-                            key={tag.label}
-                            className={`shrink-0 rounded px-1.5 py-0.5 text-[8px] tracking-wide uppercase ${
-                              tag.solid
-                                ? 'bg-primary font-bold text-text-primary'
-                                : 'border border-border font-semibold text-text-secondary'
-                            }`}
-                          >
-                            {tag.label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      <button
-                        type="button"
-                        aria-label={`Lyrics for ${row.title}`}
-                        className="grid size-6 place-items-center rounded-md text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
-                      >
-                        <HugeiconsIcon icon={TextIcon} size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRow(row.id)}
-                        aria-label={`Remove ${row.title}`}
-                        className="grid size-6 place-items-center rounded-md text-text-muted transition hover:bg-surface-elevated hover:text-error"
-                      >
-                        <HugeiconsIcon icon={Delete02Icon} size={13} />
-                      </button>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </section>
+        <LoungeQueueRail
+          rows={rowsInOrder}
+          totalCount={queueRows.length}
+          playingRowId={playingRowId}
+          shuffle={shuffle}
+          onAdd={handleAddTrack}
+          onRemove={handleRemoveRow}
+          onClear={handleClearQueue}
+          onMove={handleMoveRow}
+        />
       </div>
     </div>
   )
