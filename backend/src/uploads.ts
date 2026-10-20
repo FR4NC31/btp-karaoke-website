@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs'
-import { mkdir, rm } from 'node:fs/promises'
+import { mkdir, rm, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { extname, join, resolve } from 'node:path'
 import { Readable, Transform } from 'node:stream'
@@ -93,6 +93,19 @@ export function isUploadedMediaName(name: string): boolean {
 /** Absolute path for a served upload name, or null when the name is not ours. */
 export function mediaFilePath(name: string): string | null {
   return isUploadedMediaName(name) ? join(UPLOADS_DIR, 'media', name) : null
+}
+
+/** True when the file behind a stored upload URL is still on disk. */
+export async function uploadedMediaOnDisk(url: string): Promise<boolean> {
+  const match = ANY_UPLOAD_URL_PATTERN.exec(url)
+  const name = match?.[1]
+  if (!name) return false
+  try {
+    const info = await stat(join(UPLOADS_DIR, 'media', name))
+    return info.isFile()
+  } catch {
+    return false
+  }
 }
 
 /** Response content type for a stored upload. */

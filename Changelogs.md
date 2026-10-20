@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 19, 2026
+Last updated: October 20, 2026
 
 ### Features
 
@@ -32,6 +32,8 @@ Last updated: October 19, 2026
 
 ### Bug Fixes
 
+- fix(admin): disambiguate overview stat headings (bad7b00)
+- fix: close upload races and review findings (0882fe9)
 - fix(ui): make the media editor section-safe and leak-free (09ca2e8)
 - fix(api): tell unique violations apart and reap failed uploads (f3c3362)
 - fix(test): hold the QA admin credential in the environment, not the repo (b248df1)
@@ -66,6 +68,8 @@ Last updated: October 19, 2026
 
 ### Other Changes
 
+- refactor: split heavy pages and backend modules (e2492bb)
+- Merge pull request #16 from FR4NC31/fix/review-followups-security (85d29a4)
 - Merge pull request #15 from FR4NC31/fix/autoplay-fix (e600593)
 - Merge pull request #14 from FR4NC31/feat/booking-system (1f7237a)
 - ﻿feat(media): add artist metadata and auto-read runtimes (aab0c39)
