@@ -109,17 +109,17 @@ export default function AdminOverview() {
 
   const stats: OverviewStat[] = [
     {
-      label: 'Pending approvals',
+      label: 'Pending queue',
       value: pending.length,
       hint: 'Waiting on you to confirm or reject',
     },
     {
-      label: 'Confirmed upcoming',
+      label: 'Upcoming sessions',
       value: upcoming.length,
       hint: 'Confirmed sessions from today onwards',
     },
     {
-      label: 'Today at the studio',
+      label: "Today's schedule",
       value: today.length,
       hint: `Live schedule for ${studioToday || 'today'}`,
     },
