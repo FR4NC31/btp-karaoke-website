@@ -25,13 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
-      # Disposable database for untrusted pull-request code. The password is
-      # intentionally a throwaway value on an isolated service container.
+      # Disposable database for untrusted pull-request code. Trust auth is
+      # scoped to this throwaway container, so the workflow does not need a
+      # hardcoded password (which secret scanners correctly flag).
       postgres:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: btp_e2e
         ports:
           - 5432:5432
@@ -106,10 +107,13 @@ jobs:
             echo "PORT=3000"
             echo "FRONTEND_ORIGIN=http://localhost:5173"
             echo "EXTRA_TRUSTED_ORIGINS="
-            echo "BETTER_AUTH_SECRET=e2e-only-not-a-real-secret-please-ignore"
+            # Generated per run; this is a disposable local session secret, not
+            # a repository credential, and is never written back to the repo.
+            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
             echo "BETTER_AUTH_URL=http://localhost:3000"
             echo "BETTER_AUTH_API_KEY="
-            echo "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/btp_e2e"
+            # Trust auth means no password in the connection URL.
+            echo "DATABASE_URL=postgresql://postgres@127.0.0.1:5432/btp_e2e"
             echo "DB_CA_FILE="
             # Dummy non-empty values: AUTH-008 stubs the Google page itself,
             # so the backend only needs *some* client id to build the OAuth
