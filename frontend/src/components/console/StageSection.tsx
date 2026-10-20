@@ -90,12 +90,9 @@ export default function StageSection({
             {trackSubtitle && <span className="text-text-primary"> — {trackSubtitle}</span>}
           </h2>
         </div>
-        <button
-          type="button"
-          className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[10px] font-bold text-text-primary transition hover:bg-primary-hover"
-        >
+        <span className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[10px] font-bold text-text-primary">
           Huddle Master 640p
-        </button>
+        </span>
       </div>
 
       <div

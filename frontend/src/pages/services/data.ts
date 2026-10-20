@@ -148,7 +148,7 @@ export const wings: Wing[] = [
       badge: 'Crafted for Practical Filipino Musicians',
       title: 'Pedagogical Philosophy',
       intro:
-        'We focus on practical, gig-ready and studio-ready application. Rather than abstract academic drills, our students work on active performance, realophone technique, and song interpretation.',
+        'We focus on practical, gig-ready and studio-ready application. Rather than abstract academic drills, our students work on active performance, microphone technique, and song interpretation.',
       groups: [
         { label: 'Voice', text: 'Vocal cord compression, mix voice, resonance shift, and lyric diction.' },
         { label: 'Keyboard', text: 'Chord progressions (I–vi–IV–V), rhythmic arpeggios, and voicing.' },

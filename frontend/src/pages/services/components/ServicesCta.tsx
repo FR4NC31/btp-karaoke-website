@@ -24,7 +24,7 @@ export default function ServicesCta() {
             to="/contact"
             className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-6 py-3 font-medium text-text-secondary transition hover:text-text-primary"
           >
-            Browse Music Vault
+            Contact the production desk
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </Link>
         </div>

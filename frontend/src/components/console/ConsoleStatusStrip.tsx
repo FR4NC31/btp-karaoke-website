@@ -54,7 +54,7 @@ export default function ConsoleStatusStrip({ queueCount }: { queueCount: number 
         </span>
         <span className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary-soft px-2 py-1 text-[10px] font-bold text-primary">
           <HugeiconsIcon icon={Queue01Icon} size={12} />
-          Queue: {queueCount}/24
+          Queue: {queueCount}
         </span>
       </div>
     </section>

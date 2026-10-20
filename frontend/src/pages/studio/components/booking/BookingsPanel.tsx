@@ -5,6 +5,8 @@ import { STATUS_STYLES, formatDay, peso } from '../../../../lib/booking-format'
 
 type BookingsPanelProps = {
   bookings: Booking[]
+  /** A load/action failure — never claim "no bookings" while the list is unknown. */
+  loadError: string
   /** The row whose cancel request is in flight. */
   cancellingId: string
   onCancel: (booking: Booking) => void
@@ -14,7 +16,12 @@ type BookingsPanelProps = {
  * "My bookings" — the singer's own reservation rows (day, price, reference,
  * status, notes) with a Cancel action only while the row is pending.
  */
-export default function BookingsPanel({ bookings, cancellingId, onCancel }: BookingsPanelProps) {
+export default function BookingsPanel({
+  bookings,
+  loadError,
+  cancellingId,
+  onCancel,
+}: BookingsPanelProps) {
   return (
     <section>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
@@ -23,11 +30,11 @@ export default function BookingsPanel({ bookings, cancellingId, onCancel }: Book
           My bookings
         </h2>
         <p className="text-[11px] font-semibold tracking-widest text-text-muted uppercase">
-          {bookings.length} total
+          {loadError ? '—' : `${bookings.length} total`}
         </p>
       </div>
 
-      {bookings.length === 0 ? (
+      {bookings.length === 0 && !loadError ? (
         <p className="mt-6 text-sm text-text-muted">
           No bookings yet — pick a service above to reserve a day.
         </p>

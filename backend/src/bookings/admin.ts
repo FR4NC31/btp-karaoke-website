@@ -71,8 +71,14 @@ function toAdminBooking(row: AdminBookingRow): AdminBooking {
   }
 }
 
-async function findBookingByIdForAdmin(bookingId: string): Promise<AdminBooking | null> {
-  const rows = await db
+/** db or a transaction — the read-back must see the same connection as the write. */
+type BookingSelect = Pick<typeof db, 'select'>
+
+async function findBookingByIdForAdmin(
+  bookingId: string,
+  executor: BookingSelect = db,
+): Promise<AdminBooking | null> {
+  const rows = await executor
     .select(adminBookingColumns)
     .from(booking)
     .innerJoin(service, eq(service.id, booking.serviceId))
@@ -229,28 +235,33 @@ export async function adminSetBookingStatus(
 ): Promise<AdminBooking> {
   const transition = ADMIN_ACTIONS[action]
 
-  const updated = await db
-    .update(booking)
-    .set({ status: transition.to, updatedAt: new Date() })
-    .where(and(eq(booking.id, bookingId), inArray(booking.status, transition.from)))
-    .returning({ id: booking.id })
+  // Write and read-back share one transaction: without it, the row returned
+  // to the admin could be a later state written by another admin, or a
+  // concurrent delete could turn a successful update into a 500.
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(booking)
+      .set({ status: transition.to, updatedAt: new Date() })
+      .where(and(eq(booking.id, bookingId), inArray(booking.status, transition.from)))
+      .returning({ id: booking.id })
 
-  if (updated.length === 0) {
-    const existing = await findBookingByIdForAdmin(bookingId)
-    if (!existing) {
-      throw new BookingError('That reservation does not exist.', 404)
+    if (updated.length === 0) {
+      const existing = await findBookingByIdForAdmin(bookingId, tx)
+      if (!existing) {
+        throw new BookingError('That reservation does not exist.', 404)
+      }
+      throw new BookingError(
+        `A ${existing.status} reservation cannot be ${ACTION_PAST[action]}.`,
+        409,
+      )
     }
-    throw new BookingError(
-      `A ${existing.status} reservation cannot be ${ACTION_PAST[action]}.`,
-      409,
-    )
-  }
 
-  const result = await findBookingByIdForAdmin(bookingId)
-  if (!result) {
-    throw new Error('The reservation could not be read back after updating.')
-  }
-  return result
+    const result = await findBookingByIdForAdmin(bookingId, tx)
+    if (!result) {
+      throw new Error('The reservation could not be read back after updating.')
+    }
+    return result
+  })
 }
 
 /**

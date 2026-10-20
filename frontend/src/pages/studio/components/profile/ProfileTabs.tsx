@@ -7,11 +7,11 @@ type ProfileTabsProps = {
 export default function ProfileTabs({ tab, onTabChange }: ProfileTabsProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border">
-      <div className="flex gap-6">
+      <div role="group" aria-label="Profile sections" className="flex gap-6">
         <button
           type="button"
           onClick={() => onTabChange('account')}
-          aria-current={tab === 'account' ? 'page' : undefined}
+          aria-pressed={tab === 'account'}
           className={`border-b-2 pb-3 font-heading text-sm font-bold tracking-widest uppercase transition ${
             tab === 'account' ? 'border-primary text-text-primary' : 'border-transparent text-text-muted hover:text-text-secondary'
           }`}
@@ -21,7 +21,7 @@ export default function ProfileTabs({ tab, onTabChange }: ProfileTabsProps) {
         <button
           type="button"
           onClick={() => onTabChange('profile')}
-          aria-current={tab === 'profile' ? 'page' : undefined}
+          aria-pressed={tab === 'profile'}
           className={`border-b-2 pb-3 font-heading text-sm font-bold tracking-widest uppercase transition ${
             tab === 'profile' ? 'border-primary text-text-primary' : 'border-transparent text-text-muted hover:text-text-secondary'
           }`}

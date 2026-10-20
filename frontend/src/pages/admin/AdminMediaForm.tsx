@@ -153,6 +153,14 @@ export default function AdminMediaForm() {
     }
   }, [id])
 
+  // The auto cover's preview URL must not outlive the form. This cleanup also
+  // runs when a new auto cover replaces this one; revoking twice is a no-op.
+  useEffect(() => {
+    return () => {
+      if (autoCover) URL.revokeObjectURL(autoCover.preview)
+    }
+  }, [autoCover])
+
   function clearForAnother() {
     setSaved(null)
     setTitle('')
@@ -239,6 +247,9 @@ export default function AdminMediaForm() {
     // the cover it brought) so the wrong file type can never be attached.
     clearFileSelection()
     setAutoCover(null)
+    // Radio rows carry no cover either: drop a picked image (and its preview)
+    // so a successful save cannot upload art the row will never reference.
+    if (next === 'radio') clearCoverSelection()
     // A stored upload the new section cannot carry (radio carries none; video
     // and music each carry their own format) is detached rather than
     // submitted against the wrong section.
@@ -268,8 +279,9 @@ export default function AdminMediaForm() {
       if (tags.title) setTitle((current) => (current.trim() ? current : tags.title))
       if (tags.artist) setArtist((current) => (current.trim() ? current : tags.artist))
       if (tags.album) setAlbum((current) => (current.trim() ? current : tags.album))
-      // The runtime always refreshes — it describes the file just picked.
-      if (seconds !== null) setDuration(formatClock(seconds))
+      // The runtime always refreshes — it describes the file just picked. A
+      // failed probe clears it rather than keeping the previous file's time.
+      setDuration(seconds === null ? '' : formatClock(seconds))
 
       if (tags.cover) {
         setAutoCover(makeAutoCover(tags.cover, 'tags', picked.name))
@@ -316,6 +328,8 @@ export default function AdminMediaForm() {
     }
 
     setSubmitting(true)
+    // Only video/music rows carry files or covers; radio rows carry neither.
+    const fileSections = section === 'video' || section === 'music'
     // Everything this attempt uploads; discarded again if a later step fails
     // so a failed save cannot leak the bytes.
     const freshUploads: string[] = []
@@ -334,9 +348,10 @@ export default function AdminMediaForm() {
       // neither, the stored cover (or none) stays.
       let nextCoverUrl = coverUrl
       let nextCoverName = coverName
-      const coverSource =
-        coverFile ??
-        (autoCover ? new File([autoCover.blob], autoCover.name, { type: autoCover.blob.type }) : null)
+      const coverSource = fileSections
+        ? coverFile ??
+          (autoCover ? new File([autoCover.blob], autoCover.name, { type: autoCover.blob.type }) : null)
+        : null
       if (coverSource) {
         const { file: stored } = await uploadAdminMediaFile(await optimizeCover(coverSource))
         nextCoverUrl = stored.url
@@ -347,7 +362,6 @@ export default function AdminMediaForm() {
       // Only the selected section's fields are submitted: the others go
       // empty, so a section change can never carry hidden data (an old source
       // file, a stale cover, a leftover tempo) into the row.
-      const fileSections = section === 'video' || section === 'music'
       const input: AdminMediaInput = {
         section,
         title,

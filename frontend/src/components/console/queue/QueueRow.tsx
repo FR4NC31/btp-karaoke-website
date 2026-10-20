@@ -1,10 +1,6 @@
 import type { DragEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import {
-  Delete02Icon,
-  GripVerticalIcon,
-  TextIcon,
-} from '@hugeicons/core-free-icons'
+import { Delete02Icon, GripVerticalIcon } from '@hugeicons/core-free-icons'
 import placeholderAlbum from '../../../assets/placeholder-album.svg'
 import type { QueueItem } from '../../../lib/lounge-queue'
 
@@ -22,7 +18,7 @@ type QueueRowProps = {
   onRemove: () => void
 }
 
-/** One queue row: grip, position, cover, title/meta/tags, lyrics + remove. */
+/** One queue row: grip, position, cover, title/meta/tags + remove. */
 export default function QueueRow({
   row,
   index,
@@ -91,13 +87,6 @@ export default function QueueRow({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <button
-          type="button"
-          aria-label={`Lyrics for ${row.title}`}
-          className="grid size-6 place-items-center rounded-md text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
-        >
-          <HugeiconsIcon icon={TextIcon} size={13} />
-        </button>
         <button
           type="button"
           onClick={onRemove}

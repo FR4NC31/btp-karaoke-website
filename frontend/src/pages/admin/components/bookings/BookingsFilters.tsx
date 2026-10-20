@@ -106,7 +106,7 @@ export default function BookingsFilters({
           </button>
         </form>
 
-        {(status !== 'all' || date || query) && (
+        {(status !== 'all' || date || query || queryInput) && (
           <button
             type="button"
             onClick={onClear}

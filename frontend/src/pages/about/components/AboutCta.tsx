@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import SectionEyebrow from '../../../components/SectionEyebrow'
 
 /** Full-bleed-ish closing CTA band (inset inside the page wrapper). */
@@ -15,12 +16,18 @@ export default function AboutCta() {
         looking for licensed karaoke systems, our team is ready to assist.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-4">
-        <span className="rounded-lg bg-primary px-6 py-3 font-medium text-text-primary">
+        <Link
+          to="/contact"
+          className="rounded-lg bg-primary px-6 py-3 font-medium text-text-primary transition hover:bg-primary-hover"
+        >
           Contact Our Production Team
-        </span>
-        <span className="rounded-lg border border-border bg-background px-6 py-3 font-medium text-text-secondary">
-          Explore Song Catalog
-        </span>
+        </Link>
+        <Link
+          to="/services"
+          className="rounded-lg border border-border bg-background px-6 py-3 font-medium text-text-secondary transition hover:text-text-primary"
+        >
+          Explore Our Services
+        </Link>
       </div>
     </section>
   )

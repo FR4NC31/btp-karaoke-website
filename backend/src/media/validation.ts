@@ -42,8 +42,15 @@ function cleanText(raw: unknown, label: string, max = TEXT_MAX): string | null {
 
 /** Optional count: blank (or missing) means the column stays null. */
 function cleanCount(raw: unknown, label: string): number | null {
-  if (raw === undefined || raw === null || raw === '') return null
-  const value = typeof raw === 'number' ? raw : Number(raw)
+  if (raw === undefined || raw === null) return null
+  // Only a number or a string can name a count: `Number(true)` would turn a
+  // misplaced boolean into 1, and `Number('   ')` into 0, silently inventing
+  // data. Whitespace-only text is just an empty box.
+  if (typeof raw !== 'number' && typeof raw !== 'string') {
+    throw new MediaError(`${label} must be a whole number between 0 and 2,147,483,647.`, 400)
+  }
+  if (typeof raw === 'string' && raw.trim() === '') return null
+  const value = typeof raw === 'number' ? raw : Number(raw.trim())
   // `count` / `tracks` are Postgres `integer` columns: anything wider passes
   // validation here and then fails at write time as a 500, turning a normal
   // admin typo into a server error.
@@ -58,7 +65,7 @@ function cleanCount(raw: unknown, label: string): number | null {
  * attached — a URL the backend does not serve (or would not delete with the
  * row) has no business on a catalog row.
  */
-function cleanSourceUrl(raw: unknown): string | null {
+function cleanSourceUrl(raw: unknown, section: MediaSection): string | null {
   if (raw === undefined || raw === null) return null
   if (typeof raw !== 'string') {
     throw new MediaError('Source file must be text.', 400)
@@ -67,6 +74,18 @@ function cleanSourceUrl(raw: unknown): string | null {
   if (!url) return null
   if (!isUploadedMediaUrl(url)) {
     throw new MediaError('The source file must come from the media uploader.', 400)
+  }
+  // The hub picks the player by extension: an MP3 attached to a video song
+  // (or an MP4 on a music track) would silently render the wrong element.
+  if (section === 'radio') {
+    throw new MediaError('Radio stations do not carry a media file.', 400)
+  }
+  const isMp3 = url.toLowerCase().endsWith('.mp3')
+  if (section === 'video' && isMp3) {
+    throw new MediaError('Video songs need an MP4 source file.', 400)
+  }
+  if (section === 'music' && !isMp3) {
+    throw new MediaError('Music tracks need an MP3 source file.', 400)
   }
   return url
 }
@@ -128,7 +147,7 @@ export function validateFields(input: Record<string, unknown>): ValidatedFields 
     songKey: cleanText(input.songKey, 'Key', SHORT_TEXT_MAX),
     freq: cleanText(input.freq, 'Frequency', SHORT_TEXT_MAX),
     listeners: cleanCount(input.listeners, 'Listeners'),
-    sourceUrl: cleanSourceUrl(input.sourceUrl),
+    sourceUrl: cleanSourceUrl(input.sourceUrl, section),
     sourceName: cleanText(input.sourceName, 'Source name'),
     album: cleanText(input.album, 'Album'),
     // Lyrics are a music-track field: video/radio rows never store them, and

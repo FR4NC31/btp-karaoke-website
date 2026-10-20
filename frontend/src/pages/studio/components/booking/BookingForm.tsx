@@ -3,7 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon } from '@hugeicons/core-free-icons'
 import type { Service } from '../../../../lib/booking-api'
 import { peso } from '../../../../lib/booking-format'
-import { NOTES_MAX } from './constants'
+import { NOTES_MAX } from '../../../../lib/booking-constants'
 
 type BookingFormProps = {
   /** The service the singer picked — also shown in the form header. */
@@ -75,7 +75,7 @@ export default function BookingForm({
             className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
           <p className="mt-1.5 text-[11px] text-text-muted">
-            Whole day. One booking per service per day.
+            Whole day. One live booking per customer, per service, per day.
           </p>
         </div>
 

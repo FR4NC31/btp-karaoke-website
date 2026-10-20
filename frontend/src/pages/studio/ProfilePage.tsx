@@ -22,6 +22,7 @@ export default function ProfilePage() {
     image: user?.image,
     fullName: [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.name || 'Your Name',
     email: user?.email ?? '',
+    emailVerified: user?.emailVerified ?? false,
     phone: user?.contact_num || 'Not set',
     handle: user?.email ? `@${user.email.split('@')[0]}` : '@your_handle',
     memberSince: user?.createdAt

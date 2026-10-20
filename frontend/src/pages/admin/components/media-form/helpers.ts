@@ -43,8 +43,10 @@ export function toCount(raw: string, label: string): number | null {
   const text = raw.trim()
   if (!text) return null
   const value = Number(text)
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`${label} must be a whole, non-negative number.`)
+  // Match the API's Postgres `integer` ceiling, so a typo is caught before the
+  // upload starts instead of surfacing as a server-side 400.
+  if (!Number.isInteger(value) || value < 0 || value > 2_147_483_647) {
+    throw new Error(`${label} must be a whole number between 0 and 2,147,483,647.`)
   }
   return value
 }

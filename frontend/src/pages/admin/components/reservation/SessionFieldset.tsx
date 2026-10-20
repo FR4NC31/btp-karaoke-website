@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import type { Service } from '../../../../lib/booking-api'
+import { NOTES_MAX } from '../../../../lib/booking-constants'
 import { peso } from '../../../../lib/booking-format'
-
-const NOTES_MAX = 500
 
 type SessionFieldsetProps = {
   services: Service[]

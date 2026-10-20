@@ -16,8 +16,8 @@ import { UploadError, storeMediaUpload } from '../../uploads.ts'
  * Admin media hub catalog. /studio renders what these routes curate — video
  * songs, music tracks and radio stations. Hidden rows drop out of the public
  * /api/media feed without being deleted; `move` reorders within a section;
- * `delete` is permanent. Bodies are validated in src/media.ts, so a bad field
- * is a 400 with a specific message.
+ * `delete` is permanent. Bodies are validated in src/media/validation.ts, so
+ * a bad field is a 400 with a specific message.
  */
 const adminMedia = new Hono()
 

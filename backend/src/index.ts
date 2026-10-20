@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { auth } from './auth.ts'
+import { requireTrustedOrigin } from './origin-guard.ts'
 import adminApi from './routes/admin/index.ts'
 import bookingApi from './routes/bookings.ts'
 import publicApi from './routes/public.ts'
@@ -31,6 +32,16 @@ app.use(
     credentials: true,
   }),
 )
+
+// Cookie-authenticated mutations get a second CSRF check on top of CORS and
+// SameSite: a browser-supplied Origin outside the allowlist is refused.
+// Better Auth already enforces its own origin rules, so this covers the app's
+// own booking and admin endpoints.
+const trustedOrigin = requireTrustedOrigin(allowedOrigins)
+app.use('/api/bookings', trustedOrigin)
+app.use('/api/bookings/*', trustedOrigin)
+app.use('/api/admin', trustedOrigin)
+app.use('/api/admin/*', trustedOrigin)
 
 // Better Auth handles everything under /api/auth/* (sign-in, sign-up,
 // Google OAuth callback, session, sign-out...). Register before any

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react'
@@ -127,18 +128,24 @@ export default function AdminMediaCard({
   // Same reachability users have: video rows always play (bundled-master
   // fallback), music rows only with an upload; radio carries no media file.
   const previewable = item.section === 'video' || (item.section === 'music' && item.sourceUrl !== null)
+  // A stored cover can rot (deleted upload, hand-edited row). Swap the broken
+  // image for the same striped default the hub uses instead of leaving a hole.
+  const coverUrl = item.coverUrl
+  const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
+  const showCover = coverUrl !== null && coverUrl !== failedCoverUrl
 
   return (
     <li className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface">
       {/* Artwork, mirroring the studio hub card: the row's cover when it has
           one, else the striped default. */}
       <div className="relative">
-        {item.coverUrl ? (
+        {showCover ? (
           <img
-            src={item.coverUrl}
+            src={coverUrl}
             alt=""
             loading="lazy"
             decoding="async"
+            onError={() => setFailedCoverUrl(coverUrl)}
             className="aspect-[4/3] w-full bg-surface-elevated object-cover"
           />
         ) : (

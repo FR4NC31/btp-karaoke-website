@@ -165,7 +165,7 @@ export default function AdminBookings() {
       {/* ------------------------------- rows -------------------------------- */}
       {loading ? (
         <ReservationRowsSkeleton />
-      ) : bookings.length === 0 ? (
+      ) : bookings.length === 0 && !loadError ? (
         <p className="py-16 text-center text-sm text-text-muted">
           No reservations match these filters.
         </p>

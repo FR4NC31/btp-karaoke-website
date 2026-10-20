@@ -14,7 +14,7 @@ import type { ProfileIdentity } from './types'
 
 /** My Account tab: identity card, personal details, singing preferences. */
 export default function AccountTab({ identity }: { identity: ProfileIdentity }) {
-  const { image, fullName, email, phone, handle, memberSince } = identity
+  const { image, fullName, email, emailVerified, phone, handle, memberSince } = identity
 
   return (
     <>
@@ -89,7 +89,7 @@ export default function AccountTab({ identity }: { identity: ProfileIdentity }) 
             label="Email Address"
             value={email}
             hint="Primary Email"
-            verified
+            verified={emailVerified}
           />
           <DetailField
             icon={PhoneIcon}

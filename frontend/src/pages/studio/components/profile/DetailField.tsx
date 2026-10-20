@@ -20,7 +20,15 @@ export default function DetailField({ icon, label, value, hint, verified }: Deta
       </p>
       <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold break-words text-text-primary">
         {value}
-        {verified && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="shrink-0 text-success" />}
+        {verified && (
+          <HugeiconsIcon
+            icon={CheckmarkCircle01Icon}
+            size={14}
+            role="img"
+            aria-label="Verified"
+            className="shrink-0 text-success"
+          />
+        )}
       </p>
       <p className={`mt-0.5 text-[11px] ${verified ? 'text-success' : 'text-text-muted'}`}>{hint}</p>
     </div>

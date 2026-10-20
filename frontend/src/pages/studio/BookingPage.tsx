@@ -276,7 +276,12 @@ export default function BookingPage() {
       </section>
 
       {/* ------------------------------ my bookings --------------------------- */}
-      <BookingsPanel bookings={bookings} cancellingId={cancellingId} onCancel={handleCancel} />
+      <BookingsPanel
+        bookings={bookings}
+        loadError={loadError}
+        cancellingId={cancellingId}
+        onCancel={handleCancel}
+      />
     </div>
   )
 }

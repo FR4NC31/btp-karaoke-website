@@ -35,6 +35,8 @@ export default function AdminOverview() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
+  /** Which action the acting row is running, so only that button says Working. */
+  const [actingAction, setActingAction] = useState<'confirm' | 'reject' | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -71,6 +73,7 @@ export default function AdminOverview() {
   async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
     if (actingId) return
     setActingId(booking.id)
+    setActingAction(action)
     setFlash('')
     setLoadError('')
     try {
@@ -92,6 +95,7 @@ export default function AdminOverview() {
       }
     } finally {
       setActingId('')
+      setActingAction(null)
     }
   }
 
@@ -161,7 +165,12 @@ export default function AdminOverview() {
 
       <OverviewSummary stats={stats} />
 
-      <PendingApprovals pending={pending} actingId={actingId} onAction={handleAction} />
+      <PendingApprovals
+        pending={pending}
+        actingId={actingId}
+        actingAction={actingAction}
+        onAction={handleAction}
+      />
 
       <TodayAtStudio today={today} />
     </div>

@@ -32,7 +32,8 @@ adminBookings.get('/', async (c) => {
 })
 
 // A reservation for someone else: a tagged registered customer (userId) or a
-// guest name typed in by the admin. Created `confirmed` — see bookings.ts.
+// guest name typed in by the admin. Created `confirmed` — see
+// src/bookings/admin.ts (createBookingForOthers).
 adminBookings.post('/', async (c) => {
   let body: unknown
   try {
@@ -78,10 +79,10 @@ adminBookings.post('/', async (c) => {
 })
 
 // One endpoint for every admin status move; the legal from-states live in
-// ADMIN_ACTIONS (bookings.ts) and are enforced in the UPDATE itself.
+// ADMIN_ACTIONS (src/bookings/admin.ts) and are enforced in the UPDATE itself.
 adminBookings.post('/:id/:action', async (c) => {
   const action = c.req.param('action')
-  // Same list the transition table is built from (bookings.ts), so an action
+  // Same list the transition table is built from (src/bookings/admin.ts), so an action
   // can never be routable here without a legal move defined for it.
   if (!(ADMIN_ACTION_NAMES as readonly string[]).includes(action)) {
     return c.json({ error: 'Unknown action.' }, 404)

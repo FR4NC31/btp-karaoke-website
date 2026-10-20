@@ -24,14 +24,13 @@ export default function DspSection() {
           Lounge DSP &amp; Sound FX:
         </h2>
         {soundFx.map((fx) => (
-          <button
+          <span
             key={fx.label}
-            type="button"
-            className="flex items-center gap-1.5 rounded-md border border-border bg-surface-elevated px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition hover:border-primary/50 hover:text-text-primary"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface-elevated px-3 py-1.5 text-[11px] font-semibold text-text-secondary"
           >
             <HugeiconsIcon icon={fx.icon} size={13} className="text-primary" />
             {fx.label}
-          </button>
+          </span>
         ))}
         <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           <span className="flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-[10px]">

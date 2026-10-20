@@ -7,6 +7,8 @@ type PendingApprovalsProps = {
   pending: AdminBooking[]
   /** The row whose action is in flight. */
   actingId: string
+  /** The action it is running — only that button shows the busy label. */
+  actingAction: 'confirm' | 'reject' | null
   onAction: (booking: AdminBooking, action: 'confirm' | 'reject') => void
 }
 
@@ -14,7 +16,12 @@ type PendingApprovalsProps = {
  * The work queue's first section: every pending reservation with Reject /
  * Confirm actions. The page swaps the updated row in place.
  */
-export default function PendingApprovals({ pending, actingId, onAction }: PendingApprovalsProps) {
+export default function PendingApprovals({
+  pending,
+  actingId,
+  actingAction,
+  onAction,
+}: PendingApprovalsProps) {
   return (
     <section>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
@@ -72,7 +79,7 @@ export default function PendingApprovals({ pending, actingId, onAction }: Pendin
                   className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-bold tracking-widest text-text-secondary uppercase transition hover:border-error/50 hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                  Reject
+                  {actingId === booking.id && actingAction === 'reject' ? 'Working…' : 'Reject'}
                 </button>
                 <button
                   type="button"
@@ -81,7 +88,7 @@ export default function PendingApprovals({ pending, actingId, onAction }: Pendin
                   className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold tracking-widest text-text-primary uppercase transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
-                  {actingId === booking.id ? 'Working…' : 'Confirm'}
+                  {actingId === booking.id && actingAction === 'confirm' ? 'Working…' : 'Confirm'}
                 </button>
               </div>
             </li>
