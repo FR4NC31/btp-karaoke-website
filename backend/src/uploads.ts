@@ -27,7 +27,7 @@ export const UPLOADS_DIR = process.env.UPLOADS_DIR
   : resolve(process.cwd(), 'uploads')
 
 /** Public base path uploads are served from (proxied like the rest of /api). */
-export const MEDIA_UPLOAD_BASE = '/api/uploads/media'
+const MEDIA_UPLOAD_BASE = '/api/uploads/media'
 
 const maxMb = Number(process.env.MEDIA_UPLOAD_MAX_MB)
 
@@ -86,7 +86,7 @@ export function isUploadedImageUrl(url: string): boolean {
   return IMAGE_URL_PATTERN.test(url)
 }
 
-export function isUploadedMediaName(name: string): boolean {
+function isUploadedMediaName(name: string): boolean {
   return FILE_NAME_PATTERN.test(name)
 }
 

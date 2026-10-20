@@ -16,7 +16,7 @@ import { TEST_ADMIN } from './auth'
  * clients that send sec-fetch-mode (Playwright's request contexts do).
  */
 
-export interface MediaSeedInput {
+interface MediaSeedInput {
   section: 'video' | 'music' | 'radio'
   title: string
   subtitle?: string

@@ -10,26 +10,26 @@ import {
   AudioLinesIcon,
 } from '@hugeicons/core-free-icons'
 
-export type AboutStat = {
+type AboutStat = {
   value: string
   label: string
   desc: string
 }
 
-export type AboutService = {
+type AboutService = {
   icon: IconSvgElement
   title: string
   desc: string
   label: string
 }
 
-export type AboutCommitment = {
+type AboutCommitment = {
   icon: IconSvgElement
   title: string
   desc: string
 }
 
-export type AboutStoryColumn = {
+type AboutStoryColumn = {
   heading: string
   paragraphs: string[]
 }

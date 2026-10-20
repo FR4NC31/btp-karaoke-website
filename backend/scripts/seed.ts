@@ -171,17 +171,16 @@ try {
     console.log(`  ${row.code.padEnd(24)} ${row.price} PHP`)
   }
 
-  // Upsert on the stable id. The copy fields refresh, and so does `section`:
-  // this row is definitionally the video master, so a stray move must not
-  // leave it classified as music/radio while still playing the video file.
-  // isActive and sortOrder stay admin curation once the row exists.
+  // Upsert on the stable id. Only the copy fields refresh: `section`,
+  // `isActive` and `sortOrder` are admin curation once the row exists. Forcing
+  // `section` back to video would leave a music row (which may now carry an
+  // admin-attached MP3) claiming to be a video master.
   await db
     .insert(mediaItem)
     .values(mediaCatalog)
     .onConflictDoUpdate({
       target: mediaItem.id,
       set: {
-        section: sql`excluded."section"`,
         title: sql`excluded."title"`,
         subtitle: sql`excluded."subtitle"`,
         artist: sql`excluded."artist"`,

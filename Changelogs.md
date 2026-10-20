@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix: complete PR #16 review follow-ups (f6e82a0)
 - fix(admin): disambiguate overview stat headings (bad7b00)
 - fix: close upload races and review findings (0882fe9)
 - fix(ui): make the media editor section-safe and leak-free (09ca2e8)
@@ -68,6 +69,7 @@ Last updated: October 20, 2026
 
 ### Other Changes
 
+- Merge pull request #17 from FR4NC31/refactor/full-app (99cf7dc)
 - refactor: split heavy pages and backend modules (e2492bb)
 - Merge pull request #16 from FR4NC31/fix/review-followups-security (85d29a4)
 - Merge pull request #15 from FR4NC31/fix/autoplay-fix (e600593)

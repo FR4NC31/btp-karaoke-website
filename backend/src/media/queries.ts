@@ -32,18 +32,3 @@ export async function listMediaForAdmin(section?: MediaSection): Promise<MediaIt
 
   return rows.map(toMediaItem)
 }
-
-export async function findMediaById(id: string): Promise<MediaItem | null> {
-  const rows = await db.select().from(mediaItem).where(eq(mediaItem.id, id)).limit(1)
-  const row = rows[0]
-  return row ? toMediaItem(row) : null
-}
-
-/** Next display slot inside a section, so new rows append at the bottom. */
-export async function nextSortOrder(section: MediaSection): Promise<number> {
-  const rows = await db
-    .select({ max: sql<number | null>`max(${mediaItem.sortOrder})` })
-    .from(mediaItem)
-    .where(eq(mediaItem.section, section))
-  return (rows[0]?.max ?? 0) + 1
-}

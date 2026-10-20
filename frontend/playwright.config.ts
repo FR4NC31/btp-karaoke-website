@@ -2,10 +2,15 @@ import { existsSync } from 'node:fs'
 import { defineConfig, devices, type ReporterDescription } from '@playwright/test'
 
 /**
- * Local-only values (the QA admin credentials the setup project signs in
- * with) come from frontend/.env.local, which is gitignored. CI supplies the
- * same variables through the workflow instead. loadEnvFile never overwrites
- * variables that are already set, so an explicit env always wins.
+ * Local-only values (including the QA admin credentials the admin setup signs
+ * in with) come from frontend/.env.local, which is gitignored. Trusted CI jobs
+ * supply the same variables through the workflow instead. loadEnvFile never
+ * overwrites variables that are already set, so an explicit env always wins.
+ *
+ * The PR smoke job intentionally has no admin credential. When those values
+ * are absent, the setup project excludes admin.setup.ts — PR code never
+ * receives the admin secret, and the smoke suite still gets its shared user
+ * session from auth.setup.ts.
  */
 const localEnvFile = new URL('.env.local', import.meta.url)
 if (existsSync(localEnvFile)) process.loadEnvFile(localEnvFile)
@@ -27,13 +32,18 @@ if (existsSync(localEnvFile)) process.loadEnvFile(localEnvFile)
  *   BACKEND_BASE_URL           Backend origin. Defaults to
  *                              http://localhost:3000 (used by API probes).
  *   TEST_ADMIN_EMAIL           QA admin account the admin setup signs in as.
- *   TEST_ADMIN_PASSWORD        Its password — repo secret in CI, local
+ *   TEST_ADMIN_PASSWORD        Its password — repo secret in trusted CI, local
  *                              .env.local elsewhere (see helpers/auth.ts).
+ *                              Only the full suite needs these; the PR smoke
+ *                              run omits both and skips admin.setup.ts.
  */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173'
 const backendURL = process.env.BACKEND_BASE_URL || 'http://localhost:3000'
 const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(baseURL)
 const isLocalBackend = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(backendURL)
+const hasAdminCredentials = Boolean(
+  process.env.TEST_ADMIN_EMAIL && process.env.TEST_ADMIN_PASSWORD,
+)
 
 if (!isLocalTarget && process.env.PLAYWRIGHT_ALLOW_EXTERNAL !== '1') {
   throw new Error(
@@ -77,10 +87,12 @@ export default defineConfig({
 
   projects: [
     // Signs in once and writes playwright/.auth/user.json. Must complete
-    // before `chromium` starts, hence the dependency.
+    // before `chromium` starts, hence the dependency. admin.setup.ts is only
+    // part of the setup run when its credential exists: the PR smoke job runs
+    // without it, so PR-controlled code never sees the admin secret.
     {
       name: 'setup',
-      testMatch: /.*\.setup\.ts/,
+      testMatch: hasAdminCredentials ? /.*\.setup\.ts/ : /auth\.setup\.ts/,
     },
     {
       name: 'chromium',

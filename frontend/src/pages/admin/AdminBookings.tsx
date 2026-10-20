@@ -86,7 +86,9 @@ export default function AdminBookings() {
     let failure = ''
     try {
       const { booking: updated } = await adminBookingAction(booking.id, action)
-      setFlash(`${updated.referenceCode} is now ${updated.status}.`)
+      if (generation === filterGeneration.current) {
+        setFlash(`${updated.referenceCode} is now ${updated.status}.`)
+      }
     } catch (err) {
       // A 409 here is normal life (another tab acted first) — the reload below
       // shows the row's true state instead of a stale button set.
@@ -106,7 +108,8 @@ export default function AdminBookings() {
     } catch (err) {
       if (!failure) failure = describeBookingError(err, 'Could not refresh the reservations.')
     }
-    if (failure) setLoadError(failure)
+    // A newer filter load owns the error slot; this action's outcome is stale.
+    if (failure && generation === filterGeneration.current) setLoadError(failure)
     setActingId('')
   }
 

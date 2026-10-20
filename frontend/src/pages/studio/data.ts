@@ -6,12 +6,12 @@
  * render rows managed from /admin/media via the API (lib/media-api.ts).
  */
 
-export interface SidebarItem {
+interface SidebarItem {
   name: string
   count: string
 }
 
-export interface SidebarSection {
+interface SidebarSection {
   label: string
   items: SidebarItem[]
 }
@@ -37,7 +37,7 @@ export const sidebarSections: SidebarSection[] = [
   },
 ]
 
-export interface StudioTool {
+interface StudioTool {
   code: string
   name: string
   desc: string

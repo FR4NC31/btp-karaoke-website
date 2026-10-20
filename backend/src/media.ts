@@ -23,5 +23,4 @@ export {
   moveMediaItem,
   setMediaVisibility,
   updateMediaItem,
-  type MoveDirection,
 } from './media/admin.ts'
