@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 19, 2026
+Last updated: October 20, 2026
 
 ### Features
 
@@ -66,6 +66,8 @@ Last updated: October 19, 2026
 
 ### Other Changes
 
+- refactor: split heavy pages and backend modules (e2492bb)
+- Merge pull request #16 from FR4NC31/fix/review-followups-security (85d29a4)
 - Merge pull request #15 from FR4NC31/fix/autoplay-fix (e600593)
 - Merge pull request #14 from FR4NC31/feat/booking-system (1f7237a)
 - ﻿feat(media): add artist metadata and auto-read runtimes (aab0c39)
