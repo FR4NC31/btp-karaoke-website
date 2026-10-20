@@ -327,8 +327,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   `/studio/player-queue` directly. 2. Return to `/studio` and play the
   featured video.
 - **Expected:** The hub uses `Studio`, Profile `My Account`, Bookings
-  `Booking Desk`; a direct console visit keeps the generic `Studio` title,
-  while the console opened from a media card uses the playing track title.
+  `Booking Desk`; a direct console visit uses the fallback track title
+  (`The Reason`), and the console opened from a media card uses the playing
+  track title.
 - **Automation:** Playwright — **Status: Automated**
 
 ### TITLE-003

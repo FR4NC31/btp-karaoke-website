@@ -118,8 +118,7 @@ export default function PlayerQueue() {
     ? queuedPlay.source.kind === 'music'
     : (item?.section ?? onAir?.kind) === 'music'
   const trackTitle = queuedPlay ? queuedPlay.row.title : (item?.title ?? onAir?.title ?? 'The Reason')
-  const hasTrack = Boolean(queuedPlay || item || onAir)
-  usePageTitle(hasTrack ? trackTitle.trim() || null : null)
+  usePageTitle(trackTitle.trim() || null)
   const trackSubtitle = queuedPlay
     ? queuedPlay.row.artist || null
     : item

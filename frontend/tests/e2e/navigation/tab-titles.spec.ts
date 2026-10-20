@@ -34,7 +34,7 @@ test.describe('tab titles', () => {
     await expect(page).toHaveTitle('Booking Desk | BTP Karaoke')
 
     await page.goto('/studio/player-queue')
-    await expect(page).toHaveTitle('Studio | BTP Karaoke')
+    await expect(page).toHaveTitle('The Reason | BTP Karaoke')
 
     await page.goto('/studio')
     await page.getByRole('link', { name: 'Play The Reason' }).click()
