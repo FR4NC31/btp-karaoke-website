@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix(admin): disambiguate overview stat headings (bad7b00)
 - fix: close upload races and review findings (0882fe9)
 - fix(ui): make the media editor section-safe and leak-free (09ca2e8)
 - fix(api): tell unique violations apart and reap failed uploads (f3c3362)
