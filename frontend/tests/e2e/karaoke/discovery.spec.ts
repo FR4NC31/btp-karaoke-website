@@ -399,9 +399,11 @@ test.describe('karaoke discovery', () => {
       await page.goto('/studio')
       for (const title of [first, second, third]) {
         const card = page.locator('main article').filter({ hasText: title })
+        const dialog = page.getByRole('dialog', { name: title })
         await card.getByRole('button', { name: `More options for ${title}` }).click()
-        await page.getByRole('dialog').getByRole('button', { name: 'Add to queue' }).click()
+        await dialog.getByRole('button', { name: 'Add to queue' }).click()
         await page.keyboard.press('Escape')
+        await expect(dialog).toBeHidden()
       }
 
       await page.goto('/studio/player-queue')
@@ -512,9 +514,11 @@ test.describe('karaoke discovery', () => {
       await page.goto('/studio')
       for (const title of [first, second, third]) {
         const card = page.locator('main article').filter({ hasText: title })
+        const dialog = page.getByRole('dialog', { name: title })
         await card.getByRole('button', { name: `More options for ${title}` }).click()
-        await page.getByRole('dialog').getByRole('button', { name: 'Add to queue' }).click()
+        await dialog.getByRole('button', { name: 'Add to queue' }).click()
         await page.keyboard.press('Escape')
+        await expect(dialog).toBeHidden()
       }
 
       await page.goto('/studio/player-queue')
