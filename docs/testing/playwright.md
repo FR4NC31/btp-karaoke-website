@@ -52,7 +52,7 @@ Related docs: [qa-strategy.md](qa-strategy.md) ·
 | Backend command  | `npm run dev` (`node --env-file=.env --watch serve.ts`)  |
 | API              | `GET /health`, Better Auth under `/api/auth/*`, protected `GET /api/me`, public `GET /api/services`, session-scoped `GET/POST /api/bookings` + `POST /api/bookings/:id/cancel` |
 | Auth             | Frontend calls Better Auth through `better-auth/react` (email/password; Google disabled pending OAuth credentials). Sessions are cookies |
-| Database         | Aiven PostgreSQL — Better Auth owns `user`/`session`/`account`/`verification`; Drizzle owns `service`/`booking`. E2E sign-in/sign-up write real rows, so test accounts accumulate |
+| Database         | Aiven PostgreSQL for local/trusted full runs; disposable PostgreSQL for PR smoke. Better Auth owns `user`/`session`/`account`/`verification`; Drizzle owns `service`/`booking`/`media_item`. Sign-in/sign-up write real rows in both cases; PR rows vanish with the service, while full runs accumulate accounts in the live QA database |
 | Browser          | Chromium (only browser installed)                        |
 
 `playwright.config.ts` starts **both** dev servers automatically before the
@@ -172,11 +172,14 @@ OAuth failures redirected back as query params are covered by AUTH-018.
   `qa-admin@example.com` row in the database, put the new password in
   `frontend/.env.local` (and update the repo secret), then run the suite —
   `setup/admin.setup.ts` recreates the account and re-promotes it.
-- The PR smoke job runs **without** the admin credential: `playwright.config.ts`
-  leaves `setup/admin.setup.ts` out of the setup project when
-  `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` are absent, so pull-request code never
-  receives the admin secret. The trusted full suite still runs it.
-- No real users, no production accounts, no production data, no secrets.
+- The PR smoke job runs **without** any live credential: it uses a disposable
+  local PostgreSQL database seeded by `backend/scripts/seed-e2e-user.ts`, and
+  `playwright.config.ts` leaves `setup/admin.setup.ts` out of the setup project
+  when `TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` are absent. The trusted full
+  suite still runs against the live QA environment.
+- No real users, no production accounts, no production data, and no repository
+  secrets are available to pull-request code. Runtime `.env` files are ignored
+  at every level; only `.env.example` belongs in Git.
 - The backend **does** persist: sign-up/sign-in write rows, and a booking is a
   real row too. Tests stay re-runnable because they clean up what they create,
   not because the database is stateless. The booking suite cancels every
@@ -186,8 +189,9 @@ OAuth failures redirected back as query params are covered by AUTH-018.
   pinned to the reference code the test itself just created, never to the size
   of the list, which sibling tests are mutating in parallel. Booking days are
   randomised 400–699 days out so workers cannot collide on the unique index.
-- If a dedicated test database is added later, use a separate **test** database
-  — never production (see [qa-strategy.md](qa-strategy.md#database--environment-safety)).
+- PR smoke uses the disposable service database above; the trusted full run
+  still uses the live QA database. Neither may point at production (see
+  [qa-strategy.md](qa-strategy.md#database--environment-safety)).
 
 ## Karaoke / player testing
 
@@ -371,19 +375,24 @@ test itself. Classify before reporting: [bug-reporting.md](bug-reporting.md).
 | `BACKEND_BASE_URL`         | `http://localhost:3000` | Backend origin used by API probes.                       |
 
 The config **refuses to start** against a non-local base URL without the
-explicit flag — tests can never silently hit production. No secrets belong
-in Playwright config, tests or CI.
+explicit flag — tests can never silently hit production. No secrets belong in
+Playwright config or test code. PR CI receives none; the trusted full job reads
+the live values from repository secrets at runtime only.
 
 ## CI
 
 `.github/workflows/e2e.yml` (the existing `changelog.yml` is untouched):
 
 - **Pull Request** → lint → typecheck (frontend + backend) → build →
-  credential-free Playwright **smoke** suite (fast feedback). The live admin
-  credential is deliberately not supplied to pull-request code; admin suites
-  only run in the trusted full job below.
-- **Push to `main`/`develop` or manual dispatch** → **full** regression
-  suite (release confidence).
+  Playwright **smoke** suite (fast feedback). The job starts a disposable
+  PostgreSQL service, applies the Better Auth and Drizzle migrations, seeds
+  the sample catalog plus `qa@example.com`, and uses dummy auth values. No
+  repository secret or live QA credential is supplied to pull-request code.
+  Admin suites only run in the trusted full job below.
+- **Push to `main`/`develop` or a manual dispatch on those branches** →
+  **full** regression suite against the live QA environment (release
+  confidence). Feature-branch dispatches are skipped so the admin secret has
+  no path into unreviewed code.
 - Reports/traces upload as artifacts on failure; `github` reporter
   annotates PRs. Failures retry once (`retries: 1` in CI).
 

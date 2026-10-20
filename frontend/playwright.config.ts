@@ -70,8 +70,8 @@ export default defineConfig({
   // 60 s: the media editor flows upload real files, read tags, grab video
   // frames and walk several pages — well past 30 s under two parallel workers.
   timeout: 60_000,
-  // 10 s: the studio opens behind a session check against the remote Aiven
-  // database plus a ~3.5 s skeleton, and both slow down under parallel workers.
+  // 10 s: the studio opens behind a session check against the database plus a
+  // ~3.5 s skeleton, and both slow down under parallel workers.
   expect: { timeout: 10_000 },
   reporter: reporters,
   outputDir: 'test-results',

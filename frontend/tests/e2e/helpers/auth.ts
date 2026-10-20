@@ -25,7 +25,9 @@ export const ADMIN_STORAGE_STATE = 'playwright/.auth/admin.json'
 export const ANONYMOUS = { cookies: [], origins: [] }
 
 /**
- * Controlled test credentials backed by a real account in Aiven.
+ * Controlled test credentials backed by a real account in the configured
+ * database (Aiven locally/in the trusted full run; the disposable Postgres
+ * service in PR smoke).
  *
  * This user is seeded once into the database and reused across runs, so
  * sign-in tests exercise the actual backend credential check. If sign-in
