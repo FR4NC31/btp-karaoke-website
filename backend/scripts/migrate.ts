@@ -20,8 +20,8 @@ import { db, pool } from '../src/db.ts'
  *
  * Scope: this only creates the tables Drizzle owns (service, booking, media_item).
  * The Better Auth tables come from `better-auth_migrations/` (via
- * `bun x auth@latest migrate` or the CI-only `npm run db:auth-migrate`) and are
- * referenced, never created, from here.
+ * `bun x auth@latest migrate` or the localhost-guarded
+ * `npm run db:auth-migrate`) and are referenced, never created, from here.
  */
 
 const migrationsFolder = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'drizzle')
