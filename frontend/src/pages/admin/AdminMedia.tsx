@@ -20,6 +20,10 @@ export default function AdminMedia() {
   const [items, setItems] = useState<AdminMediaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  // Distinguishes a failed initial load from an action error: an action error
+  // leaves the known catalog on screen, so its sections may legitimately be
+  // empty. Only the initial failure makes "No items" a lie.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
   const [confirmingId, setConfirmingId] = useState('')
@@ -34,9 +38,11 @@ export default function AdminMedia() {
         if (!alive) return
         setItems(result.items)
         setLoadError('')
+        setLoadFailed(false)
       } catch (err) {
         if (!alive) return
         setLoadError(describeBookingError(err, 'Could not load the media catalog.'))
+        setLoadFailed(true)
       } finally {
         if (alive) setLoading(false)
       }
@@ -183,7 +189,7 @@ export default function AdminMedia() {
                   ))}
                 </MediaCarousel>
 
-                {sectionItems.length === 0 && !loadError && (
+                {sectionItems.length === 0 && !loadFailed && (
                   <p className="text-sm text-text-muted">No items in this section yet.</p>
                 )}
               </section>

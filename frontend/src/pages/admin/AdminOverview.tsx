@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import {
@@ -14,6 +14,18 @@ import OverviewSummary, { type OverviewStat } from './components/overview/Overvi
 import PendingApprovals from './components/overview/PendingApprovals'
 import TodayAtStudio from './components/overview/TodayAtStudio'
 
+/**
+ * /admin — the work queue.
+ *
+ * Pending reservations come first: they are the only rows with actions, and
+ * the reason this page exists. Below them, "today at the studio" answers the
+ * one question worth asking on arrival — who is coming in today.
+ *
+ * Reads the full list (this is a single studio's calendar, not a paginated
+ * dataset) and derives the cards client-side, so the page costs one request.
+ * The + New reservation button opens the shell-hosted modal; a save bumps the
+ * shell's revision and reloads this snapshot.
+ */
 
 export default function AdminOverview() {
   const { openNewReservation, reservationsRevision } = useNewReservationDialog()
@@ -23,23 +35,29 @@ export default function AdminOverview() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
+  /** Which action the acting row is running, so only that button says Working. */
   const [actingAction, setActingAction] = useState<'confirm' | 'reject' | null>(null)
+  // Bumped whenever the shell's revision starts a new load. Action refreshes
+  // capture it so a slower response cannot overwrite a newer snapshot.
+  const loadGeneration = useRef(0)
 
   useEffect(() => {
+    const generation = ++loadGeneration.current
     let alive = true
 
     async function load() {
       try {
         const result = await fetchAdminBookings()
-        if (!alive) return
+        if (!alive || generation !== loadGeneration.current) return
         setBookings(result.bookings)
         setStudioToday(result.studioToday)
+        // A successful reload clears a stale error from an earlier attempt.
         setLoadError('')
       } catch (err) {
-        if (!alive) return
+        if (!alive || generation !== loadGeneration.current) return
         setLoadError(describeBookingError(err, 'Could not load the reservations.'))
       } finally {
-        if (alive) setLoading(false)
+        if (alive && generation === loadGeneration.current) setLoading(false)
       }
     }
 
@@ -49,30 +67,42 @@ export default function AdminOverview() {
     }
   }, [reservationsRevision])
 
+  /** Re-reads the snapshot — used best-effort after a failed action. */
   async function refresh() {
+    const generation = loadGeneration.current
     const result = await fetchAdminBookings()
+    if (generation !== loadGeneration.current) return
     setBookings(result.bookings)
     setStudioToday(result.studioToday)
   }
 
   async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
     if (actingId) return
+    const generation = loadGeneration.current
     setActingId(booking.id)
     setActingAction(action)
     setFlash('')
     setLoadError('')
     try {
       const { booking: updated } = await adminBookingAction(booking.id, action)
-      setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
-      setFlash(
-        `${updated.referenceCode} ${updated.status} — ${updated.customerName}, ${updated.serviceName}.`,
-      )
+      // Swap the one row; the day never changes, so list order holds until
+      // the next load re-sorts. A newer load already has the server's truth.
+      if (generation === loadGeneration.current) {
+        setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+        setFlash(
+          `${updated.referenceCode} ${updated.status} — ${updated.customerName}, ${updated.serviceName}.`,
+        )
+      }
     } catch (err) {
-      setLoadError(describeBookingError(err, 'The reservation could not be updated.'))
+      if (generation === loadGeneration.current) {
+        setLoadError(describeBookingError(err, 'The reservation could not be updated.'))
+      }
+      // The action may have lost a race (409) — re-read so the queue matches
+      // the server even though the action itself reported an error.
       try {
         await refresh()
       } catch {
-        return
+        // Keep the action's error; the reload is best-effort.
       }
     } finally {
       setActingId('')

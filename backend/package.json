@@ -6,8 +6,10 @@
     "dev": "node --env-file=.env --watch serve.ts",
     "start": "node --env-file=.env serve.ts",
     "db:generate": "drizzle-kit generate",
+    "db:auth-migrate": "node --env-file=.env scripts/apply-better-auth-migrations.ts",
     "migrate": "node --env-file=.env scripts/migrate.ts",
     "seed": "node --env-file=.env scripts/seed.ts",
+    "seed:e2e": "node --env-file=.env scripts/seed-e2e-user.ts",
     "promote-admin": "node --env-file=.env scripts/promote-admin.ts",
     "typecheck": "tsc --noEmit"
   },

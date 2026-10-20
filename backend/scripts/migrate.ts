@@ -18,9 +18,10 @@ import { db, pool } from '../src/db.ts'
  * Deliberately NOT `drizzle-kit migrate`: that opens its own connection and
  * would bypass the Aiven CA + `sslmode` handling in src/db.ts.
  *
- * Scope: this only creates the tables Drizzle owns (service, booking). The
- * Better Auth tables come from `bun x auth@latest migrate` and are referenced, never
- * created, from here.
+ * Scope: this only creates the tables Drizzle owns (service, booking, media_item).
+ * The Better Auth tables come from `better-auth_migrations/` (via
+ * `bun x auth@latest migrate` or the localhost-guarded
+ * `npm run db:auth-migrate`) and are referenced, never created, from here.
  */
 
 const migrationsFolder = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'drizzle')
@@ -30,8 +31,9 @@ const wantsStatus = process.argv.includes('--status')
  * What the ledger knows: every recorded hash, and the newest `created_at`.
  *
  * The ledger table lives in the `drizzle` schema and does not exist until the
- * first migration runs, so a missing table means an empty database rather than
- * an error — and that is the *only* failure worth swallowing. A connection,
+ * first migration runs, so a missing table (or missing `drizzle` schema) means
+ * an empty database rather than an error — and that is the *only* failure worth
+ * swallowing. A connection,
  * TLS or permission error has to surface: treating those as "empty ledger"
  * made `--status` print every migration as pending and still exit 0 while the
  * database was unreachable, which is worse than no output at all.
@@ -53,9 +55,15 @@ async function readLedger(): Promise<{ hashes: Set<string>; lastCreatedAt: numbe
   }
 }
 
-/** Postgres `undefined_table` — the only error that means "no migrations yet". */
+/**
+ * Postgres `undefined_table` (42P01) or `invalid_schema_name` (3F000) — the
+ * only errors that mean "no migrations yet". The ledger query names both the
+ * `drizzle` schema and its table, so a fresh database can report either first.
+ */
 function isMissingLedgerTable(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && (err as { code?: unknown }).code === '42P01'
+  if (typeof err !== 'object' || err === null) return false
+  const code = (err as { code?: unknown }).code
+  return code === '42P01' || code === '3F000'
 }
 
 async function printStatus() {
@@ -64,15 +72,16 @@ async function printStatus() {
 
   // The migrator picks work by timestamp, not by hash: it reads the newest
   // ledger row's `created_at` and applies every file whose `folderMillis` is
-  // greater (drizzle-orm pg-core/dialect). A file at or below that mark is
-  // therefore already accounted for even if its hash never reached the ledger,
-  // and calling it PENDING would promise a run that `migrate` will skip.
-  const isApplied = (file: { hash: string; folderMillis: number }) =>
-    hashes.has(file.hash) || (lastCreatedAt !== null && file.folderMillis <= lastCreatedAt)
+  // greater (drizzle-orm pg-core/dialect). A file at or below that mark whose
+  // hash never reached the ledger will be skipped by `migrate`, so report it as
+  // skipped rather than promising a run that cannot happen.
+  const isRecorded = (file: { hash: string }) => hashes.has(file.hash)
+  const isSkipped = (file: { hash: string; folderMillis: number }) =>
+    !isRecorded(file) && lastCreatedAt !== null && file.folderMillis <= lastCreatedAt
 
   console.log(`Migrations in ${migrationsFolder}:\n`)
   for (const file of files) {
-    const mark = isApplied(file) ? 'applied' : 'PENDING'
+    const mark = isRecorded(file) ? 'applied' : isSkipped(file) ? 'skipped' : 'PENDING'
     // `folderMillis` is the journal timestamp, so show it as a date; the first
     // line of SQL does not identify a migration (0000 opens with
     // `CREATE TABLE "booking" (`, which every table-creating file resembles).
@@ -81,10 +90,14 @@ async function printStatus() {
     console.log(`  ${mark.padEnd(8)} ${when}  ${name}`)
   }
 
-  const pending = files.filter((file) => !isApplied(file)).length
-  console.log(
-    `\n${files.length} migration(s): ${files.length - pending} applied, ${pending} pending.`,
-  )
+  const skipped = files.filter(isSkipped).length
+  const pending = files.filter((file) => !isRecorded(file) && !isSkipped(file)).length
+  const applied = files.length - skipped - pending
+  const summary = [`${applied} applied`, `${pending} pending`]
+  if (skipped > 0) {
+    summary.splice(1, 0, `${skipped} skipped (unrecorded, below the ledger watermark)`)
+  }
+  console.log(`\n${files.length} migration(s): ${summary.join(', ')}.`)
 }
 
 try {

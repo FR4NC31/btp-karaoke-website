@@ -3,7 +3,7 @@ import type { APIRequestContext } from '@playwright/test'
 import { TEST_ADMIN } from './auth'
 
 
-export interface MediaSeedInput {
+interface MediaSeedInput {
   section: 'video' | 'music' | 'radio'
   title: string
   subtitle?: string

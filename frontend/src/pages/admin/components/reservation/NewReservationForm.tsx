@@ -15,6 +15,15 @@ import CustomerFieldset from './CustomerFieldset'
 import SessionFieldset from './SessionFieldset'
 import type { CustomerMode } from './types'
 
+/**
+ * The reservation form inside the modal: customer kind, guest/customer pick,
+ * session fields, validation, save, and the success panel. Radix unmounts the
+ * dialog content while closed, so this remounts fresh (service catalog
+ * refetched included) every time it opens.
+ *
+ * Creates the reservation `confirmed`: the admin taking it is the approval
+ * step, so it does not enter the pending queue.
+ */
 export default function NewReservationForm({
   onClose,
   onCreated,
@@ -26,14 +35,19 @@ export default function NewReservationForm({
 }) {
   const [mode, setMode] = useState<CustomerMode>('user')
 
+  // Registered-customer search
   const [userQuery, setUserQuery] = useState('')
   const [userResults, setUserResults] = useState<TagUser[]>([])
   const [searchingUsers, setSearchingUsers] = useState(false)
   const [selectedUser, setSelectedUser] = useState<TagUser | null>(null)
+  // A failed search used to look identical to an empty result — "No accounts
+  // match" — which invites an admin to book a registered customer as a guest.
   const [userSearchError, setUserSearchError] = useState('')
 
+  // Guest name
   const [guestName, setGuestName] = useState('')
 
+  // Reservation fields
   const [services, setServices] = useState<Service[]>([])
   const [serviceId, setServiceId] = useState('')
   const [bookingDate, setBookingDate] = useState('')
@@ -55,6 +69,7 @@ export default function NewReservationForm({
         if (!alive) return
         setServices(result.services)
         setStudioToday(result.studioToday)
+        // Pre-fill with the studio's today so the field is never empty.
         setBookingDate(result.studioToday)
       } catch (err) {
         if (!alive) return
@@ -70,6 +85,11 @@ export default function NewReservationForm({
     }
   }, [])
 
+  // Debounced customer search. Runs only while someone is actually picking a
+  // registered customer — the guest tab never hits the endpoint. The state
+  // updates that can happen immediately (clearing for an empty box, showing
+  // "Searching…") live in the change handler, so this effect only schedules
+  // work asynchronously.
   useEffect(() => {
     if (mode !== 'user' || selectedUser) return
     const query = userQuery.trim()
@@ -84,6 +104,9 @@ export default function NewReservationForm({
           setUserSearchError('')
         }
       } catch (err) {
+        // A failed search must not block typing, but it must not read as
+        // "no matches" either — that is how a registered customer ends up
+        // booked as a guest.
         if (alive) {
           setUserResults([])
           setUserSearchError(describeBookingError(err, 'Could not search accounts.'))
@@ -103,6 +126,8 @@ export default function NewReservationForm({
     setSelectedUser(null)
     setUserQuery('')
     setUserResults([])
+    setSearchingUsers(false)
+    setUserSearchError('')
     setGuestName('')
     setServiceId('')
     setNotes('')
@@ -111,13 +136,23 @@ export default function NewReservationForm({
     setCreated(null)
   }
 
+  /**
+   * Switching customer kinds drops the previous kind's validation error,
+   * including a search failure: the submit path reads `userSearchError`, so
+   * leaving it behind would blame a search the admin has already left.
+   */
   function handleModeChange(next: CustomerMode) {
     setMode(next)
     setFormError('')
+    setUserSearchError('')
+    setSearchingUsers(next === 'user' && userQuery.trim().length > 0 && !selectedUser)
   }
 
+  /** Mirrors the search dropdown's immediate states; the request follows. */
   function handleUserQueryChange(value: string) {
     setUserQuery(value)
+    // An empty box has nothing to search; anything else reads as
+    // "Searching…" until the debounced request settles.
     setSearchingUsers(value.trim().length > 0)
     setUserSearchError('')
     if (!value.trim()) setUserResults([])
@@ -126,11 +161,16 @@ export default function NewReservationForm({
   function handlePickUser(candidate: TagUser) {
     setSelectedUser(candidate)
     setUserResults([])
+    setSearchingUsers(false)
+    setUserSearchError('')
   }
 
   function handleClearUser() {
     setSelectedUser(null)
     setUserQuery('')
+    setUserResults([])
+    setSearchingUsers(false)
+    setUserSearchError('')
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -173,10 +213,13 @@ export default function NewReservationForm({
       setSelectedUser(null)
       setUserQuery('')
       setUserResults([])
+      setSearchingUsers(false)
+      setUserSearchError('')
       setGuestName('')
       setServiceId('')
       setNotes('')
       setBookingDate(studioToday)
+      // The desk pages behind the modal show the new row right away.
       onCreated()
     } catch (err) {
       setFormError(describeBookingError(err, 'The reservation could not be saved.'))

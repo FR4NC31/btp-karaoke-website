@@ -1,7 +1,7 @@
 import type { AdminBookingAction } from '../../../../lib/admin-api'
 import type { BookingStatus } from '../../../../lib/booking-api'
 
-export type BookingRowAction = {
+type BookingRowAction = {
   action: AdminBookingAction
   label: string
   kind: 'primary' | 'danger' | 'neutral'

@@ -2,7 +2,7 @@ import type { MediaSection } from '../../../../lib/media-api'
 
 export const SECTION_ORDER: MediaSection[] = ['video', 'music', 'radio']
 
-export interface SectionCopy {
+interface SectionCopy {
   titleLabel: string
   titlePlaceholder: string
   subtitleLabel?: string

@@ -81,15 +81,21 @@ try {
       for (const match of [target, ...others]) {
         console.error(`  ${match.email}`)
       }
-      console.error('Re-run with the address as stored, so exactly one account matches.')
+      console.error('Resolve the duplicate accounts manually in the database, then re-run.')
       process.exitCode = 1
     } else {
-      await db
+      const updated = await db
         .update(user)
         .set({ role, updatedAt: new Date() })
         .where(eq(user.id, target.id))
+        .returning({ id: user.id })
 
-      console.log(`${target.email} is now '${role}'.`)
+      if (updated.length === 0) {
+        console.error(`${target.email} disappeared before the update — nothing changed.`)
+        process.exitCode = 1
+      } else {
+        console.log(`${target.email} is now '${role}'.`)
+      }
     }
   }
 } catch (err) {

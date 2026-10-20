@@ -1,13 +1,18 @@
 name: E2E tests
 
-# PR flow: lint + typecheck + build + Playwright smoke (fast feedback).
-# Push to main/develop (or manual): full Playwright regression suite.
+# PR flow: lint + typecheck + build + Playwright smoke against a disposable
+# local Postgres. No repository secret is exposed to pull_request code.
+# Push to main/develop (or a manual dispatch on those branches): full Playwright
+# regression suite against the live QA environment.
 # The existing changelog workflow is untouched.
 on:
   pull_request:
   push:
     branches: [main, develop]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -23,6 +28,57 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+          # Do not leave the read-only GITHUB_TOKEN in .git/config for the
+          # PR-controlled steps that run later in this job.
+          persist-credentials: false
+
+      - name: Verify runtime env files are ignored
+        run: |
+          git check-ignore -q .env
+          git check-ignore -q backend/.env
+          git check-ignore -q backend/.env.local
+          git check-ignore -q frontend/.env
+          git check-ignore -q frontend/.env.local
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '\.env\.example$'; then
+            echo "::error::A runtime .env file is tracked. Remove it from the index; only .env.example belongs in Git."
+            exit 1
+          fi
+
+      # This is the guard that would have caught the previous design: the PR
+      # job must not inherit any live credential from the workflow environment.
+      - name: Verify no live credentials are present
+        run: |
+          for name in DATABASE_URL BETTER_AUTH_SECRET BETTER_AUTH_API_KEY TEST_ADMIN_PASSWORD; do
+            if [ -n "${!name:-}" ]; then
+              echo "::error::$name is present in the pull-request job; remove it from the workflow."
+              exit 1
+            fi
+          done
+
+      # The service-container syntax cannot interpolate a generated password,
+      # so start Postgres directly. The password exists only for this run and
+      # is not a repository secret; the port is bound to loopback.
+      - name: Start disposable PostgreSQL
+        run: |
+          DB_PASSWORD="$(openssl rand -hex 16)"
+          echo "E2E_DB_PASSWORD=$DB_PASSWORD" >> "$GITHUB_ENV"
+          docker run --detach \
+            --name btp-e2e-postgres \
+            --env POSTGRES_USER=postgres \
+            --env POSTGRES_PASSWORD="$DB_PASSWORD" \
+            --env POSTGRES_DB=btp_e2e \
+            --publish 127.0.0.1:5432:5432 \
+            postgres:16
+          for attempt in $(seq 1 60); do
+            if docker exec btp-e2e-postgres \
+              psql -U postgres -d btp_e2e -tAc 'SELECT 1' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Disposable PostgreSQL did not become ready."
+          docker logs btp-e2e-postgres
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -48,25 +104,31 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      # backend/.env is gitignored; CI rebuilds it from repo secrets.
-      # Set them with `gh secret set <NAME>` (values never appear in chat,
-      # logs, or the repo). Source: backend/.env.example.
-      - name: Write backend/.env
+      # backend/.env is gitignored. This job never reads repository secrets:
+      # the database is the disposable container above, and auth values are
+      # generated or dummy test values. A malicious PR can read this file and
+      # learn nothing that reaches the live QA database or can forge a real
+      # session.
+      - name: Write disposable backend/.env
         working-directory: backend
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BETTER_AUTH_API_KEY: ${{ secrets.BETTER_AUTH_API_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
+          if [ -z "${E2E_DB_PASSWORD:-}" ]; then
+            echo "::error::E2E_DB_PASSWORD is not set; refusing to write a passwordless DATABASE_URL."
+            exit 1
+          fi
           {
             echo "PORT=3000"
             echo "FRONTEND_ORIGIN=http://localhost:5173"
             echo "EXTRA_TRUSTED_ORIGINS="
-            echo "BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}"
+            # Generated per run; this is a disposable local session secret, not
+            # a repository credential, and is never written back to the repo.
+            echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)"
             echo "BETTER_AUTH_URL=http://localhost:3000"
-            echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
-            echo "DATABASE_URL=${DATABASE_URL}"
-            echo "DB_CA_FILE=./ca.pem"
+            echo "BETTER_AUTH_API_KEY="
+            # The password is generated for this run and protects only the
+            # disposable local container; it is not a repository credential.
+            echo "DATABASE_URL=postgresql://postgres:${E2E_DB_PASSWORD}@127.0.0.1:5432/btp_e2e"
+            echo "DB_CA_FILE="
             # Dummy non-empty values: AUTH-008 stubs the Google page itself,
             # so the backend only needs *some* client id to build the OAuth
             # redirect URL. Empty values make Better Auth 500 the handoff.
@@ -78,6 +140,16 @@ jobs:
         working-directory: backend
         run: npm run typecheck
 
+      - name: Initialize disposable test database
+        working-directory: backend
+        env:
+          E2E_DB_SETUP: '1'
+        run: |
+          npm run db:auth-migrate
+          npm run migrate
+          npm run seed
+          npm run seed:e2e
+
       - name: Build (frontend)
         working-directory: frontend
         run: npm run build
@@ -88,12 +160,10 @@ jobs:
 
       - name: Playwright smoke suite
         working-directory: frontend
-        env:
-          # helpers/auth.ts reads the QA admin credentials from the
-          # environment — the same contract as the local frontend/.env.local,
-          # with the password coming from the repo secret instead.
-          TEST_ADMIN_EMAIL: qa-admin@example.com
-          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+        # Deliberately no live credentials: pull_request code is not trusted.
+        # playwright.config.ts leaves admin.setup.ts out when TEST_ADMIN_* is
+        # absent, and the smoke suite runs on the disposable QA user instead.
+        # Admin E2E runs in full-e2e, which is restricted to trusted branches.
         run: npm run test:e2e:smoke
 
       - name: Upload Playwright report
@@ -106,9 +176,18 @@ jobs:
             frontend/test-results/
           retention-days: 14
 
-  # Full regression suite after merge / on demand (release confidence).
+      - name: Stop disposable PostgreSQL
+        if: always()
+        run: docker rm --force btp-e2e-postgres || true
+
+  # Full regression suite against the live QA environment. This is the only
+  # job with repository secrets, and it never runs for a pull_request or a
+  # manual dispatch from a feature branch.
   full-e2e:
-    if: github.event_name != 'pull_request'
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -132,7 +211,8 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      # Same secrets-built .env as pr-checks (see above).
+      # Trusted full-suite job only: live QA database + auth secrets. The
+      # disposable PR job above never receives these values.
       - name: Write backend/.env
         working-directory: backend
         env:
