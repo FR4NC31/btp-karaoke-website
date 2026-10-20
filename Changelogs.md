@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix: close upload races and review findings (0882fe9)
 - fix(ui): make the media editor section-safe and leak-free (09ca2e8)
 - fix(api): tell unique violations apart and reap failed uploads (f3c3362)
 - fix(test): hold the QA admin credential in the environment, not the repo (b248df1)
