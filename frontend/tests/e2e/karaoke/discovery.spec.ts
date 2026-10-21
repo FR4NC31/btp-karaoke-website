@@ -243,10 +243,10 @@ test.describe('karaoke discovery', () => {
       .toBeGreaterThan(videoTime - 0.5)
 
     await mini.hover()
-    await mini.getByRole('button', { name: 'Pause' }).click()
-    await expect(mini.getByRole('button', { name: 'Play' })).toBeVisible()
-    await mini.getByRole('button', { name: 'Play' }).click()
-    await expect(mini.getByRole('button', { name: 'Pause' })).toBeVisible()
+    await mini.getByRole('button', { name: 'Pause', exact: true }).click()
+    await expect(mini.getByRole('button', { name: 'Play', exact: true })).toBeVisible()
+    await mini.getByRole('button', { name: 'Play', exact: true }).click()
+    await expect(mini.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
 
     await mini.getByRole('button', { name: 'Expand' }).click()
     await expect(page).toHaveURL('/studio/player-queue')
@@ -260,7 +260,9 @@ test.describe('karaoke discovery', () => {
 
   test('KARAOKE-012: an uploaded minus-one really plays from the hub', { tag: '@p1' }, async ({ page, baseURL }) => {
     const title = `E2E Uploaded Track ${Date.now()}`
-    const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
+    // One second is too short: the song can legitimately end while the test
+    // checks playback state and navigates back to the hub.
+    const mp3 = loopedSilence(6)
     const upload = await uploadMediaFileAsAdmin(baseURL, {
       name: 'e2e-minus-one.mp3',
       mimeType: 'audio/mpeg',
@@ -296,6 +298,7 @@ test.describe('karaoke discovery', () => {
 
       const ranged = await page.request.get(sourceUrl, { headers: { Range: 'bytes=10-99' } })
       expect(ranged.status()).toBe(206)
+      const beforeLeaving = await stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
 
       await page.getByRole('link', { name: 'Back' }).click()
       await expect(page).toHaveURL('/studio')
@@ -305,6 +308,9 @@ test.describe('karaoke discovery', () => {
       await expect(stage).toHaveAttribute('src', sourceUrl)
       await expect(stage).toBeHidden()
       await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+      await expect
+        .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).currentTime))
+        .toBeGreaterThan(beforeLeaving + 0.2)
       await expect(page.locator('audio')).toHaveCount(0)
     } finally {
       await deleteMediaItemAsAdmin(baseURL, id)
@@ -449,6 +455,16 @@ test.describe('karaoke discovery', () => {
       await expect.poll(paused).toBe(false)
       await playerBar.getByRole('button', { name: 'Previous' }).click()
       await expect(stage).toHaveAttribute('src', url1)
+
+      // The same transport must be able to load the next file while the console
+      // is minimized and the hidden element is using preload="none".
+      await page.getByRole('link', { name: 'Back' }).click()
+      await expect(page).toHaveURL('/studio')
+      await expect(stage).toBeHidden()
+      await playerBar.getByRole('button', { name: 'Next' }).click()
+      await expect(stage).toHaveAttribute('src', url3)
+      await expect(playerBar).toContainText(third)
+      await expect.poll(paused).toBe(false)
     } finally {
       for (const id of createdIds) await deleteMediaItemAsAdmin(baseURL, id)
     }

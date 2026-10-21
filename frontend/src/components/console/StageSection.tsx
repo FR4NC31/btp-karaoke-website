@@ -131,7 +131,7 @@ export default function StageSection({
           src={source}
           poster={coverSrc ?? (audioMode ? placeholderAlbum : placeholderVideo)}
           playsInline
-          preload="metadata"
+          preload={isHidden ? 'none' : 'metadata'}
           onClick={onToggle}
           onPlay={handlePlay}
           onPause={handleStop}

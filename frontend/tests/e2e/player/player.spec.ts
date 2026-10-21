@@ -35,14 +35,13 @@ test.describe('player', () => {
     await expect(playerBar.getByRole('button', { name: 'Pause' })).toBeVisible()
   })
 
-  test('PLAYER-009: studio entry does not autoplay the lobby music or show the bar', { tag: '@p1' }, async ({ page }) => {
+  test('PLAYER-009: studio entry does not autoplay or show the player bar', { tag: '@p1' }, async ({ page }) => {
     await page.goto('/studio')
-    const audio = page.locator('audio')
-    await expect
-      .poll(() => audio.evaluate((el) => (el as HTMLAudioElement).readyState))
-      .toBeGreaterThanOrEqual(2)
-    await expect(audio).toHaveJSProperty('paused', true)
-    expect(await audio.evaluate((el) => (el as HTMLAudioElement).played.length)).toBe(0)
+    const video = page.locator('main video')
+    await expect(video).toBeHidden()
+    await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(true)
+    expect(await video.evaluate((el) => (el as HTMLVideoElement).played.length)).toBe(0)
+    await expect(page.locator('audio')).toHaveCount(0)
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
   })
 
