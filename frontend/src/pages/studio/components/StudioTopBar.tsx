@@ -18,6 +18,7 @@ import ProfileMenu from './ProfileMenu'
 export default function StudioTopBar() {
   const { pathname } = useLocation()
   const showBack = pathname !== '/studio'
+  const onQueue = pathname.startsWith('/studio/player-queue')
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
@@ -73,10 +74,11 @@ export default function StudioTopBar() {
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <Link
-          to="/studio/player-queue"
-          aria-label="Player Queue"
+          to={onQueue ? '/studio' : '/studio/player-queue'}
+          aria-label={onQueue ? 'Minimize player queue' : 'Player Queue'}
+          title={onQueue ? 'Minimize player queue' : 'Open player queue'}
           className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
-            pathname.startsWith('/studio/player-queue')
+            onQueue
               ? 'border-primary/50 bg-primary-soft text-primary'
               : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
           }`}
