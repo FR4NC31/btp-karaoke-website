@@ -1,26 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import localVideo from '../assets/video_local/the-reason.mp4'
-import AdminDetailsPanel from '../components/console/AdminDetailsPanel'
-import ConsoleStatusStrip from '../components/console/ConsoleStatusStrip'
-import DspSection from '../components/console/DspSection'
-import LoungeQueueRail from '../components/console/LoungeQueueRail'
-import StageSection from '../components/console/StageSection'
-import { seededShuffle } from '../components/console/playlist'
-import type { PreviewItem } from '../components/console/types'
-import { fetchAdminMedia } from '../lib/admin-api'
-import { useSession } from '../lib/auth-client'
-import { useKaraokeVideoControls } from '../lib/karaoke-player'
-import { usePageTitle } from '../lib/page-title'
-import { resolveQueueSource, useLoungeQueue, type QueueItem } from '../lib/lounge-queue'
-import { fetchMediaCatalog, type AdminMediaItem, type MediaItem } from '../lib/media-api'
+import localVideo from '../../../assets/video_local/the-reason.mp4'
+import AdminDetailsPanel from '../../../components/console/AdminDetailsPanel'
+import ConsoleStatusStrip from '../../../components/console/ConsoleStatusStrip'
+import DspSection from '../../../components/console/DspSection'
+import LoungeQueueRail from '../../../components/console/LoungeQueueRail'
+import StageSection from '../../../components/console/StageSection'
+import { seededShuffle } from '../../../components/console/playlist'
+import type { PreviewItem } from '../../../components/console/types'
+import { fetchAdminMedia } from '../../../lib/admin-api'
+import { useSession } from '../../../lib/auth-client'
+import type { KaraokeVideoApi, PlayerViewMode } from '../../../lib/karaoke-player'
+import { usePageTitle } from '../../../lib/page-title'
+import { resolveQueueSource, useLoungeQueue, type QueueItem } from '../../../lib/lounge-queue'
+import { fetchMediaCatalog, type AdminMediaItem, type MediaItem } from '../../../lib/media-api'
 
-
-export default function PlayerQueue() {
+export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
   const {
     attachVideo,
     attachPlaylist,
     enterPip,
+    exitPip,
+    pip,
     toggle,
     playing,
     onAir,
@@ -28,7 +29,7 @@ export default function PlayerQueue() {
     repeatMode,
     shuffle,
     shuffleSeed,
-  } = useKaraokeVideoControls()
+  } = player
   const location = useLocation()
   const navigate = useNavigate()
   const { data: session } = useSession()
@@ -37,6 +38,9 @@ export default function PlayerQueue() {
   const routeState = location.state as { autoplay?: boolean; item?: PreviewItem } | null
   const item = routeState?.item
   const autoplay = Boolean(routeState?.autoplay)
+  const onConsole = location.pathname.startsWith('/studio/player-queue')
+  const mode: PlayerViewMode = onConsole ? 'expanded' : pip ? 'mini' : 'hidden'
+  const expanded = mode === 'expanded'
 
   const {
     items: queueRows,
@@ -44,7 +48,23 @@ export default function PlayerQueue() {
     clear: clearQueue,
     move: moveRow,
   } = useLoungeQueue()
-  const [queueTrackId, setQueueTrackId] = useState<string | null>(null)
+
+  // A card navigation is a new history entry. Queue selections are tied to the
+  // item navigation they were made from, so clicking another card starts that
+  // card instead of leaving the old queue row on air. The state update is
+  // guarded and happens during render so the old source never wins a frame.
+  const itemLocationKey = item ? location.key : null
+  const [lastItemLocationKey, setLastItemLocationKey] = useState<string | null>(null)
+  if (itemLocationKey !== null && itemLocationKey !== lastItemLocationKey) {
+    setLastItemLocationKey(itemLocationKey)
+  }
+  const itemSessionKey = itemLocationKey ?? lastItemLocationKey
+  const [queueSelection, setQueueSelection] = useState<{
+    id: string
+    itemSessionKey: string | null
+  } | null>(null)
+  const queueTrackId =
+    queueSelection && queueSelection.itemSessionKey === itemSessionKey ? queueSelection.id : null
   const [playToken, setPlayToken] = useState(0)
   const shuffleHistoryRef = useRef<string[]>([])
   const shufflePlayedRef = useRef<Set<string>>(new Set())
@@ -118,7 +138,7 @@ export default function PlayerQueue() {
     ? queuedPlay.source.kind === 'music'
     : (item?.section ?? onAir?.kind) === 'music'
   const trackTitle = queuedPlay ? queuedPlay.row.title : (item?.title ?? onAir?.title ?? 'The Reason')
-  usePageTitle(trackTitle.trim() || null)
+  usePageTitle(expanded ? trackTitle.trim() || null : null)
   const trackSubtitle = queuedPlay
     ? queuedPlay.row.artist || null
     : item
@@ -157,6 +177,7 @@ export default function PlayerQueue() {
   }, [queuedPlay, item, adminCatalog, catalog])
 
   const removedSlotRef = useRef<{ forward: string[]; backward: string[] } | null>(null)
+
   const rememberRemovedSlot = useCallback(
     (id: string) => {
       const index = playableIds.indexOf(id)
@@ -192,12 +213,12 @@ export default function PlayerQueue() {
 
   const goToRow = useCallback(
     (id: string) => {
-      setQueueTrackId(id)
+      setQueueSelection({ id, itemSessionKey })
       setLastQueuedRow(queueRows.find((row) => row.id === id) ?? null)
       setPlayToken((token) => token + 1)
       removedSlotRef.current = null
     },
-    [queueRows],
+    [itemSessionKey, queueRows],
   )
 
   const advance = useCallback(
@@ -309,12 +330,15 @@ export default function PlayerQueue() {
   useEffect(() => {
     const el = videoRef.current
     if (!el) return
-    const detach = attachVideo(el)
-    if (autoplay) void el.play().catch(() => {})
-    return () => {
-      detach()
-    }
-  }, [attachVideo, autoplay])
+    return attachVideo(el)
+  }, [attachVideo])
+
+  useEffect(() => {
+    if (!autoplay || queueTrackId !== null) return
+    const el = videoRef.current
+    if (!el) return
+    void el.play().catch(() => {})
+  }, [autoplay, item?.id, queueTrackId])
 
   const handleMediaError = useCallback(() => {
     if (!queuedPlay) return
@@ -333,12 +357,42 @@ export default function PlayerQueue() {
     navigate('/studio')
   }, [enterPip, navigate])
 
-  return (
-    <div>
-      <ConsoleStatusStrip queueCount={queueRows.length} />
+  const handleExpand = useCallback(() => {
+    navigate('/studio/player-queue')
+  }, [navigate])
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
+  const handleCloseMini = useCallback(() => {
+    exitPip()
+  }, [exitPip])
+
+  const rootClass =
+    mode === 'expanded'
+      ? 'absolute inset-0 z-30 overflow-y-auto overscroll-contain bg-background p-4 sm:p-6'
+      : mode === 'mini'
+        ? 'fixed right-3 bottom-24 z-40 w-56 sm:right-4 sm:w-72'
+        : 'invisible pointer-events-none fixed top-0 left-0 h-px w-px overflow-hidden'
+
+  return (
+    <div
+      data-player-mode={mode}
+      role={mode === 'mini' ? 'complementary' : undefined}
+      aria-label={mode === 'mini' ? 'Mini player' : undefined}
+      aria-hidden={mode === 'hidden' ? true : undefined}
+      inert={mode === 'hidden' ? true : undefined}
+      className={rootClass}
+    >
+      {expanded && <ConsoleStatusStrip queueCount={queueRows.length} />}
+
+      <div
+        className={
+          expanded ? 'mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]' : undefined
+        }
+      >
+        <div
+          className={
+            expanded ? 'min-w-0 space-y-5 lg:col-start-1 lg:row-start-1' : undefined
+          }
+        >
           <StageSection
             videoRef={videoRef}
             source={source}
@@ -347,28 +401,43 @@ export default function PlayerQueue() {
             trackTitle={trackTitle}
             trackSubtitle={trackSubtitle}
             playing={playing}
+            mode={mode}
             onToggle={toggle}
             onEnded={() => advance(1)}
             onMediaError={handleMediaError}
             onMediaLoaded={handleMediaLoaded}
             onEnterPip={handleEnterPip}
+            onExpand={handleExpand}
           />
 
-          {isAdmin && panelItem && <AdminDetailsPanel item={panelItem} />}
+          {expanded && isAdmin && panelItem && <AdminDetailsPanel item={panelItem} />}
 
-          <DspSection />
+          {expanded && <DspSection />}
         </div>
 
-        <LoungeQueueRail
-          rows={rowsInOrder}
-          totalCount={queueRows.length}
-          playingRowId={playingRowId}
-          shuffle={shuffle}
-          onRemove={handleRemoveRow}
-          onClear={handleClearQueue}
-          onMove={handleMoveRow}
-        />
+        {expanded && (
+          <LoungeQueueRail
+            rows={rowsInOrder}
+            totalCount={queueRows.length}
+            playingRowId={playingRowId}
+            shuffle={shuffle}
+            onRemove={handleRemoveRow}
+            onClear={handleClearQueue}
+            onMove={handleMoveRow}
+          />
+        )}
       </div>
+
+      {mode === 'mini' && (
+        <button
+          type="button"
+          aria-label="Close mini player"
+          onClick={handleCloseMini}
+          className="absolute top-1.5 left-1.5 z-10 grid size-7 place-items-center rounded-md bg-black/60 text-base leading-none text-text-primary backdrop-blur transition hover:bg-primary"
+        >
+          ×
+        </button>
+      )}
     </div>
   )
 }

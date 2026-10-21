@@ -3,8 +3,7 @@ import { Outlet, useLocation } from 'react-router'
 import StudioTopBar from './components/StudioTopBar'
 import StudioSidebar from './components/StudioSidebar'
 import PlayerBar from './components/PlayerBar'
-import StudioBgm from './components/StudioBgm'
-import StudioPip from './components/StudioPip'
+import StudioPlayer from './components/StudioPlayer'
 import StudioSkeleton from './components/StudioSkeleton'
 import { useKaraokeVideo } from '../../lib/karaoke-player'
 import { LoungeQueueProvider, useLoungeQueueState } from '../../lib/lounge-queue'
@@ -34,14 +33,18 @@ export default function StudioShell() {
       <div className="flex min-h-0 flex-1">
         <StudioSidebar />
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-6">
-          {loading && !skipSkeleton ? (
-            <StudioSkeleton />
-          ) : (
-            <LoungeQueueProvider api={queue}>
-              <Outlet context={player} />
-            </LoungeQueueProvider>
-          )}
+        <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+          <LoungeQueueProvider api={queue}>
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              {loading && !skipSkeleton ? (
+                <StudioSkeleton />
+              ) : (
+                <Outlet context={player} />
+              )}
+            </div>
+
+            <StudioPlayer player={player} />
+          </LoungeQueueProvider>
         </main>
       </div>
 
@@ -52,8 +55,6 @@ export default function StudioShell() {
           onToggleLiked={() => setLiked((value) => !value)}
         />
       )}
-      <StudioBgm player={player} />
-      <StudioPip player={player} />
     </div>
   )
 }
