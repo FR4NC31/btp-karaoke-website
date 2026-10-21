@@ -35,6 +35,7 @@ Last updated: October 22, 2026
 
 ### Bug Fixes
 
+- fix(profile): cover sign-up and tighten location guard (2e5289d)
 - fix(player): retry catalogs after effect cleanup (c940315)
 - fix(profile): guard location saves and PSGC loads (83e386f)
 - fix(studio): address persistent player review feedback (ad3f398)
@@ -87,6 +88,10 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- docs(testing): label signup location coverage (cb6d8d9)
+- test(auth): tighten sign-up guard assertion (fe70938)
+- test(profile): cover sign-up location guard (e514df3)
+- Merge pull request #32 from FR4NC31/fix/player-catalog-latch (ed142f8)
 - docs(testing): scope PLAYER-010 to the request retry (446668d)
 - Merge pull request #31 from FR4NC31/feat/profile-location (f8522d6)
 - Merge pull request #29 from FR4NC31/feat/persistent-player-surface (8ce57bb)

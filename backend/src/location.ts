@@ -1,15 +1,16 @@
 /**
  * Structural guard for the profile location fields.
  *
- * The UI only offers PSGC names, but `update-user` is a public endpoint: a
- * crafted request could otherwise save one field at a time, store a street
- * address, or write an unbounded string. Keeping this independent from
- * Better Auth lets the rules be tested without a database connection.
+ * The UI only offers PSGC names, but sign-up and `update-user` are public
+ * endpoints: a crafted request could otherwise save one field at a time or
+ * write an unbounded string. Keeping this independent from Better Auth lets
+ * the rules be tested without a database connection.
  *
- * PSGC membership itself stays in the client cascade; validating the whole
- * dataset on the auth path would make every profile save depend on an
- * external API. These checks stop partial, blank, oversized, and
- * control-character writes, and keep clearing an all-or-nothing operation.
+ * This guard enforces shape and length only: all three levels together,
+ * trimmed, at most 120 characters, no control characters. PSGC membership and
+ * the no-street-address rule stay in the client cascade; validating the whole
+ * dataset on the auth path would make every profile save depend on an external
+ * API.
  */
 export const LOCATION_FIELDS = ['province', 'city_municipality', 'barangay'] as const
 
@@ -23,7 +24,8 @@ export type LocationValidation =
   | { kind: 'valid'; data: LocationValues }
 
 const MAX_LOCATION_LENGTH = 120
-const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]/
+// C0 controls, DEL, and the C1 control block.
+const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F]/
 
 function isBlank(value: unknown): boolean {
   return (

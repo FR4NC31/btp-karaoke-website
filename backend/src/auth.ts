@@ -1,5 +1,6 @@
 import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
+import type { User } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import { resolveAuthNetworkSettings } from './auth-settings.ts'
 import { pool } from './db.ts'
@@ -8,28 +9,34 @@ import { validateLocationUpdate } from './location.ts'
 const { frontendOrigin, ipAddressHeaders, trustedProxies, errorURL } =
   resolveAuthNetworkSettings()
 
+type UserInput = Partial<User> & Record<string, unknown>
+
+/**
+ * The location editor sends all three PSGC names together. Keep that contract
+ * at the API boundary too: both sign-up and update-user accept additional
+ * fields from the client, so neither may write a partial, blank, or unbounded
+ * location row.
+ */
+async function guardLocation(user: UserInput) {
+  const location = validateLocationUpdate(user)
+
+  if (location.kind === 'invalid') {
+    throw new APIError('BAD_REQUEST', { message: location.message })
+  }
+
+  if (location.kind === 'valid') {
+    return { data: { ...user, ...location.data } }
+  }
+}
+
 export const auth = betterAuth({
   // Shared pool (see db.ts) so auth and the booking queries ride the same
   // connections and TLS setup.
   database: pool,
-  // The location editor sends all three PSGC names together. Keep that contract
-  // at the API boundary too: update-user is public and must not be able to
-  // write a partial, blank, or unbounded location row.
   databaseHooks: {
     user: {
-      update: {
-        before: async (user) => {
-          const location = validateLocationUpdate(user)
-
-          if (location.kind === 'invalid') {
-            throw new APIError('BAD_REQUEST', { message: location.message })
-          }
-
-          if (location.kind === 'valid') {
-            return { data: { ...user, ...location.data } }
-          }
-        },
-      },
+      create: { before: guardLocation },
+      update: { before: guardLocation },
     },
   },
   // Rate-limit buckets are keyed by client IP. Behind a proxy/CDN the socket
