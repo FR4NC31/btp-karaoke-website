@@ -79,6 +79,7 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
 - docs(auth): correct session failure note (ed2f4c3)
 - perf(auth): enable database joins and upgrade Better Auth (3533b55)
