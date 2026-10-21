@@ -77,6 +77,8 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- perf(auth): enable database joins and upgrade Better Auth (3533b55)
+- Merge pull request #25 from FR4NC31/fix/better-auth-rate-limit-oauth-errors (804ddb8)
 - Merge pull request #24 from FR4NC31/fix/karaoke-014-015-popover-race (70a8995)
 - test(karaoke): await queue popover close (284dec3)
 - Merge pull request #23 from FR4NC31/fix/UI-polished (e031c31)
