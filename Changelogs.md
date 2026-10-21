@@ -81,6 +81,7 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- wip: persist studio player across navigation (366c3db)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
