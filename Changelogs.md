@@ -6,6 +6,7 @@ Last updated: October 21, 2026
 
 ### Features
 
+- feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
 - feat(admin): take reservations in a desk modal (0d2fe27)
@@ -33,8 +34,8 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
-- fix(studio): address persistent player review feedback (322a482)
-- fix(studio): finish persistent player playback and coverage (b39442e)
+- fix(studio): address persistent player review feedback (ad3f398)
+- fix(studio): finish persistent player playback and coverage (29a1279)
 - fix(studio): address player queue resume review feedback (aa87ad7)
 - fix(studio): resume queue playback and toggle minimize (243af74)
 - fix(studio): address player queue review feedback (c464ae3)
@@ -83,7 +84,6 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
-- wip: persist studio player across navigation (366c3db)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
