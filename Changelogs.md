@@ -33,6 +33,7 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
+- fix(studio): address persistent player review feedback (322a482)
 - fix(studio): finish persistent player playback and coverage (b39442e)
 - fix(studio): address player queue resume review feedback (aa87ad7)
 - fix(studio): resume queue playback and toggle minimize (243af74)
@@ -82,7 +83,7 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
-- feat(studio): persist player across navigation (366c3db)
+- wip: persist studio player across navigation (366c3db)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
