@@ -297,13 +297,9 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
     const el = videoRef.current
     if (!el) return
     el.currentTime = 0
-    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      void el.play().catch(() => {})
-      return
-    }
-    const start = () => void el.play().catch(() => {})
-    el.addEventListener('canplay', start, { once: true })
-    return () => el.removeEventListener('canplay', start)
+    // play() starts the resource load itself. Waiting for canplay first would
+    // deadlock when the hidden surface uses preload="none" on a new source.
+    void el.play().catch(() => {})
   }, [playToken])
 
   useEffect(() => {

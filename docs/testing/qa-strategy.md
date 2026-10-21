@@ -160,10 +160,12 @@ Only mark what actually exists in the application.
   pinned by KARAOKE-002)
 - [x] Video song → console hop (KARAOKE-002)
 - [x] Player opens with track (PLAYER-001)
-- [x] Studio entry stays silent — no lobby autoplay (PLAYER-009)
+- [x] Studio entry stays silent — the persistent player starts hidden and paused (PLAYER-009)
 - [x] Playback start / pause / resume (PLAYER-003, PLAYER-004)
 - [x] Like toggle (PLAYER-008)
 - [x] Song loads real media — uploaded files or the bundled master via shell player bar (KARAOKE-006/012)
+- [x] One persistent player survives route changes; hidden/mini/expanded are presentation modes, not remounts (KARAOKE-010/011/017/018/019/020)
+- [x] Player queue navigation, deep links and active-control minimize (KARAOKE-016/017)
 - [ ] Player error / media failure handling — N/A (write-time validation rejects broken sources; no UI error state for out-of-band deletions)
 
 ### Backend

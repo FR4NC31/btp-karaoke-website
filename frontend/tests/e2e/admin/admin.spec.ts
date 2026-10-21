@@ -46,6 +46,15 @@ async function serviceIdByCode(api: APIRequestContext, code: string): Promise<st
   return match.id
 }
 
+async function mediaIdByTitle(api: APIRequestContext, title: string): Promise<string> {
+  const response = await api.get('/api/admin/media')
+  expect(response.ok(), `media read should succeed (got ${response.status()})`).toBeTruthy()
+  const body = (await response.json()) as { items: Array<{ id: string; title: string }> }
+  const item = body.items.find((entry) => entry.title === title)
+  expect(item, 'the created media row should be in the admin catalog').toBeTruthy()
+  return item!.id
+}
+
 async function createPendingAsCustomer(
   baseURL: string | undefined,
   serviceCode: string,
@@ -324,50 +333,60 @@ test.describe('media hub catalog', () => {
     }
   })
 
-  test('ADMIN-009: the admin uploads an MP4 and the hub really plays it', { tag: '@p1' }, async ({ page }) => {
+  test('ADMIN-009: the admin uploads an MP4 and the hub really plays it', { tag: '@p1' }, async ({ page, baseURL }) => {
     const title = `E2E Upload ${Date.now()}`
+    let createdId: string | null = null
 
-    await page.goto('/admin/media/new')
-    await page.getByLabel('Title', { exact: true }).fill(title)
-    await page.getByLabel('Artist').fill('E2E performer')
-    await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
-    await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
-    await expect(page.getByText('Runtime: 3:54 — read from the file.')).toBeVisible()
+    try {
+      await page.goto('/admin/media/new')
+      await page.getByLabel('Title', { exact: true }).fill(title)
+      await page.getByLabel('Artist').fill('E2E performer')
+      await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
+      await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
+      await expect(page.getByText('Runtime: 3:54 — read from the file.')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Add to the hub' }).click()
-    await expect(flashWith(page, title)).toContainText('live on the hub')
+      await page.getByRole('button', { name: 'Add to the hub' }).click()
+      await expect(flashWith(page, title)).toContainText('live on the hub')
+      createdId = await mediaIdByTitle(page.request, title)
 
-    await page.goto('/admin/media')
-    const row = page.locator('main li').filter({ hasText: title })
-    await expect(row).toContainText('MP4 file')
+      await page.goto('/admin/media')
+      const row = page.locator('main li').filter({ hasText: title })
+      await expect(row).toContainText('MP4 file')
 
-    await page.goto('/studio')
-    const card = page.locator('main article').filter({ hasText: title })
-    await expect(card).toContainText('E2E performer')
-    await expect(card).toContainText('3:54')
-    await page.getByRole('link', { name: `Play ${title}` }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+      await page.goto('/studio')
+      const card = page.locator('main article').filter({ hasText: title })
+      await expect(card).toContainText('E2E performer')
+      await expect(card).toContainText('3:54')
+      await page.getByRole('link', { name: `Play ${title}` }).click()
+      await expect(page).toHaveURL('/studio/player-queue')
 
-    const video = page.locator('main video')
-    const src = await video.getAttribute('src')
-    expect(src, 'the stage should point at the stored upload').toContain('/api/uploads/media/')
-    await expect(page.getByRole('contentinfo')).toContainText(title)
-    await expect(page.getByRole('contentinfo')).toContainText('E2E performer')
-    await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+      const video = page.locator('main video')
+      // The persistent player exists before this route commits, so wait for
+      // its new source instead of reading the previous src immediately.
+      await expect(video).toHaveAttribute('src', /\/api\/uploads\/media\//)
+      const src = await video.getAttribute('src')
+      expect(src, 'the stage should point at the stored upload').toContain('/api/uploads/media/')
+      await expect(page.getByRole('contentinfo')).toContainText(title)
+      await expect(page.getByRole('contentinfo')).toContainText('E2E performer')
+      await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
 
-    const ranged = await page.request.get(src!, { headers: { Range: 'bytes=0-99' } })
-    expect(ranged.status()).toBe(206)
-    expect(ranged.headers()['content-range']).toMatch(/^bytes 0-99\/\d+$/)
+      const ranged = await page.request.get(src!, { headers: { Range: 'bytes=0-99' } })
+      expect(ranged.status()).toBe(206)
+      expect(ranged.headers()['content-range']).toMatch(/^bytes 0-99\/\d+$/)
 
-    await page.goto('/admin/media')
-    const cleanup = page.locator('main li').filter({ hasText: title })
-    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
-    await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
-    await expect(flashWith(page, `${title} removed.`)).toBeVisible()
-    await expect(cleanup).toBeHidden()
+      await page.goto('/admin/media')
+      const cleanup = page.locator('main li').filter({ hasText: title })
+      await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+      await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
+      await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+      await expect(cleanup).toBeHidden()
+      createdId = null
 
-    const gone = await page.request.get(src!)
-    expect(gone.status(), 'the uploaded file should be deleted with its row').toBe(404)
+      const gone = await page.request.get(src!)
+      expect(gone.status(), 'the uploaded file should be deleted with its row').toBe(404)
+    } finally {
+      if (createdId) await deleteMediaItemAsAdmin(baseURL, createdId)
+    }
   })
 
   test('ADMIN-010: the uploader rejects files that are not real media or cover images', { tag: '@p2' }, async ({ request, baseURL }) => {
@@ -493,62 +512,69 @@ test.describe('media hub catalog', () => {
     expect((await page.request.get(stored!.coverUrl!)).status()).toBe(404)
   })
 
-  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page }) => {
+  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page, baseURL }) => {
     const title = `E2E Thumb ${Date.now()}`
+    let createdId: string | null = null
 
-    await page.goto('/admin/media/new')
-    await page.getByLabel('Title', { exact: true }).fill(title)
-    await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
-    await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
+    try {
+      await page.goto('/admin/media/new')
+      await page.getByLabel('Title', { exact: true }).fill(title)
+      await page.getByLabel('Video file (MP4)').setInputFiles('src/assets/video_local/the-reason.mp4')
+      await expect(page.getByText(/Ready to upload: the-reason\.mp4/)).toBeVisible()
 
-    await expect(page.getByText('Grabbed from the video')).toBeVisible()
+      await expect(page.getByText('Grabbed from the video')).toBeVisible()
 
-    await page.getByLabel('Thumbnail image (JPG, PNG or WebP)').setInputFiles('tests/e2e/assets/cover.png')
-    await expect(page.getByText(/Chosen image: cover\.png/)).toBeVisible()
-    await expect(page.getByAltText('Cover preview')).toHaveAttribute('src', /^blob:/)
+      await page.getByLabel('Thumbnail image (JPG, PNG or WebP)').setInputFiles('tests/e2e/assets/cover.png')
+      await expect(page.getByText(/Chosen image: cover\.png/)).toBeVisible()
+      await expect(page.getByAltText('Cover preview')).toHaveAttribute('src', /^blob:/)
 
-    await page.getByRole('button', { name: 'Add to the hub' }).click()
-    await expect(flashWith(page, title)).toContainText('live on the hub')
+      await page.getByRole('button', { name: 'Add to the hub' }).click()
+      await expect(flashWith(page, title)).toContainText('live on the hub')
+      createdId = await mediaIdByTitle(page.request, title)
 
-    await page.goto('/studio')
-    const card = page.locator('main article').filter({ hasText: title })
-    const coverSrc = await card.locator('img').getAttribute('src')
-    expect(coverSrc).toMatch(/\/api\/uploads\/media\/.+\.webp$/)
-    const served = await page.request.get(coverSrc!)
-    expect(served.status()).toBe(200)
-    expect(served.headers()['content-type']).toContain('image/webp')
+      await page.goto('/studio')
+      const card = page.locator('main article').filter({ hasText: title })
+      const coverSrc = await card.locator('img').getAttribute('src')
+      expect(coverSrc).toMatch(/\/api\/uploads\/media\/.+\.webp$/)
+      const served = await page.request.get(coverSrc!)
+      expect(served.status()).toBe(200)
+      expect(served.headers()['content-type']).toContain('image/webp')
 
-    await page.goto('/admin/media')
-    const row = page.locator('main li').filter({ hasText: title })
-    await expect(row).toContainText('Cover')
-    await row.getByRole('link', { name: `Edit ${title}` }).click()
-    await expect(page.getByText(/Current cover:/)).toBeVisible()
-    await page.getByRole('button', { name: 'Remove cover' }).click()
-    await expect(page.getByText(/No cover yet/)).toBeVisible()
-    await page.getByRole('button', { name: 'Save changes' }).click()
-    await expect(flashWith(page, 'Saved')).toBeVisible()
-    expect((await page.request.get(coverSrc!)).status()).toBe(404)
+      await page.goto('/admin/media')
+      const row = page.locator('main li').filter({ hasText: title })
+      await expect(row).toContainText('Cover')
+      await row.getByRole('link', { name: `Edit ${title}` }).click()
+      await expect(page.getByText(/Current cover:/)).toBeVisible()
+      await page.getByRole('button', { name: 'Remove cover' }).click()
+      await expect(page.getByText(/No cover yet/)).toBeVisible()
+      await page.getByRole('button', { name: 'Save changes' }).click()
+      await expect(flashWith(page, 'Saved')).toBeVisible()
+      expect((await page.request.get(coverSrc!)).status()).toBe(404)
 
-    await page.goto('/studio')
-    await expect(page.locator('main article').filter({ hasText: title }).locator('img')).toHaveCount(0)
+      await page.goto('/studio')
+      await expect(page.locator('main article').filter({ hasText: title }).locator('img')).toHaveCount(0)
 
-    const listed = await page.request.get('/api/admin/media')
-    const items = (await listed.json()).items as Array<{
-      title: string
-      sourceUrl: string | null
-      coverUrl: string | null
-    }>
-    const stored = items.find((entry) => entry.title === title)
-    expect(stored?.coverUrl, 'the removed cover should be null again').toBeNull()
-    const sourceUrl = stored!.sourceUrl!
+      const listed = await page.request.get('/api/admin/media')
+      const items = (await listed.json()).items as Array<{
+        title: string
+        sourceUrl: string | null
+        coverUrl: string | null
+      }>
+      const stored = items.find((entry) => entry.title === title)
+      expect(stored?.coverUrl, 'the removed cover should be null again').toBeNull()
+      const sourceUrl = stored!.sourceUrl!
 
-    await page.goto('/admin/media')
-    const cleanup = page.locator('main li').filter({ hasText: title })
-    await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
-    await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
-    await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+      await page.goto('/admin/media')
+      const cleanup = page.locator('main li').filter({ hasText: title })
+      await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
+      await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
+      await expect(flashWith(page, `${title} removed.`)).toBeVisible()
+      createdId = null
 
-    expect((await page.request.get(sourceUrl)).status()).toBe(404)
+      expect((await page.request.get(sourceUrl)).status()).toBe(404)
+    } finally {
+      if (createdId) await deleteMediaItemAsAdmin(baseURL, createdId)
+    }
   })
 
   test('ADMIN-014: Play previews the row on the console with staff-only details', { tag: '@p2' }, async ({ page, baseURL }) => {
