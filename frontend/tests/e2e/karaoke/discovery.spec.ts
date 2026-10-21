@@ -642,4 +642,40 @@ test.describe('karaoke discovery', () => {
       for (const id of createdIds) await deleteMediaItemAsAdmin(baseURL, id)
     }
   })
+
+  test('KARAOKE-016: player queue opens from the studio navigation and player bar', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio')
+
+    const topBar = page.getByRole('banner')
+    await topBar.getByRole('link', { name: 'Player Queue' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(
+      page.getByRole('heading', { name: 'Karaoke & Studio Audio Console' }),
+    ).toBeVisible()
+    await expect(topBar.getByRole('link', { name: 'Player Queue' })).toHaveClass(/bg-primary-soft/)
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
+
+    const sidebar = page
+      .getByRole('complementary')
+      .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
+    await sidebar.getByRole('link', { name: 'Player Queue' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+
+    const playerBar = page.getByRole('contentinfo')
+    await playerBar.getByRole('button', { name: /Play|Pause/ }).click()
+    await expect(page).toHaveURL('/studio')
+
+    await playerBar.getByRole('link', { name: 'Open player queue' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+  })
 })

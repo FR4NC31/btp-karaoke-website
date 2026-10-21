@@ -108,7 +108,7 @@ frontend/tests/e2e/
 ├── auth/signin.spec.ts          AUTH-001…021    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…015 media hub (DB-backed catalog), console, player bar, PiP, queue playback
+├── karaoke/discovery.spec.ts    KARAOKE-001…016 media hub (DB-backed catalog), console, player bar, PiP, queue playback, queue navigation
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
@@ -208,6 +208,7 @@ What the product actually implements today (test coverage is limited to this):
 | -------------------------------- | --------------------- | ------------------------- |
 | Media hub sections (video/music/radio) | Working — DB-backed catalog curated from `/admin/media`; empty sections render nothing | KARAOKE-001/003/005, SMOKE-004 |
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
+| Player queue navigation          | Working — the top bar, sidebar, player-bar track block, and non-control bar surface open `/studio/player-queue`; transport and seek controls keep their own actions | KARAOKE-016 |
 | Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
 | Player play/pause/like toggles   | Working (real lobby track on the hub; the console's on-air track renames the bar) | PLAYER-001/003/004/008 |

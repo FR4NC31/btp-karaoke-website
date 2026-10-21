@@ -1,3 +1,5 @@
+import type { MouseEvent } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   MusicNote01Icon,
@@ -31,11 +33,23 @@ export default function PlayerBar({
   liked: boolean
   onToggleLiked: () => void
 }) {
+  const navigate = useNavigate()
   const playing = player.playing
   const progress = player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
   const current = formatTime(player.currentTime)
   const duration = formatTime(player.duration)
   const canSeek = player.duration > 0
+
+  const openQueue = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target
+    if (
+      target instanceof Element &&
+      target.closest('button, a, input, select, textarea, [role="slider"]')
+    ) {
+      return
+    }
+    navigate('/studio/player-queue')
+  }
 
   const onAir = player.onAir
   const nowTitle = onAir?.title ?? 'The Reason'
@@ -55,7 +69,10 @@ export default function PlayerBar({
   }
 
   return (
-    <footer className="relative flex h-20 shrink-0 items-center gap-3 bg-surface px-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:px-4">
+    <footer
+      onClick={openQueue}
+      className="relative flex h-20 shrink-0 cursor-pointer items-center gap-3 bg-surface px-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:px-4"
+    >
       <div className="absolute top-0 left-0 z-10 h-3 w-full">
         <div className="absolute top-1 left-0 h-1 w-full bg-border">
           <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
@@ -78,24 +95,33 @@ export default function PlayerBar({
         />
       </div>
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
-        {onAir?.coverUrl ? (
-          <img
-            src={onAir.coverUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="size-12 shrink-0 rounded-md bg-surface-elevated object-cover"
-          />
-        ) : (
-          <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
-        )}
-        <div className="min-w-0 leading-tight">
-          <p className="truncate text-sm font-semibold uppercase">{nowTitle}</p>
-          {nowSubtitle && <p className="truncate text-[11px] text-text-muted">{nowSubtitle}</p>}
-          <p className="mt-0.5 hidden text-[9px] font-bold tracking-wider text-primary uppercase sm:block">
-            {nowFormat}
-          </p>
-        </div>
+        <Link
+          to="/studio/player-queue"
+          aria-label="Open player queue"
+          title="Open player queue"
+          className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          {onAir?.coverUrl ? (
+            <img
+              src={onAir.coverUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="size-12 shrink-0 rounded-md bg-surface-elevated object-cover"
+            />
+          ) : (
+            <Placeholder icon={MusicNote01Icon} iconSize={16} className="size-12 shrink-0 rounded-md" />
+          )}
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-semibold uppercase transition-colors group-hover:text-primary">
+              {nowTitle}
+            </p>
+            {nowSubtitle && <p className="truncate text-[11px] text-text-muted">{nowSubtitle}</p>}
+            <p className="mt-0.5 hidden text-[9px] font-bold tracking-wider text-primary uppercase sm:block">
+              {nowFormat}
+            </p>
+          </div>
+        </Link>
         <button
           type="button"
           onClick={onToggleLiked}
