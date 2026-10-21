@@ -164,6 +164,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Sign in. 2. Reload the page.
 - **Expected:** Still on `/studio` with the studio rendered — the Better Auth
   cookie persists, so the guard resolves without re-authenticating.
+- **Notes:** The reload calls Better Auth's session endpoint, so this also
+  exercises the joined session read enabled by `advanced.database.joins`; a
+  failed relation would send the guard back to sign-in.
 - **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-010

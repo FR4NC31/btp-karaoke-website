@@ -10,6 +10,9 @@ The application now resolves both from environment variables in
 `backend/src/auth-settings.ts`. This document explains the defaults, how to
 choose values for your edge, and what can go wrong.
 
+Database joins and the Better Auth version policy are covered separately in
+[performance-and-upgrades.md](performance-and-upgrades.md).
+
 ## 1. Accurate rate limiting behind a proxy or CDN
 
 ### Why the default is not enough

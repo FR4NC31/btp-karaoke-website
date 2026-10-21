@@ -16,6 +16,18 @@ export const auth = betterAuth({
   // auth-settings.ts; see docs/auth/proxy-and-oauth-errors.md for deployment
   // examples and spoofing risks.
   advanced: {
+    // Better Auth reads/writes its own tables through the Kysely adapter
+    // (database: pool above), not through the Drizzle instance that owns the
+    // booking/media schema. The PostgreSQL Kysely dialect supports native
+    // joins, so `get-session` and similar endpoints can fetch the user (and,
+    // where relevant, account) rows in one round trip instead of one query
+    // per relation.
+    // No Drizzle relations are needed here; they only apply if this ever
+    // switches to @better-auth/drizzle-adapter. See
+    // docs/auth/performance-and-upgrades.md.
+    database: {
+      joins: true,
+    },
     ipAddress: {
       ipAddressHeaders,
       ...(trustedProxies.length > 0 ? { trustedProxies } : {}),

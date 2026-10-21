@@ -160,6 +160,11 @@ OAuth failures redirected back as query params are covered by AUTH-018. The
 global fallback page and the Better Auth redirect to it are covered by
 AUTH-021.
 
+Better Auth runs with `advanced.database.joins: true` on the Kysely/PostgreSQL
+adapter. AUTH-009's session reload is the end-to-end check for the joined
+session read; joins change query shape, not the response contract, so they do
+not need a separate test ID.
+
 ## Test data
 
 - Controlled fake data only: `qa@example.com`, `juan@example.com`,
