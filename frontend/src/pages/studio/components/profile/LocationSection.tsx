@@ -186,6 +186,7 @@ export default function LocationSection({ location, onSaved }: Props) {
     setBarangayCode('')
     setCities([])
     setBarangays([])
+    setLoadError('')
   }
 
   function handleCityChange(code: string) {
@@ -194,6 +195,12 @@ export default function LocationSection({ location, onSaved }: Props) {
     setCityCode(code)
     setBarangayCode('')
     setBarangays([])
+    setLoadError('')
+  }
+
+  function handleBarangayChange(code: string) {
+    setBarangayCode(code)
+    setLoadError('')
   }
 
   async function handleSave(event: FormEvent) {
@@ -317,7 +324,7 @@ export default function LocationSection({ location, onSaved }: Props) {
               id="location-barangay"
               label="Barangay"
               value={barangayCode}
-              onChange={setBarangayCode}
+              onChange={handleBarangayChange}
               options={barangays}
               placeholder={cityCode ? 'Select a barangay' : 'Select a city / municipality first'}
               loading={barangaysLoading}

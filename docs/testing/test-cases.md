@@ -746,7 +746,7 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   **Profile**.
 - **Expected:** `/studio/profile` loads; h1 shows the session user's name,
   "Personal Details" section visible, email rendered from the session, and the
-  session-backed **Location** card is visible (saved address or empty state).
+  session-backed **Location** card is visible (saved location or empty state).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PROFILE-002

@@ -50,6 +50,16 @@ test('allows clearing every location field together', () => {
   })
 })
 
+test('accepts a location name at the 120-character limit', () => {
+  const result = validateLocationUpdate({
+    province: 'Cavite',
+    city_municipality: 'City of Bacoor',
+    barangay: 'x'.repeat(120),
+  })
+
+  assert.equal(result.kind, 'valid')
+})
+
 test('rejects non-string, oversized, and control-character values', () => {
   assert.equal(
     validateLocationUpdate({
@@ -74,6 +84,15 @@ test('rejects non-string, oversized, and control-character values', () => {
       province: 'Cavite',
       city_municipality: 'City of Bacoor',
       barangay: 'Molino\nI',
+    }).kind,
+    'invalid',
+  )
+
+  assert.equal(
+    validateLocationUpdate({
+      province: 'Cav\u0080ite',
+      city_municipality: 'City of Bacoor',
+      barangay: 'Molino I',
     }).kind,
     'invalid',
   )
