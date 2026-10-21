@@ -164,7 +164,7 @@ Only mark what actually exists in the application.
 - [x] Playback start / pause / resume (PLAYER-003, PLAYER-004)
 - [x] Like toggle (PLAYER-008)
 - [x] Song loads real media — uploaded files or the bundled master via shell player bar (KARAOKE-006/012)
-- [x] One persistent player survives route changes; hidden/mini/expanded are presentation modes, not remounts (KARAOKE-010/011/017/018/019/020)
+- [x] One persistent player survives route changes; hidden/mini/expanded are presentation modes, not remounts, and selecting the same card restarts it (KARAOKE-010/011/017/018/019/020/021)
 - [x] Player queue navigation, deep links and active-control minimize (KARAOKE-016/017)
 - [ ] Player error / media failure handling — N/A (write-time validation rejects broken sources; no UI error state for out-of-band deletions)
 

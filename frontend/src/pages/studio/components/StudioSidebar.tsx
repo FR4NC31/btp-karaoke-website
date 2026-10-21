@@ -23,6 +23,7 @@ const deskLinks = [
 export default function StudioSidebar() {
   const [activeSidebar, setActiveSidebar] = useState('Master Collections Vault')
   const { pathname } = useLocation()
+  const pathnameForMatch = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
   const onQueue = pathname.startsWith('/studio/player-queue')
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
@@ -50,8 +51,8 @@ export default function StudioSidebar() {
               const isActive = isQueue
                 ? onQueue
                 : link.end
-                  ? pathname === link.to
-                  : pathname.startsWith(link.to)
+                  ? pathnameForMatch === link.to
+                  : pathnameForMatch.startsWith(link.to)
               return (
                 <li key={link.to}>
                   <Link

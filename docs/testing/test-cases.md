@@ -498,10 +498,11 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 - **Title:** An uploaded minus-one really plays from the hub
 - **Priority:** P1
-- **Preconditions:** Uploads a real silent MP3 (six seconds long so it
-  cannot end during the navigation assertions) through the admin API
-  (`helpers/media.ts`) and attaches it to a fresh music row; the row is
-  deleted in `finally` and the stored file is asserted gone with it.
+- **Preconditions:** Uploads a real silent MP3, made by repeating the
+  one-second fixture six times so it cannot end during the navigation
+  assertions, through the admin API (`helpers/media.ts`) and attaches it to a
+  fresh music row; the row is deleted in `finally` and the stored file is
+  asserted gone with it.
 - **Steps:** 1. Open `/studio` and find the card. 2. Click its play link.
   3. Click **Back** to return to the hub.
 - **Expected:** The console stage plays **that uploaded file** (`src` is the
@@ -529,9 +530,10 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 - **Title:** The bar skips play exact queued songs, never the master
 - **Priority:** P1
-- **Preconditions:** Uploads a six-second silent MP3 three times and attaches
-  one to each of three fresh music rows (all rows deleted in `finally`). The
-  clip length keeps auto-advance timing deterministic.
+- **Preconditions:** Uploads a silent MP3, made by repeating the one-second
+  fixture six times, three times and attaches one to each of three fresh music
+  rows (all rows deleted in `finally`). The clip length keeps auto-advance
+  timing deterministic.
 - **Steps:** 1. Queue all three songs from their hub card menus. 2. Open the
   console, click **Next** on the player bar, end the first song (the test
   seeks to its last fraction of a second), then click **Previous** and
@@ -641,6 +643,17 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Expected:** The hidden hub player stays paused, and opening the queue
   shows the same paused element within 0.25 s of the position where it was
   paused. The bar still offers **Play**; nothing auto-resumes or seeks to 0:00.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-021
+
+- **Title:** Replaying the same card restarts the persistent player
+- **Priority:** P2
+- **Steps:** 1. Play **The Reason** and let it pass ~1.5 s. 2. Click **Back**.
+  3. Click **Play The Reason** again.
+- **Expected:** The second selection keeps the same browser session and media
+  source but restarts it at the beginning (playhead under 1 s) and plays; the
+  persistent element does not resume from the earlier position.
 - **Automation:** Playwright — **Status: Automated**
 
 ---

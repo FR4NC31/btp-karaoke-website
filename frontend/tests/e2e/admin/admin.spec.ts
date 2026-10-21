@@ -7,7 +7,12 @@ import {
   TEST_USER,
   signInAsAdmin,
 } from '../helpers/auth'
-import { createMediaItemAsAdmin, deleteMediaItemAsAdmin, uploadMediaFileAsAdmin } from '../helpers/media'
+import {
+  createMediaItemAsAdmin,
+  deleteMediaItemAsAdmin,
+  deleteMediaItemsByTitleAsAdmin,
+  uploadMediaFileAsAdmin,
+} from '../helpers/media'
 
 
 function farFutureDay(): string {
@@ -44,15 +49,6 @@ async function serviceIdByCode(api: APIRequestContext, code: string): Promise<st
   const match = body.services.find((service: { code: string }) => service.code === code)
   expect(match, `service ${code} should be seeded`).toBeTruthy()
   return match.id
-}
-
-async function mediaIdByTitle(api: APIRequestContext, title: string): Promise<string> {
-  const response = await api.get('/api/admin/media')
-  expect(response.ok(), `media read should succeed (got ${response.status()})`).toBeTruthy()
-  const body = (await response.json()) as { items: Array<{ id: string; title: string }> }
-  const item = body.items.find((entry) => entry.title === title)
-  expect(item, 'the created media row should be in the admin catalog').toBeTruthy()
-  return item!.id
 }
 
 async function createPendingAsCustomer(
@@ -335,7 +331,6 @@ test.describe('media hub catalog', () => {
 
   test('ADMIN-009: the admin uploads an MP4 and the hub really plays it', { tag: '@p1' }, async ({ page, baseURL }) => {
     const title = `E2E Upload ${Date.now()}`
-    let createdId: string | null = null
 
     try {
       await page.goto('/admin/media/new')
@@ -347,7 +342,6 @@ test.describe('media hub catalog', () => {
 
       await page.getByRole('button', { name: 'Add to the hub' }).click()
       await expect(flashWith(page, title)).toContainText('live on the hub')
-      createdId = await mediaIdByTitle(page.request, title)
 
       await page.goto('/admin/media')
       const row = page.locator('main li').filter({ hasText: title })
@@ -380,12 +374,13 @@ test.describe('media hub catalog', () => {
       await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
       await expect(flashWith(page, `${title} removed.`)).toBeVisible()
       await expect(cleanup).toBeHidden()
-      createdId = null
 
       const gone = await page.request.get(src!)
       expect(gone.status(), 'the uploaded file should be deleted with its row').toBe(404)
     } finally {
-      if (createdId) await deleteMediaItemAsAdmin(baseURL, createdId)
+      // Recover by title so a failed UI flow cannot leave a row behind for the
+      // error-health specs.
+      await deleteMediaItemsByTitleAsAdmin(baseURL, title).catch(() => {})
     }
   })
 
@@ -514,7 +509,6 @@ test.describe('media hub catalog', () => {
 
   test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page, baseURL }) => {
     const title = `E2E Thumb ${Date.now()}`
-    let createdId: string | null = null
 
     try {
       await page.goto('/admin/media/new')
@@ -530,7 +524,6 @@ test.describe('media hub catalog', () => {
 
       await page.getByRole('button', { name: 'Add to the hub' }).click()
       await expect(flashWith(page, title)).toContainText('live on the hub')
-      createdId = await mediaIdByTitle(page.request, title)
 
       await page.goto('/studio')
       const card = page.locator('main article').filter({ hasText: title })
@@ -569,11 +562,10 @@ test.describe('media hub catalog', () => {
       await cleanup.getByRole('button', { name: `Delete ${title}` }).click()
       await cleanup.getByRole('button', { name: `Confirm delete ${title}` }).click()
       await expect(flashWith(page, `${title} removed.`)).toBeVisible()
-      createdId = null
 
       expect((await page.request.get(sourceUrl)).status()).toBe(404)
     } finally {
-      if (createdId) await deleteMediaItemAsAdmin(baseURL, createdId)
+      await deleteMediaItemsByTitleAsAdmin(baseURL, title).catch(() => {})
     }
   })
 

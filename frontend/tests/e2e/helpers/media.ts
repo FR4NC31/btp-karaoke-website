@@ -67,6 +67,26 @@ export async function deleteMediaItemAsAdmin(
   })
 }
 
+/**
+ * Best-effort cleanup for tests that create a row through the UI. The row id is
+ * not returned by that flow, so recover it by its unique title instead of
+ * depending on a second lookup that can fail before `finally` runs.
+ */
+export async function deleteMediaItemsByTitleAsAdmin(
+  baseURL: string | undefined,
+  title: string,
+): Promise<void> {
+  await withAdminApi(baseURL, async (api) => {
+    const response = await api.get('/api/admin/media')
+    if (!response.ok()) return
+    const body = (await response.json()) as { items: Array<{ id: string; title: string }> }
+    const matches = body.items.filter((item) => item.title === title)
+    for (const item of matches) {
+      await api.post(`/api/admin/media/${encodeURIComponent(item.id)}/delete`)
+    }
+  })
+}
+
 export async function getMediaItemAsAdmin(
   baseURL: string | undefined,
   id: string,
