@@ -33,6 +33,7 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
+- fix(studio): address player queue review feedback (c464ae3)
 - fix(auth): trust proxy IPs and add OAuth error page (a3a95db)
 - fix(studio): align console tab title with the fallback track (c519a74)
 - fix(studio): address PR review feedback (a7363c5)
