@@ -87,6 +87,7 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- docs(testing): scope PLAYER-010 to the request retry (c1a17e9)
 - Merge pull request #29 from FR4NC31/feat/persistent-player-surface (8ce57bb)
 - Merge pull request #28 from FR4NC31/fix/player-queue-resume-toggle (6cdb5b6)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
