@@ -33,6 +33,7 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
+- fix(studio): finish persistent player playback and coverage (b39442e)
 - fix(studio): address player queue resume review feedback (aa87ad7)
 - fix(studio): resume queue playback and toggle minimize (243af74)
 - fix(studio): address player queue review feedback (c464ae3)
