@@ -573,9 +573,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Player Queue** in the top bar, then
   use **Back** and repeat from the sidebar. 3. Start the video song, return to
-  the hub, then click the track block in the player bar. 4. Back on the hub,
-  click the playback toggle and the seek slider, then click an empty part of
-  the bar.
+  the hub, then click the track block in the player bar. 4. Click **Back** to
+  return to the hub, then click the playback toggle and the seek slider, then
+  click an empty part of the bar.
 - **Expected:** Each navigation entry opens `/studio/player-queue`; the top-bar
   and sidebar links highlight while the console is active. The player bar's
   track block and non-control surface also open the queue, while its transport

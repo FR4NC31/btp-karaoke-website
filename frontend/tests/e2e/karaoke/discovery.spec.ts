@@ -683,6 +683,11 @@ test.describe('karaoke discovery', () => {
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
+    const emptyBarSpot = await playerBar.evaluate((el) => {
+      const rect = el.getBoundingClientRect()
+      return document.elementFromPoint(rect.left + 4, rect.top + 72) === el
+    })
+    expect(emptyBarSpot).toBe(true)
     await playerBar.click({ position: { x: 4, y: 72 } })
     await expect(page).toHaveURL('/studio/player-queue')
   })
