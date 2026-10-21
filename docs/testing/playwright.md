@@ -106,7 +106,7 @@ frontend/tests/e2e/
 │   └── env.ts                   BACKEND_URL (no hard-coded hosts)
 ├── smoke/smoke.spec.ts          SMOKE-001…006   P0 "can a user use the site?"
 ├── auth/signin.spec.ts          AUTH-001…021    login, logout, validation, Google
-├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
+├── auth/signup.spec.ts          AUTH-010…014, 022 registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…021 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry

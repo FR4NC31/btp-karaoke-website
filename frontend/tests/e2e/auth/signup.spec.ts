@@ -73,11 +73,13 @@ test.describe('registration', () => {
   })
 
   test('AUTH-022: sign-up rejects a partial location payload', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const email = uniqueEmail()
+    const password = 'Secret123!'
     const response = await page.request.post('/api/auth/sign-up/email', {
       headers: { Origin: baseURL ?? 'http://localhost:5173' },
       data: {
-        email: uniqueEmail(),
-        password: 'Secret123!',
+        email,
+        password,
         name: 'Juan Dela Cruz',
         first_name: 'Juan',
         last_name: 'Dela Cruz',
@@ -87,6 +89,14 @@ test.describe('registration', () => {
     })
 
     expect(response.status()).toBe(400)
-    expect(await response.json()).toMatchObject({ message: /together/i })
+    expect((await response.json()).message).toMatch(/together/i)
+
+    // The guard runs before the insert, so the rejected email must not be
+    // able to sign in afterwards.
+    const signIn = await page.request.post('/api/auth/sign-in/email', {
+      headers: { Origin: baseURL ?? 'http://localhost:5173' },
+      data: { email, password },
+    })
+    expect(signIn.status()).toBe(401)
   })
 })
