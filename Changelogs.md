@@ -6,6 +6,7 @@ Last updated: October 21, 2026
 
 ### Features
 
+- feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
 - feat(admin): take reservations in a desk modal (0d2fe27)
@@ -33,6 +34,8 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
+- fix(studio): address persistent player review feedback (ad3f398)
+- fix(studio): finish persistent player playback and coverage (29a1279)
 - fix(studio): address player queue resume review feedback (aa87ad7)
 - fix(studio): resume queue playback and toggle minimize (243af74)
 - fix(studio): address player queue review feedback (c464ae3)

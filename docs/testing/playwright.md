@@ -108,7 +108,7 @@ frontend/tests/e2e/
 ├── auth/signin.spec.ts          AUTH-001…021    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
-├── karaoke/discovery.spec.ts    KARAOKE-001…017 media hub (DB-backed catalog), console, player bar, PiP, queue playback, queue navigation/toggle
+├── karaoke/discovery.spec.ts    KARAOKE-001…021 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
@@ -208,16 +208,17 @@ What the product actually implements today (test coverage is limited to this):
 | -------------------------------- | --------------------- | ------------------------- |
 | Media hub sections (video/music/radio) | Working — DB-backed catalog curated from `/admin/media`; empty sections render nothing | KARAOKE-001/003/005, SMOKE-004 |
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
-| Player queue navigation          | Working — the top bar, sidebar, player-bar track block, and non-control bar surface open `/studio/player-queue`; clicking the active queue control minimizes back to `/studio`. When the audio and video URLs match, the hub-to-console handoff resumes at the carried-over position. Transport and seek controls keep their own actions | KARAOKE-016/017 |
-| Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
+| Persistent studio player         | Working — one `<video>` lives in `StudioShell` and is restyled **expanded / mini / hidden**; route changes never remount it. Mini has play, expand and close; closing only hides the surface, and selecting the same card again restarts it at 0:00 | KARAOKE-010/011/017/018/019/020/021 |
+| Player queue navigation          | Working — the top bar, sidebar, player-bar track block, and non-control bar surface open `/studio/player-queue`; clicking the active queue control minimizes back to `/studio`. The queue route is a deep link into the shell surface, not a separate page/player. Transport and seek controls keep their own actions | KARAOKE-016/017 |
+| Local video via shell player bar  | Working (real persistent `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
-| Player play/pause/like toggles   | Working (real lobby track on the hub; the console's on-air track renames the bar) | PLAYER-001/003/004/008 |
-| Lobby autoplay on studio entry   | **None by design** — silence until the user plays (bar's Play) or a console session hands back on exit (KARAOKE-010); reintroducing autoplay is a regression | PLAYER-009 |
-| Progress display                 | Live m:ss on every studio page (video on console, lobby music elsewhere) | PLAYER-006 |
+| Player play/pause/like toggles   | Working (same persistent element everywhere; its on-air track renames the bar) | PLAYER-001/003/004/008 |
+| Autoplay on studio entry         | **None by design** — the single `<video>` starts hidden and paused; there is no `<audio>` lobby element. Silence until the user plays (bar's Play) or a console session hands back on exit (KARAOKE-010); reintroducing autoplay is a regression | PLAYER-009 |
+| Progress display                 | Live m:ss whenever the player bar is shown, from the persistent element, including when minimized or hidden | PLAYER-006 |
 | Search input (top bar)           | **Not wired** (decorative) | — (N/A, test-cases.md) |
 | Song detail / lyrics page        | Does not exist        | —                         |
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
-| Previous/Next/Shuffle/Repeat     | Working on the console queue: repeat cycles off → all → one (all wraps the queue — and loops the floating PiP mini, which has no queue of its own; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. No playlist on other studio pages, so the skips are inert there. | KARAOKE-014/015 |
+| Previous/Next/Shuffle/Repeat     | Working through the persistent transport on every studio route: repeat cycles off → all → one (all wraps the queue; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. The handlers stay attached while the player is mini/hidden, so skips work from the bar too; they are inert when no playable queue rows exist. | KARAOKE-014/015 |
 
 ## Booking desk testing
 
@@ -325,8 +326,9 @@ their tests create the rows they assert and delete them afterwards.
   `X-File-Name`) is exercised twice over: ADMIN-009 drives the real editor
   and the hub playback of the stored file (including byte-range serving at
   `GET /api/uploads/media/:name`), KARAOKE-012 uploads a committed silent MP3
-  fixture (`tests/e2e/assets/silence.mp3`) through the API helper and proves
-  the hub plays it; ADMIN-010 pins the rejection paths (bad extension, type
+  fixture (`tests/e2e/assets/silence.mp3`), repeated six times, through the
+  API helper and proves the hub plays and then continues it after navigating
+  back; ADMIN-010 pins the rejection paths (bad extension, type
   mismatch, cover-in-source / media-in-cover column cross-checks, anonymous
   401). ADMIN-012/013 cover the editor's metadata and art pipeline: tag
   pre-fill and embedded covers from a real tagged MP3, frame-grabbed video

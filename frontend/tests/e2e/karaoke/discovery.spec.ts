@@ -204,22 +204,23 @@ test.describe('karaoke discovery', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
   })
 
-  test('KARAOKE-010: leaving the console hands the song to the hub, synced', { tag: '@p2' }, async ({ page }) => {
+  test('KARAOKE-010: leaving the console keeps the same song playing on the hub', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio')
     await page.getByRole('link', { name: 'Play The Reason' }).click()
 
     const video = page.locator('main video')
-    await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime)).toBeGreaterThan(1.5)
-    const videoTime = await video.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const videoTime = () => video.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const videoPaused = () => video.evaluate((el) => (el as HTMLVideoElement).paused)
+    await expect.poll(videoTime).toBeGreaterThan(1.5)
+    const beforeLeaving = await videoTime()
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
 
-    const audio = page.locator('audio')
-    await expect.poll(() => audio.evaluate((el) => (el as HTMLAudioElement).paused)).toBe(false)
-    await expect
-      .poll(() => audio.evaluate((el) => (el as HTMLAudioElement).currentTime))
-      .toBeGreaterThan(videoTime - 0.5)
+    await expect(video).toBeHidden()
+    await expect(page.locator('audio')).toHaveCount(0)
+    await expect.poll(videoPaused).toBe(false)
+    await expect.poll(videoTime).toBeGreaterThan(beforeLeaving + 0.2)
     await expect(page.getByRole('contentinfo').getByRole('button', { name: 'Pause' })).toBeVisible()
   })
 
@@ -242,16 +243,10 @@ test.describe('karaoke discovery', () => {
       .toBeGreaterThan(videoTime - 0.5)
 
     await mini.hover()
-    await mini.getByRole('button', { name: 'Pause' }).click()
-    await expect(mini.getByRole('button', { name: 'Play' })).toBeVisible()
-    await mini.getByRole('button', { name: 'Play' }).click()
-    await expect(mini.getByRole('button', { name: 'Pause' })).toBeVisible()
-
-    await page.getByRole('contentinfo').getByRole('button', { name: 'Repeat off' }).click()
-    await expect(
-      page.getByRole('contentinfo').getByRole('button', { name: 'Repeat all' }),
-    ).toBeVisible()
-    await expect(miniVideo).toHaveJSProperty('loop', true)
+    await mini.getByRole('button', { name: 'Pause', exact: true }).click()
+    await expect(mini.getByRole('button', { name: 'Play', exact: true })).toBeVisible()
+    await mini.getByRole('button', { name: 'Play', exact: true }).click()
+    await expect(mini.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
 
     await mini.getByRole('button', { name: 'Expand' }).click()
     await expect(page).toHaveURL('/studio/player-queue')
@@ -265,7 +260,9 @@ test.describe('karaoke discovery', () => {
 
   test('KARAOKE-012: an uploaded minus-one really plays from the hub', { tag: '@p1' }, async ({ page, baseURL }) => {
     const title = `E2E Uploaded Track ${Date.now()}`
-    const mp3 = readFileSync(new URL('../assets/silence.mp3', import.meta.url))
+    // One second is too short: the song can legitimately end while the test
+    // checks playback state and navigates back to the hub.
+    const mp3 = loopedSilence(6)
     const upload = await uploadMediaFileAsAdmin(baseURL, {
       name: 'e2e-minus-one.mp3',
       mimeType: 'audio/mpeg',
@@ -301,13 +298,20 @@ test.describe('karaoke discovery', () => {
 
       const ranged = await page.request.get(sourceUrl, { headers: { Range: 'bytes=10-99' } })
       expect(ranged.status()).toBe(206)
+      const beforeLeaving = await stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
 
       await page.getByRole('link', { name: 'Back' }).click()
       await expect(page).toHaveURL('/studio')
       const playerBar = page.getByRole('contentinfo')
       await expect(playerBar).toContainText(title)
       await expect(playerBar).toContainText('Studio master · MP3')
-      await expect(page.locator('audio')).toHaveAttribute('src', sourceUrl)
+      await expect(stage).toHaveAttribute('src', sourceUrl)
+      await expect(stage).toBeHidden()
+      await expect.poll(() => stage.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+      await expect
+        .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).currentTime))
+        .toBeGreaterThan(beforeLeaving + 0.2)
+      await expect(page.locator('audio')).toHaveCount(0)
     } finally {
       await deleteMediaItemAsAdmin(baseURL, id)
       const gone = await page.request.get(sourceUrl)
@@ -451,6 +455,16 @@ test.describe('karaoke discovery', () => {
       await expect.poll(paused).toBe(false)
       await playerBar.getByRole('button', { name: 'Previous' }).click()
       await expect(stage).toHaveAttribute('src', url1)
+
+      // The same transport must be able to load the next file while the console
+      // is minimized and the hidden element is using preload="none".
+      await page.getByRole('link', { name: 'Back' }).click()
+      await expect(page).toHaveURL('/studio')
+      await expect(stage).toBeHidden()
+      await playerBar.getByRole('button', { name: 'Next' }).click()
+      await expect(stage).toHaveAttribute('src', url3)
+      await expect(playerBar).toContainText(third)
+      await expect.poll(paused).toBe(false)
     } finally {
       for (const id of createdIds) await deleteMediaItemAsAdmin(baseURL, id)
     }
@@ -703,17 +717,16 @@ test.describe('karaoke discovery', () => {
     const stageTime = () => stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
     const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
     await expect.poll(stageTime).toBeGreaterThan(1.5)
-    const beforeHandoff = await stageTime()
+    const beforeMinimize = await stageTime()
     const stageSource = await stage.getAttribute('src')
     expect(stageSource).toBeTruthy()
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
-    const audio = page.locator('audio')
-    const audioTime = () => audio.evaluate((el) => (el as HTMLAudioElement).currentTime)
-    const audioPaused = () => audio.evaluate((el) => (el as HTMLAudioElement).paused)
-    await expect.poll(audioTime).toBeGreaterThan(beforeHandoff - 0.5)
-    await expect.poll(audioPaused).toBe(false)
+    await expect(stage).toBeHidden()
+    await expect.poll(stageTime).toBeGreaterThan(beforeMinimize + 0.2)
+    await expect.poll(stagePaused).toBe(false)
+    await expect(page.locator('audio')).toHaveCount(0)
 
     const topBar = page.getByRole('banner')
     const sidebar = page
@@ -722,20 +735,21 @@ test.describe('karaoke discovery', () => {
     const playerBar = page.getByRole('contentinfo')
 
     async function expectQueueResume(openQueue: () => Promise<void>) {
-      const audioBefore = await audioTime()
+      const videoBefore = await stageTime()
       await openQueue()
       await expect(page).toHaveURL('/studio/player-queue')
       await expect(stage).toHaveAttribute('src', stageSource ?? '')
-      await expect.poll(stageTime).toBeGreaterThan(audioBefore - 0.5)
+      await expect(stage).toBeVisible()
+      await expect.poll(stageTime).toBeGreaterThan(videoBefore - 0.5)
       await expect.poll(stagePaused).toBe(false)
       return stageTime()
     }
 
     async function expectQueueMinimized(videoBefore: number) {
       await expect(page).toHaveURL('/studio')
-      await expect(stage).toHaveCount(0)
-      await expect.poll(audioTime).toBeGreaterThan(videoBefore - 0.5)
-      await expect.poll(audioPaused).toBe(false)
+      await expect(stage).toBeHidden()
+      await expect.poll(stageTime).toBeGreaterThan(videoBefore - 0.5)
+      await expect.poll(stagePaused).toBe(false)
     }
 
     const fromTopBar = await expectQueueResume(() =>
@@ -764,5 +778,110 @@ test.describe('karaoke discovery', () => {
     await expect(playerBar.getByRole('link', { name: /Minimize player queue/i })).toBeVisible()
     await playerBar.getByRole('link', { name: /Minimize player queue/i }).click()
     await expectQueueMinimized(fromPlayerBar)
+  })
+
+  test('KARAOKE-018: playback survives browsing other studio pages', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+
+    const stage = page.locator('main video')
+    const stageTime = () => stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
+    await expect.poll(stageTime).toBeGreaterThan(1.5)
+    const beforeBrowsing = await stageTime()
+
+    const topBar = page.getByRole('banner')
+    await topBar.getByRole('link', { name: 'Bookings' }).click()
+    await expect(page).toHaveURL('/studio/bookings')
+    await expect(page.getByRole('heading', { level: 1, name: 'Booking Desk' })).toBeVisible()
+
+    const playerBar = page.getByRole('contentinfo')
+    await expect(playerBar).toContainText('The Reason')
+    await expect(playerBar.getByRole('button', { name: 'Pause' })).toBeVisible()
+    await expect(stage).toBeHidden()
+    await expect.poll(stagePaused).toBe(false)
+    await expect.poll(stageTime).toBeGreaterThan(beforeBrowsing + 0.2)
+
+    await topBar.getByRole('link', { name: 'Player Queue' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(stage).toBeVisible()
+    await expect.poll(stagePaused).toBe(false)
+    await expect.poll(stageTime).toBeGreaterThan(beforeBrowsing + 0.2)
+  })
+
+  test('KARAOKE-019: closing the mini player keeps the song in the bar', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+
+    const stage = page.locator('main video')
+    const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
+    await expect
+      .poll(() => stage.evaluate((el) => (el as HTMLVideoElement).currentTime))
+      .toBeGreaterThan(1.5)
+
+    await page.getByRole('button', { name: 'Picture in picture' }).click()
+    const mini = page.getByRole('complementary', { name: 'Mini player' })
+    await expect(mini).toBeVisible()
+    await expect.poll(() => mini.locator('video').evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
+
+    await mini.getByRole('button', { name: 'Close mini player' }).click()
+    await expect(mini).toBeHidden()
+    await expect(stage).toBeHidden()
+    await expect.poll(stagePaused).toBe(false)
+    await expect(page.getByRole('contentinfo').getByRole('button', { name: 'Pause' })).toBeVisible()
+
+    await page.getByRole('contentinfo').getByRole('link', { name: /Open player queue/ }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(stage).toBeVisible()
+    await expect.poll(stagePaused).toBe(false)
+  })
+
+  test('KARAOKE-020: opening the queue while paused stays paused and does not restart', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+
+    const stage = page.locator('main video')
+    const stageTime = () => stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
+    const playerBar = page.getByRole('contentinfo')
+    await expect.poll(stageTime).toBeGreaterThan(1.5)
+
+    await playerBar.getByRole('button', { name: 'Pause' }).click()
+    await expect.poll(stagePaused).toBe(true)
+    const pausedAt = await stageTime()
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    await expect(stage).toBeHidden()
+    await expect.poll(stagePaused).toBe(true)
+
+    await page.getByRole('banner').getByRole('link', { name: 'Player Queue' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(stage).toBeVisible()
+    await expect.poll(stagePaused).toBe(true)
+    await expect(playerBar.getByRole('button', { name: 'Play' })).toBeVisible()
+    expect(Math.abs((await stageTime()) - pausedAt)).toBeLessThan(0.25)
+  })
+
+  test('KARAOKE-021: replaying the same card restarts the persistent player', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+
+    const stage = page.locator('main video')
+    const stageTime = () => stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
+    await expect.poll(stageTime).toBeGreaterThan(1.5)
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    await expect(stage).toBeHidden()
+
+    // The same src stays loaded on the persistent element, so selecting the
+    // card again must reset the playhead explicitly.
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(stage).toBeVisible()
+    await expect.poll(stageTime).toBeLessThan(1)
+    await expect.poll(stagePaused).toBe(false)
   })
 })

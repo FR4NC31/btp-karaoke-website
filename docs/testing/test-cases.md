@@ -470,12 +470,14 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ### KARAOKE-010
 
-- **Title:** Leaving the console hands the song to the hub, synced
+- **Title:** Leaving the console keeps the same song playing on the hub
 - **Priority:** P2
 - **Steps:** 1. Open `/studio`. 2. Open the console and let the video play
   past ~1.5 s. 3. Click the top bar's **Back** link.
-- **Expected:** On the hub the lobby audio continues the same song from the
-  video's position (bar shows **Pause** and the synced m:ss).
+- **Expected:** The single persistent `<video>` stays mounted and keeps
+  playing while hidden on the hub; no separate `<audio>` element is created.
+  The player bar shows **Pause** and its playhead keeps advancing from the
+  carried-over position.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-011
@@ -485,25 +487,31 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Open the console and let the video pass ~1.5 s. 2. Click
   **Picture in picture**. 3. Hover the floating **Mini player** and pause,
   then play. 4. Click **Expand**.
-- **Expected:** The hub shows the mini player in the corner, still playing
-  the same song from the console position; the overlay button pauses and
-  resumes it. Expand returns to `/studio/player-queue` with the video
-  playing from the carried-over position, and the mini hides.
+- **Expected:** The same media element is restyled as the mini player in the
+  hub corner, still playing from the console position; its overlay button
+  pauses and resumes it. Expand returns to `/studio/player-queue` with the
+  player visible and still playing from the carried-over position, and the
+  mini hides. PiP is a presentation mode, not a second player.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-012
 
 - **Title:** An uploaded minus-one really plays from the hub
 - **Priority:** P1
-- **Preconditions:** Uploads a real (silent) MP3 through the admin API
-  (`helpers/media.ts`) and attaches it to a fresh music row; the row is
-  deleted in `finally` and the stored file is asserted gone with it.
+- **Preconditions:** Uploads a real silent MP3, made by repeating the
+  one-second fixture six times so it cannot end during the navigation
+  assertions, through the admin API (`helpers/media.ts`) and attaches it to a
+  fresh music row; the row is deleted in `finally` and the stored file is
+  asserted gone with it.
 - **Steps:** 1. Open `/studio` and find the card. 2. Click its play link.
+  3. Click **Back** to return to the hub.
 - **Expected:** The console stage plays **that uploaded file** (`src` is the
   stored `/api/uploads/media/...` url — not the bundled master), the bar
   shows the track's title, the stage reads **Studio Audio Mode**, the PiP
   button is absent (audio-only), and the stored file answers byte ranges
-  (206). Deleting the row removes the stored file (404).
+  (206). Back on the hub the hidden player keeps the same source, stays
+  unpaused, and its playhead advances; no `<audio>` element appears. Deleting
+  the row removes the stored file (404).
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-013
@@ -522,15 +530,16 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 - **Title:** The bar skips play exact queued songs, never the master
 - **Priority:** P1
-- **Preconditions:** Uploads a real (silent) MP3 three times and attaches one
-  to each of three fresh music rows (all rows deleted in `finally`). The clips
-  are stretched past the fixture's 1.35 s so auto-advance timing is
-  deterministic.
+- **Preconditions:** Uploads a silent MP3, made by repeating the one-second
+  fixture six times, three times and attaches one to each of three fresh music
+  rows (all rows deleted in `finally`). The clip length keeps auto-advance
+  timing deterministic.
 - **Steps:** 1. Queue all three songs from their hub card menus. 2. Open the
   console, click **Next** on the player bar, end the first song (the test
   seeks to its last fraction of a second), then click **Previous** and
   **Next**. 3. Remove the on-air row from the rail, then click **Next** and
-  **Previous**.
+  **Previous**. 4. Click **Back** to minimize the console, then click
+  **Next** from the hub player bar.
 - **Expected:** The first **Next** steps over the mockup queue rows (nothing
   real behind them) onto the first queued song and plays **its exact file**
   (`src` is the stored `/api/uploads/media/...` url - never the bundled
@@ -538,7 +547,9 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   second queued file and auto-plays it; **Previous** / **Next** walk the real
   songs. Removing the on-air row keeps that song playing, and the next
   **Next** resumes from the slot it occupied (the third song) instead of
-  restarting at the top; **Previous** steps back over the removed row.
+  restarting at the top; **Previous** steps back over the removed row. The
+  hidden hub player also loads and plays a newly selected source, proving the
+  persistent element can start a track with `preload="none"`.
 - **Automation:** Playwright - **Status: Automated**
 
 ### KARAOKE-015
@@ -577,9 +588,12 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   return to the hub, then click the playback toggle and the seek slider, then
   click an empty part of the bar.
 - **Expected:** Each navigation entry opens `/studio/player-queue`; the top-bar
-  and sidebar links highlight while the console is active. The player bar's
-  track block and non-control surface also open the queue, while its transport
-  and seek controls keep their own behavior without navigating.
+  and sidebar links highlight while the console is active. The queue route is
+  a deep link into the shell-level persistent player, not a separate page with
+  its own media element. The player bar's track block and non-control surface
+  also open the queue, while its transport and seek controls keep their own
+  behavior without navigating. The active queue control minimizes to
+  `/studio`.
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-017
@@ -587,14 +601,59 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Title:** Reopening the queue resumes playback and toggles back
 - **Priority:** P1
 - **Steps:** 1. Start the video song, let it pass ~1.5 s, then click **Back**
-  so the hub continues the track through its audio element. 2. Click
-  **Player Queue** in the top bar. 3. Click the top-bar **Minimize player
-  queue** control, then repeat the open/minimize cycle from the sidebar and the
-  player-bar track block.
-- **Expected:** The console reopens on the same source at the hub's carried-over
+  so the hidden hub player continues the track. 2. Click **Player Queue** in
+  the top bar. 3. Click the top-bar **Minimize player queue** control, then
+  repeat the open/minimize cycle from the sidebar and the player-bar track
+  block.
+- **Expected:** The console reopens on the same source at the carried-over
   position and keeps playing instead of restarting at 0:00. Each minimize
-  control returns to `/studio`, removes the console video, and hands playback
-  back to the hub audio at the same position.
+  control returns to `/studio` and hides the same media element without
+  remounting or pausing it.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-018
+
+- **Title:** Playback survives browsing other studio pages
+- **Priority:** P1
+- **Steps:** 1. Start the video song and let it pass ~1.5 s. 2. Open
+  **Bookings** from the top bar. 3. Open **Player Queue** from the top bar.
+- **Expected:** The player bar keeps showing the track and **Pause** on the
+  bookings page; the persistent element stays hidden but unpaused and its
+  playhead advances. Opening the queue makes the same element visible and it
+  continues from the advanced position — no restart.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-019
+
+- **Title:** Closing the mini player keeps the song in the bar
+- **Priority:** P2
+- **Steps:** 1. Start the video and enter **Picture in picture**. 2. Click
+  **Close mini player**. 3. Open the queue from the player-bar track block.
+- **Expected:** Closing the mini hides the persistent player but does not
+  pause it; the bar still shows **Pause**. Reopening the queue from the bar
+  shows the same element still playing.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-020
+
+- **Title:** Opening the queue while paused stays paused and does not restart
+- **Priority:** P2
+- **Steps:** 1. Start the video and let it pass ~1.5 s. 2. Pause it from the
+  player bar. 3. Click **Back**, then open **Player Queue** from the top bar.
+- **Expected:** The hidden hub player stays paused, and opening the queue
+  shows the same paused element within 0.25 s of the position where it was
+  paused. The bar still offers **Play**; nothing auto-resumes or seeks to 0:00.
+- **Automation:** Playwright — **Status: Automated**
+
+### KARAOKE-021
+
+- **Title:** Replaying the same card restarts the persistent player
+- **Priority:** P2
+- **Steps:** 1. Play **The Reason** and let it pass ~1.5 s. 2. Click **Back**.
+  3. Click **Play The Reason** again.
+- **Expected:** The second selection keeps the same browser session and media
+  source but restarts it at the beginning (playhead under 1 s) and plays; the
+  persistent element does not resume from the earlier position.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -605,57 +664,62 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 - **Title:** Player bar shows the current track
 - **Priority:** P1
-- **Steps:** 1. Open `/studio`. 2. Inspect the player bar.
-- **Expected:** Track title "The Reason" and artist "Hoobastank" visible — the bar mirrors the real transport (the lobby/master default when nothing else is on air; the console's on-air track renames it — see KARAOKE-012).
+- **Steps:** 1. Open `/studio` and confirm the player bar is hidden.
+  2. Click **Play The Reason**.
+- **Expected:** The player bar appears with track title "The Reason" and
+  artist "Hoobastank" from the persistent transport; the console's on-air
+  track renames it (see KARAOKE-012).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-003
 
 - **Title:** Playback starts
 - **Priority:** P1
-- **Steps:** 1. Open `/studio`. 2. Click **Play** in the player bar.
-- **Expected:** The toggle becomes **Pause** (the hub never autoplays —
-  PLAYER-009 — so this click is the first start; the spec settles the lobby
-  track's metadata first).
+- **Steps:** 1. Open `/studio/player-queue`. 2. Click **Play** in the player
+  bar.
+- **Expected:** The toggle becomes **Pause** and the single `<video>` element
+  is actually playing (the spec waits for its metadata first).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-004
 
 - **Title:** Pause and resume work
 - **Priority:** P1
-- **Steps:** 1. Play → Pause → Play.
-- **Expected:** Toggle cycles Pause → Play → Pause correctly (same settle
-  step as PLAYER-003).
+- **Steps:** 1. Open `/studio/player-queue`. 2. Play → Pause → Play.
+- **Expected:** Toggle cycles Pause → Play → Pause correctly on the same
+  persistent element (same settle step as PLAYER-003).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-006
 
 - **Title:** Progress display shows current and total time
 - **Priority:** P2
-- **Steps:** 1. Open `/studio`.
-- **Expected:** The bar mirrors the real lobby music transport — total time
-  "3:54" (placeholder lobby track) and a live m:ss current time (0:00 until
-  playback starts); the console shows the video's own m:ss.
+- **Steps:** 1. Open `/studio/player-queue`.
+- **Expected:** The bar mirrors the persistent element's real transport —
+  total time "3:54" for the default master and a live m:ss current time
+  (0:00 until playback starts); the same values follow the player when it is
+  minimized or hidden.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-008
 
 - **Title:** Like toggles player state
 - **Priority:** P2
-- **Steps:** 1. Click the **Like** heart in the player bar.
+- **Steps:** 1. Open `/studio/player-queue`. 2. Click the **Like** heart in
+  the player bar.
 - **Expected:** Active (primary-colored) styling toggles on/off.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYER-009
 
-- **Title:** Studio entry does not autoplay the lobby music
+- **Title:** Studio entry does not autoplay or show the player bar
 - **Priority:** P1
-- **Steps:** 1. Sign in / open `/studio`. 2. Watch the lobby track without
+- **Steps:** 1. Sign in / open `/studio`. 2. Watch the hidden player without
   touching anything.
-- **Expected:** The lobby music stays paused (silent, 0:00, bar shows
-  **Play**) until the user actually chooses to hear something: the bar's
-  Play button or a console session handed back on exit (KARAOKE-010). The
-  single auto-resume that survives is that handoff.
+- **Expected:** The persistent `<video>` starts paused, its playhead has never
+  advanced, no `<audio>` element exists, and the player bar is hidden. It
+  stays silent until the user chooses to hear something through the bar's
+  Play button or a console session hands back on exit (KARAOKE-010).
 - **Automation:** Playwright — **Status: Automated**
 
 ---
@@ -993,7 +1057,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Favorites / playlists round-trip       | N/A                   | Not implemented (like button is local state only).           |
 | Database persistence after refresh     | Partial               | Sign-up/sign-in read and write Aiven (AUTH-010, AUTH-001) and the session persists (AUTH-009); favorites/playlists are still local state only. |
 | Song detail / lyrics synchronization   | N/A                   | No song detail page; the admin stores staff-only lyrics on music rows (the public `/api/media` payload omits them), but nothing renders or syncs them yet. |
-| Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and the end-of-song auto-advance play each row's exact file and step over rows with no real media (KARAOKE-014). |
+| Real playback, progress movement, volume | Covered               | One persistent `<video>` element owns all studio playback (audio-only rows use the same element). Play/pause, seek and volume are pinned by KARAOKE-006…008; playback survives route changes, stays alive in the mini player, and continues while hidden (KARAOKE-010/011/017/018/019/020). The console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and end-of-song auto-advance play each row's exact file, including from the hidden hub player (KARAOKE-014). |
 | Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
 | OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008), OAuth errors surface in the UI (AUTH-018), and the global Better Auth error redirect has a dedicated fallback page (AUTH-021); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
