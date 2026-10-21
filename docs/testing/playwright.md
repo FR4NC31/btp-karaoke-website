@@ -113,7 +113,7 @@ frontend/tests/e2e/
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
-├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
+├── profile/profile.spec.ts      PROFILE-001…003 profile menu → account page, tabs, location cascade + save
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
 

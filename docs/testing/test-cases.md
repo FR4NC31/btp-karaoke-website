@@ -733,8 +733,8 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Open `/studio`. 2. Open the profile menu. 3. Click
   **Profile**.
 - **Expected:** `/studio/profile` loads; h1 shows the session user's name,
-  "Personal Details" section visible, email rendered from the session,
-  Location/City shows the mockup placeholder.
+  "Personal Details" section visible, email rendered from the session, and the
+  session-backed **Location** card is visible (saved address or empty state).
 - **Automation:** Playwright — **Status: Automated**
 
 ### PROFILE-002
@@ -744,6 +744,20 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Open `/studio/profile`. 2. Click **User Profile**.
   3. Click **My Account**.
 - **Expected:** Panels swap (Personal Details ↔ Public Profile).
+- **Automation:** Playwright — **Status: Automated**
+
+### PROFILE-003
+
+- **Title:** Location cascades province → city → barangay and persists
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/profile`. 2. Open **Add/Edit location**.
+  3. Pick a province, then a city/municipality, then a barangay.
+  4. Click **Save location**, wait for **Location saved**, then reload
+  `/studio/profile`.
+- **Expected:** Choosing each level loads the next from the PSGC API; **Save
+  location** persists the three names through Better Auth, and after a reload
+  the session still renders the saved barangay/city/province. The test mocks
+  `psgc.gitlab.io` so it never depends on the live dataset.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
