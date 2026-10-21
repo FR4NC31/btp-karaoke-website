@@ -6,6 +6,7 @@ Last updated: October 21, 2026
 
 ### Features
 
+- feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
 - feat(admin): take reservations in a desk modal (0d2fe27)
 - feat(media): add track lyrics and staff preview (8c5c8b6)
@@ -77,6 +78,7 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
 - docs(auth): correct session failure note (ed2f4c3)
 - perf(auth): enable database joins and upgrade Better Auth (3533b55)
 - Merge pull request #25 from FR4NC31/fix/better-auth-rate-limit-oauth-errors (804ddb8)
