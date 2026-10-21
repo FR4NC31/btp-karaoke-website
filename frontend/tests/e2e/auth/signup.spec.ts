@@ -71,4 +71,22 @@ test.describe('registration', () => {
     await page.getByRole('button', { name: 'Register' }).click()
     await expect(page).toHaveURL('/studio')
   })
+
+  test('AUTH-022: sign-up rejects a partial location payload', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const response = await page.request.post('/api/auth/sign-up/email', {
+      headers: { Origin: baseURL ?? 'http://localhost:5173' },
+      data: {
+        email: uniqueEmail(),
+        password: 'Secret123!',
+        name: 'Juan Dela Cruz',
+        first_name: 'Juan',
+        last_name: 'Dela Cruz',
+        contact_num: '09171234567',
+        province: 'Cavite',
+      },
+    })
+
+    expect(response.status()).toBe(400)
+    expect(await response.json()).toMatchObject({ message: /together/i })
+  })
 })

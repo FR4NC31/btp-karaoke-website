@@ -73,9 +73,9 @@ table above. All four are declared in `src/schema.ts`; `role` is added by
 `drizzle/0001_*.sql` and location by `drizzle/0007_*.sql`, while Better Auth
 reads them through `user.additionalFields` in `src/auth.ts`. That is what makes
 `role` unsettable from the client (`input: false`), and what lets the
-`databaseHooks.user.update.before` guard reject partial or malformed location
-writes (`src/location.ts`). The ALTERs are `IF NOT EXISTS` so the
-fresh-database order above still works (Better Auth creates the columns
+`databaseHooks.user.create.before` / `update.before` guard reject partial or
+malformed location writes (`src/location.ts`). The ALTERs are `IF NOT EXISTS`
+so the fresh-database order above still works (Better Auth creates the columns
 first). Promote and revoke admins with:
 
 ```bash

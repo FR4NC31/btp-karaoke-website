@@ -287,6 +287,16 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   covers failures that happen before or outside a specific OAuth flow.
 - **Automation:** Playwright - **Status: Automated**
 
+### AUTH-022
+
+- **Title:** Sign-up rejects a partial location payload
+- **Priority:** P1
+- **Steps:** 1. POST `/api/auth/sign-up/email` with the required account fields
+  plus only `province: "Cavite"`.
+- **Expected:** The server responds `400` and creates no account; the location
+  guard requires province, city/municipality, and barangay together.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Navigation — `frontend/tests/e2e/navigation/navigation.spec.ts`

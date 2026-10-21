@@ -100,6 +100,10 @@ test.describe('profile', () => {
       await expect(page.getByText('City of Bacoor', { exact: true })).toBeVisible()
       await expect(page.getByText('Cavite', { exact: true })).toBeVisible()
     } finally {
+      // The API only accepts a complete location set, so a partial legacy row
+      // cannot be written back exactly. Clear it rather than leave the test
+      // values behind. Keep a failed restore soft so the cascade assertion is
+      // still the primary error.
       const complete = Boolean(original.province && original.city_municipality && original.barangay)
       const restore = complete
         ? original
@@ -108,7 +112,7 @@ test.describe('profile', () => {
         data: restore,
         headers: { Origin: baseURL ?? 'http://localhost:5173' },
       })
-      expect(response.ok(), await response.text()).toBeTruthy()
+      expect.soft(response.ok(), await response.text()).toBeTruthy()
     }
   })
 })
