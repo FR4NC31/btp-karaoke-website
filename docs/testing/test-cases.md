@@ -730,7 +730,8 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   and delay the first `/api/media` response.
 - **Expected:** StrictMode's first effect is cleaned up before that response
   arrives; the replacement effect issues a second catalog request instead of
-  skipping it, so queue rows can still resolve their sources.
+  skipping it. The test counts requests; queue-source resolution is covered by
+  the karaoke suite.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
