@@ -82,31 +82,45 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
   const activeRow = queued ?? (queueTrackId !== null ? lastQueuedRow : null)
 
   const [catalog, setCatalog] = useState<MediaItem[]>([])
+  const catalogRequestedRef = useRef(false)
   useEffect(() => {
+    // The hub already fetches the catalog. The player only needs it once there
+    // is a queue row to resolve, so a hidden player with an empty queue does no
+    // duplicate catalog work.
+    if (queueRows.length === 0 || catalogRequestedRef.current) return
+    catalogRequestedRef.current = true
     let alive = true
     fetchMediaCatalog()
       .then((result) => {
         if (alive) setCatalog(result.items)
       })
-      .catch(() => {})
+      .catch(() => {
+        catalogRequestedRef.current = false
+      })
     return () => {
       alive = false
     }
-  }, [])
+  }, [queueRows.length])
 
   const [adminCatalog, setAdminCatalog] = useState<AdminMediaItem[]>([])
+  const adminCatalogRequestedRef = useRef(false)
   useEffect(() => {
-    if (!isAdmin) return
+    // Staff details only render in the expanded console; don't fetch the admin
+    // catalog while the player is mini or hidden.
+    if (!isAdmin || !expanded || adminCatalogRequestedRef.current) return
+    adminCatalogRequestedRef.current = true
     let alive = true
     fetchAdminMedia()
       .then((result) => {
         if (alive) setAdminCatalog(result.items)
       })
-      .catch(() => {})
+      .catch(() => {
+        adminCatalogRequestedRef.current = false
+      })
     return () => {
       alive = false
     }
-  }, [isAdmin])
+  }, [expanded, isAdmin])
 
   const queuedPlay = useMemo(() => {
     if (!activeRow) return null
@@ -333,6 +347,9 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
     if (!autoplay || queueTrackId !== null) return
     const el = videoRef.current
     if (!el) return
+    // Replaying the same card keeps the same src, so the browser will not reset
+    // the playhead for us.
+    el.currentTime = 0
     void el.play().catch(() => {})
   }, [autoplay, item?.id, queueTrackId])
 

@@ -150,7 +150,7 @@ export default function StageSection({
             className={`pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300 ${
               isMini
                 ? playing
-                  ? 'opacity-0 group-hover:opacity-100'
+                  ? 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
                   : 'opacity-100'
                 : badgeVisible
                   ? ''

@@ -862,4 +862,26 @@ test.describe('karaoke discovery', () => {
     await expect(playerBar.getByRole('button', { name: 'Play' })).toBeVisible()
     expect(Math.abs((await stageTime()) - pausedAt)).toBeLessThan(0.25)
   })
+
+  test('KARAOKE-021: replaying the same card restarts the persistent player', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+
+    const stage = page.locator('main video')
+    const stageTime = () => stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
+    await expect.poll(stageTime).toBeGreaterThan(1.5)
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    await expect(stage).toBeHidden()
+
+    // The same src stays loaded on the persistent element, so selecting the
+    // card again must reset the playhead explicitly.
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(stage).toBeVisible()
+    await expect.poll(stageTime).toBeLessThan(1)
+    await expect.poll(stagePaused).toBe(false)
+  })
 })
