@@ -675,7 +675,15 @@ test.describe('karaoke discovery', () => {
     await playerBar.getByRole('button', { name: /Play|Pause/ }).click()
     await expect(page).toHaveURL('/studio')
 
-    await playerBar.getByRole('link', { name: 'Open player queue' }).click()
+    await page.getByRole('slider', { name: 'Seek' }).click()
+    await expect(page).toHaveURL('/studio')
+
+    await playerBar.getByRole('link', { name: /Open player queue/ }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    await playerBar.click({ position: { x: 4, y: 72 } })
     await expect(page).toHaveURL('/studio/player-queue')
   })
 })

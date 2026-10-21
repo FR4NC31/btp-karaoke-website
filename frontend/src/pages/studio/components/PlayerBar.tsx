@@ -97,8 +97,8 @@ export default function PlayerBar({
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         <Link
           to="/studio/player-queue"
-          aria-label="Open player queue"
-          title="Open player queue"
+          aria-label={`Open player queue: ${nowTitle}${nowSubtitle ? ` by ${nowSubtitle}` : ''}`}
+          title={`Open player queue: ${nowTitle}`}
           className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
         >
           {onAir?.coverUrl ? (
