@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import { useOutletContext } from 'react-router'
 
 export type KaraokeVideoApi = {
   pip: boolean
@@ -10,11 +9,9 @@ export type KaraokeVideoApi = {
   volume: number
   onAir: OnAirTrack | null
   attachVideo: (el: HTMLVideoElement) => () => void
-  attachMini: (el: HTMLVideoElement) => () => void
-  attachMusic: (el: HTMLAudioElement) => () => void
   setOnAir: (track: OnAirTrack | null) => void
-  consumeMusicHandoff: () => boolean
   enterPip: () => void
+  exitPip: () => void
   toggle: () => void
   seek: (time: number) => void
   changeVolume: (volume: number) => void
@@ -43,22 +40,22 @@ export interface PlaylistHandlers {
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
-type SourceKind = 'video' | 'mini' | 'music'
+/** The single player element is only restyled between these presentation modes. */
+export type PlayerViewMode = 'expanded' | 'mini' | 'hidden'
 
 const DEFAULT_VOLUME = 0.7
 
-function sameSource(a: HTMLMediaElement, b: HTMLMediaElement): boolean {
-  return a.src !== '' && a.src === b.src
-}
-
+/**
+ * Owns the single studio media element's transport state.
+ *
+ * The element itself lives in the persistent StudioPlayer surface, so it is
+ * never unmounted when the user moves between studio routes. Hidden/mini/
+ * expanded are presentation modes, not different players.
+ */
 export function useKaraokeVideo(): KaraokeVideoApi {
-  const videoRef = useRef<HTMLMediaElement | null>(null)
-  const miniRef = useRef<HTMLMediaElement | null>(null)
-  const musicRef = useRef<HTMLMediaElement | null>(null)
-  const pipRef = useRef(false)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const videoVolumeRef = useRef(DEFAULT_VOLUME)
   const repeatModeRef = useRef<RepeatMode>('off')
-  const musicHandoffRef = useRef(false)
   const playlistRef = useRef<PlaylistHandlers | null>(null)
 
   const [pip, setPip] = useState(false)
@@ -76,8 +73,6 @@ export function useKaraokeVideo(): KaraokeVideoApi {
     setOnAirState(track)
   }, [])
 
-  const active = () => videoRef.current ?? (pipRef.current ? miniRef.current : null) ?? musicRef.current
-
   const syncFrom = useCallback((el: HTMLMediaElement) => {
     setPlaying(!el.paused)
     setCurrentTime(el.currentTime)
@@ -92,8 +87,8 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   }, [])
 
   const register = useCallback(
-    (el: HTMLMediaElement, kind: SourceKind) => {
-      const isActive = () => active() === el
+    (el: HTMLVideoElement) => {
+      const isActive = () => videoRef.current === el
       const syncTime = () => {
         if (isActive()) setCurrentTime(el.currentTime)
       }
@@ -119,36 +114,11 @@ export function useKaraokeVideo(): KaraokeVideoApi {
       el.addEventListener('ended', syncPause)
       el.addEventListener('volumechange', syncVolume)
 
-      if (kind === 'video') {
-        const mini = miniRef.current
-        if (pipRef.current && mini && sameSource(el, mini)) {
-          if (mini.currentTime > 1) el.currentTime = mini.currentTime
-          if (!mini.paused) void el.play().catch(() => {})
-        } else {
-          const music = musicRef.current
-          if (music && sameSource(el, music)) {
-            const resume = !music.paused
-            if (music.currentTime > 0) el.currentTime = music.currentTime
-            music.pause()
-            musicHandoffRef.current = false
-            if (resume) void el.play().catch(() => {})
-          }
-        }
-        pipRef.current = false
-        setPip(false)
-        videoRef.current = el
-        el.volume = videoVolumeRef.current
-        el.loop = repeatModeRef.current === 'one'
-      } else if (kind === 'mini') {
-        miniRef.current = el
-        el.loop = repeatModeRef.current !== 'off'
-      } else {
-        musicRef.current = el
-      }
-      if (active() === el) {
-        syncFrom(el)
-        if (!el.paused) setStarted(true)
-      }
+      videoRef.current = el
+      el.volume = videoVolumeRef.current
+      el.loop = repeatModeRef.current === 'one'
+      syncFrom(el)
+      if (!el.paused) setStarted(true)
 
       return () => {
         el.removeEventListener('timeupdate', syncTime)
@@ -159,62 +129,32 @@ export function useKaraokeVideo(): KaraokeVideoApi {
         el.removeEventListener('ended', syncPause)
         el.removeEventListener('volumechange', syncVolume)
 
-        if (kind === 'video') {
-          if (videoRef.current === el) videoRef.current = null
-          const mini = miniRef.current
-          if (pipRef.current && mini && sameSource(el, mini)) {
-            mini.currentTime = el.currentTime
-            mini.volume = el.volume
-            if (!el.paused) void mini.play().catch(() => {})
-          } else if (!pipRef.current) {
-            const music = musicRef.current
-            if (music && sameSource(el, music)) {
-              if (el.currentTime > 1) {
-                music.currentTime = el.currentTime
-                musicHandoffRef.current = true
-              } else {
-                musicHandoffRef.current = false
-              }
-            }
-          }
-        } else if (kind === 'mini') {
-          if (miniRef.current === el) miniRef.current = null
-        } else {
-          if (musicRef.current === el) musicRef.current = null
-        }
-
-        const next = active()
-        if (next) syncFrom(next)
-        else resetTransport()
+        if (videoRef.current === el) videoRef.current = null
+        resetTransport()
       }
     },
     [resetTransport, syncFrom],
   )
 
-  const attachVideo = useCallback((el: HTMLVideoElement) => register(el, 'video'), [register])
-  const attachMini = useCallback((el: HTMLVideoElement) => register(el, 'mini'), [register])
-  const attachMusic = useCallback((el: HTMLAudioElement) => register(el, 'music'), [register])
-
-  const consumeMusicHandoff = useCallback(() => {
-    const handoff = musicHandoffRef.current
-    musicHandoffRef.current = false
-    return handoff
-  }, [])
+  const attachVideo = useCallback((el: HTMLVideoElement) => register(el), [register])
 
   const enterPip = useCallback(() => {
-    pipRef.current = true
     setPip(true)
   }, [])
 
+  const exitPip = useCallback(() => {
+    setPip(false)
+  }, [])
+
   const toggle = useCallback(() => {
-    const el = active()
+    const el = videoRef.current
     if (!el) return
     if (el.paused) void el.play().catch(() => {})
     else el.pause()
   }, [])
 
   const seek = useCallback((time: number) => {
-    const el = active()
+    const el = videoRef.current
     if (!el || !Number.isFinite(time)) return
     el.currentTime = time
     setCurrentTime(time)
@@ -223,18 +163,16 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const changeVolume = useCallback((next: number) => {
     const clamped = Math.min(1, Math.max(0, next))
     setVolume(clamped)
-    const el = active()
+    const el = videoRef.current
     if (!el) return
     el.volume = clamped
-    if (el === videoRef.current || el === miniRef.current) videoVolumeRef.current = clamped
+    videoVolumeRef.current = clamped
   }, [])
 
   const setRepeatMode = useCallback((mode: RepeatMode) => {
     repeatModeRef.current = mode
     setRepeatModeState(mode)
-    const consoleLoops = mode === 'one'
-    if (videoRef.current) videoRef.current.loop = consoleLoops
-    if (miniRef.current) miniRef.current.loop = mode !== 'off'
+    if (videoRef.current) videoRef.current.loop = mode === 'one'
   }, [])
 
   const setShuffle = useCallback((next: boolean) => {
@@ -266,11 +204,9 @@ export function useKaraokeVideo(): KaraokeVideoApi {
     volume,
     onAir,
     attachVideo,
-    attachMini,
-    attachMusic,
     setOnAir,
-    consumeMusicHandoff,
     enterPip,
+    exitPip,
     toggle,
     seek,
     changeVolume,
@@ -283,8 +219,4 @@ export function useKaraokeVideo(): KaraokeVideoApi {
     next,
     attachPlaylist,
   }
-}
-
-export function useKaraokeVideoControls(): KaraokeVideoApi {
-  return useOutletContext<KaraokeVideoApi>()
 }
