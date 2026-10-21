@@ -105,7 +105,7 @@ frontend/tests/e2e/
 │   ├── media.ts                 admin API helpers: create/delete one catalog row (KARAOKE-003/005 create their own)
 │   └── env.ts                   BACKEND_URL (no hard-coded hosts)
 ├── smoke/smoke.spec.ts          SMOKE-001…006   P0 "can a user use the site?"
-├── auth/signin.spec.ts          AUTH-001…008    login, logout, validation, Google
+├── auth/signin.spec.ts          AUTH-001…021    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…015 media hub (DB-backed catalog), console, player bar, PiP, queue playback
@@ -156,7 +156,9 @@ is stale: re-run once (the setup project recreates it) or check that
 No production OAuth/accounts are used. The Google button is wired to the real
 Better Auth hand-off, but Playwright stubs Google's page, so the test asserts
 the outgoing authorization URL rather than completing a consent (AUTH-008);
-OAuth failures redirected back as query params are covered by AUTH-018.
+OAuth failures redirected back as query params are covered by AUTH-018. The
+global fallback page and the Better Auth redirect to it are covered by
+AUTH-021.
 
 ## Test data
 
@@ -296,7 +298,7 @@ their tests create the rows they assert and delete them afterwards.
 - The frontend calls them through **`better-auth/react`**: sign-up and
   sign-in run against the real database, the session is a cookie, and
   `RequireAuth` gates `/studio`. Covered end-to-end by the auth suite
-  (AUTH-001…014) plus SMOKE-003/005.
+  (AUTH-001…021) plus SMOKE-003/005.
 - The **booking API** (`GET /api/services`, `GET/POST /api/bookings`,
   `POST /api/bookings/:id/cancel`) is exercised end-to-end through the UI by
   BOOKING-001…007. Its error branches — 401 anonymous, 400 for a past or

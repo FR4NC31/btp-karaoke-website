@@ -1,11 +1,32 @@
 import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
+import { resolveAuthNetworkSettings } from './auth-settings.ts'
 import { pool } from './db.ts'
+
+const { frontendOrigin, ipAddressHeaders, trustedProxies, errorURL } =
+  resolveAuthNetworkSettings()
 
 export const auth = betterAuth({
   // Shared pool (see db.ts) so auth and the booking queries ride the same
   // connections and TLS setup.
   database: pool,
+  // Rate-limit buckets are keyed by client IP. Behind a proxy/CDN the socket
+  // address is the edge, so read the address header the edge overwrites.
+  // AUTH_IP_ADDRESS_HEADERS / AUTH_TRUSTED_PROXIES are validated in
+  // auth-settings.ts; see docs/auth/proxy-and-oauth-errors.md for deployment
+  // examples and spoofing risks.
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders,
+      ...(trustedProxies.length > 0 ? { trustedProxies } : {}),
+    },
+  },
+  // Never send users to Better Auth's development-only HTML error page. The
+  // SPA has a styled /auth/error route, and this URL is absolute so it also
+  // works when the API and frontend are hosted on different origins.
+  onAPIError: {
+    errorURL,
+  },
   emailAndPassword: {
     enabled: true,
   },
@@ -87,7 +108,7 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [
-    process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+    frontendOrigin,
     // ngrok and any other hosts you want to verify from
     ...(process.env.EXTRA_TRUSTED_ORIGINS?.split(',').map((o) => o.trim()) ?? []),
     // Better Auth Dash verifies server ownership from its dashboard

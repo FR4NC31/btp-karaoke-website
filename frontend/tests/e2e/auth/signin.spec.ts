@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures'
 import { ANONYMOUS, signIn, TEST_USER } from '../helpers/auth'
+import { BACKEND_URL } from '../helpers/env'
 
 test.describe('authentication', () => {
   test.use({ storageState: ANONYMOUS })
@@ -74,10 +75,18 @@ test.describe('authentication', () => {
 
   test('AUTH-008: Google sign-in is offered and hands off to Google', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/signin')
+    const appOrigin = new URL(page.url()).origin
 
     const googleButton = page.getByRole('button', { name: 'Continue with Google' })
     await expect(googleButton).toBeEnabled()
     await expect(page.getByText('Google sign-in is not available yet')).toHaveCount(0)
+
+    let socialSignInBody: { errorCallbackURL?: string } | undefined
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/auth/sign-in/social')) {
+        socialSignInBody = request.postDataJSON() as { errorCallbackURL?: string }
+      }
+    })
 
     await page.route('https://accounts.google.com/**', (route) =>
       route.fulfill({
@@ -94,6 +103,7 @@ test.describe('authentication', () => {
     expect(params.get('client_id')).toBeTruthy()
     expect(params.get('state')).toBeTruthy()
     expect(params.get('redirect_uri')).toMatch(/\/api\/auth\/callback\/google$/)
+    expect(socialSignInBody?.errorCallbackURL).toBe(`${appOrigin}/signin`)
   })
 
   test('AUTH-018: an OAuth failure arriving as a query param is shown', { tag: '@p2' }, async ({ page }) => {
@@ -112,6 +122,30 @@ test.describe('authentication', () => {
       'Sign in with your email and password instead',
     )
     expect(new URL(page.url()).pathname).toBe('/signin')
+  })
+
+  test('AUTH-021: Better Auth errors redirect to the app error page', {
+    tag: '@p2',
+  }, async ({ page, request }) => {
+    const response = await request.get(`${BACKEND_URL}/api/auth/error?error=access_denied`, {
+      maxRedirects: 0,
+    })
+
+    expect(response.status()).toBe(302)
+    const location = response.headers()['location']
+    expect(location).toBeTruthy()
+
+    const errorURL = new URL(location!)
+    expect(errorURL.pathname).toBe('/auth/error')
+    expect(errorURL.searchParams.get('error')).toBe('access_denied')
+
+    await page.goto(errorURL.toString())
+    await expect(page.getByRole('heading', { name: 'Sign-in error' })).toBeVisible()
+    await expect(page.getByRole('alert')).toHaveText('Google sign-in was cancelled.')
+    await expect(page.getByRole('link', { name: 'Try signing in again' })).toHaveAttribute(
+      'href',
+      '/signin',
+    )
   })
 
   test('AUTH-020: a failed logout is reported, not silently bounced', { tag: '@p1' }, async ({ page }) => {

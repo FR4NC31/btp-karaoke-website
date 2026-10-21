@@ -8,6 +8,7 @@ const publicTitles = [
   ['/contact', 'Contact'],
   ['/signin', 'Sign In'],
   ['/signup', 'Sign Up'],
+  ['/auth/error', 'Sign-In Error'],
   ['/not-a-real-page', 'Page Not Found'],
 ] as const
 

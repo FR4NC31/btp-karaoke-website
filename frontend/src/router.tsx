@@ -13,6 +13,7 @@ import PlayerQueue from "./pages/PlayerQueue"
 import NotFound from "./pages/NotFound"
 import SignIn from "./pages/auth/SignIn"
 import SignUp from "./pages/auth/SignUp"
+import AuthError from "./pages/auth/AuthError"
 import StudioShell from "./pages/studio/StudioShell"
 import StudioHome from "./pages/studio/StudioHome"
 import BookingPage from "./pages/studio/BookingPage"
@@ -83,6 +84,11 @@ export const router = createBrowserRouter([
                         element: <SignUp />,
                     },
                 ]
+            },
+            {
+                path: "/auth/error",
+                handle: { title: 'Sign-In Error' },
+                element: <AuthError />,
             },
             {
                 element: <RequireAdmin />,

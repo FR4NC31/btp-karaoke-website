@@ -19,3 +19,4 @@ Documentation:
 - [docs/testing/test-cases.md](docs/testing/test-cases.md) — test case catalog
 - [docs/testing/test-reports.md](docs/testing/test-reports.md) — PASS/FAIL/BLOCKED reporting
 - [docs/testing/bug-reporting.md](docs/testing/bug-reporting.md) — GitHub bug workflow
+- [docs/auth/proxy-and-oauth-errors.md](docs/auth/proxy-and-oauth-errors.md) — client-IP/rate-limit and OAuth-error deployment guide

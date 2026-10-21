@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 20, 2026
+Last updated: October 21, 2026
 
 ### Features
 
@@ -32,6 +32,7 @@ Last updated: October 20, 2026
 
 ### Bug Fixes
 
+- fix(auth): trust proxy IPs and add OAuth error page (a3a95db)
 - fix(studio): align console tab title with the fallback track (c519a74)
 - fix(studio): address PR review feedback (a7363c5)
 - fix(studio): polish console playback and media rails (2cc8598)
@@ -76,6 +77,7 @@ Last updated: October 20, 2026
 
 ### Other Changes
 
+- Merge pull request #24 from FR4NC31/fix/karaoke-014-015-popover-race (70a8995)
 - test(karaoke): await queue popover close (284dec3)
 - Merge pull request #23 from FR4NC31/fix/UI-polished (e031c31)
 - Merge branch 'develop' into fix/UI-polished (970550c)
