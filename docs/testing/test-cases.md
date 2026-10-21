@@ -147,12 +147,14 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Expected:** The button is enabled and no prototype disclosure remains.
   The browser is sent to Google's authorization endpoint carrying our
   `client_id`, a `state`, and a `redirect_uri` that ends
-  `/api/auth/callback/google` — the exact URI that must be registered as an
-  Authorized redirect URI in the Google Cloud console.
+  `/api/auth/callback/google` - the exact URI that must be registered as an
+  Authorized redirect URI in the Google Cloud console. The social sign-in
+  request also carries an `errorCallbackURL` pointing back to `/signin`.
 - **Notes:** Google's real login page is stubbed by a Playwright route, so the
   test proves the hand-off without touching Google or needing an account. The
-  consent step itself is not automated — see the OAuth row in the coverage
-  matrix.
+  consent step itself is not automated - see the OAuth row in the coverage
+  matrix. The `errorCallbackURL` assertion pins the per-flow error path so a
+  cancellation does not fall through to the global fallback page.
 - **Automation:** Playwright — **Status: Automated**
 
 ### AUTH-009
@@ -265,6 +267,21 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   `src/lib/auth-errors.ts` maps the codes. The query string is deliberately
   left in place so a refresh re-surfaces the message.
 - **Automation:** Playwright — **Status: Automated**
+
+### AUTH-021
+
+- **Title:** Better Auth errors redirect to the app error page
+- **Priority:** P2
+- **Steps:** 1. Request `GET /api/auth/error?error=access_denied` from the
+  backend without following redirects. 2. Open the returned `Location`.
+- **Expected:** The API returns `302` to `FRONTEND_ORIGIN/auth/error` (not
+  Better Auth's built-in HTML page). The page shows "Google sign-in was
+  cancelled." and offers links back to `/signin` and `/`.
+- **Notes:** `onAPIError.errorURL` is resolved from `FRONTEND_ORIGIN` in
+  `backend/src/auth-settings.ts` and is absolute so the API and SPA can be on
+  separate origins. `errorCallbackURL` remains the per-flow route; this case
+  covers failures that happen before or outside a specific OAuth flow.
+- **Automation:** Playwright - **Status: Automated**
 
 ---
 
@@ -944,7 +961,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Song detail / lyrics synchronization   | N/A                   | No song detail page; the admin stores staff-only lyrics on music rows (the public `/api/media` payload omits them), but nothing renders or syncs them yet. |
 | Real playback, progress movement, volume | Covered               | Real media elements and a shared transport: play/pause, seek and volume are pinned by KARAOKE-006…008; the console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and the end-of-song auto-advance play each row's exact file and step over rows with no real media (KARAOKE-014). |
 | Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
-| OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008) and OAuth errors surface in the UI (AUTH-018); the consent step needs a real Google account, so it stays manual. |
+| OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008), OAuth errors surface in the UI (AUTH-018), and the global Better Auth error redirect has a dedicated fallback page (AUTH-021); the consent step needs a real Google account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
 | Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 - reaches `/studio`, multi-line lyrics stored on music rows and kept staff-only: the public `/api/media` payload omits them), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 - stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 - tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 - **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |

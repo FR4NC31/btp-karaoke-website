@@ -140,6 +140,10 @@ jobs:
         working-directory: backend
         run: npm run typecheck
 
+      - name: Test auth network settings
+        working-directory: backend
+        run: npm test
+
       - name: Initialize disposable test database
         working-directory: backend
         env:
