@@ -8,6 +8,7 @@ import {
   Mic01Icon,
   BellIcon,
   CalendarCheck01Icon,
+  Queue01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
 import BrandLogo from '../../../components/BrandLogo'
@@ -71,6 +72,18 @@ export default function StudioTopBar() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Link
+          to="/studio/player-queue"
+          aria-label="Player Queue"
+          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
+            pathname.startsWith('/studio/player-queue')
+              ? 'border-primary/50 bg-primary-soft text-primary'
+              : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <HugeiconsIcon icon={Queue01Icon} size={15} />
+          <span className="hidden lg:inline">Queue</span>
+        </Link>
         <Link
           to="/studio/bookings"
           aria-label="Bookings"
