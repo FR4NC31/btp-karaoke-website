@@ -6,6 +6,7 @@ Last updated: October 21, 2026
 
 ### Features
 
+- feat(profile): add PH location cascade (07f9741)
 - feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
