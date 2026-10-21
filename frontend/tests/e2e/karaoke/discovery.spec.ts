@@ -652,7 +652,7 @@ test.describe('karaoke discovery', () => {
     await expect(
       page.getByRole('heading', { name: 'Karaoke & Studio Audio Console' }),
     ).toBeVisible()
-    await expect(topBar.getByRole('link', { name: 'Player Queue' })).toHaveClass(/bg-primary-soft/)
+    await expect(topBar.getByRole('link', { name: /Player Queue/i })).toHaveClass(/bg-primary-soft/)
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
@@ -663,6 +663,9 @@ test.describe('karaoke discovery', () => {
       .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
     await sidebar.getByRole('link', { name: 'Player Queue' }).click()
     await expect(page).toHaveURL('/studio/player-queue')
+    await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveClass(
+      /bg-primary-soft/,
+    )
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
@@ -690,5 +693,76 @@ test.describe('karaoke discovery', () => {
     expect(emptyBarSpot).toBe(true)
     await playerBar.click({ position: { x: 4, y: 72 } })
     await expect(page).toHaveURL('/studio/player-queue')
+  })
+
+  test('KARAOKE-017: reopening the queue resumes playback and toggles back', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+
+    const stage = page.locator('main video')
+    const stageTime = () => stage.evaluate((el) => (el as HTMLVideoElement).currentTime)
+    const stagePaused = () => stage.evaluate((el) => (el as HTMLVideoElement).paused)
+    await expect.poll(stageTime).toBeGreaterThan(1.5)
+    const beforeHandoff = await stageTime()
+    const stageSource = await stage.getAttribute('src')
+    expect(stageSource).toBeTruthy()
+
+    await page.getByRole('link', { name: 'Back' }).click()
+    await expect(page).toHaveURL('/studio')
+    const audio = page.locator('audio')
+    const audioTime = () => audio.evaluate((el) => (el as HTMLAudioElement).currentTime)
+    const audioPaused = () => audio.evaluate((el) => (el as HTMLAudioElement).paused)
+    await expect.poll(audioTime).toBeGreaterThan(beforeHandoff - 0.5)
+    await expect.poll(audioPaused).toBe(false)
+
+    const topBar = page.getByRole('banner')
+    const sidebar = page
+      .getByRole('complementary')
+      .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
+    const playerBar = page.getByRole('contentinfo')
+
+    async function expectQueueResume(openQueue: () => Promise<void>) {
+      const audioBefore = await audioTime()
+      await openQueue()
+      await expect(page).toHaveURL('/studio/player-queue')
+      await expect(stage).toHaveAttribute('src', stageSource ?? '')
+      await expect.poll(stageTime).toBeGreaterThan(audioBefore - 0.5)
+      await expect.poll(stagePaused).toBe(false)
+      return stageTime()
+    }
+
+    async function expectQueueMinimized(videoBefore: number) {
+      await expect(page).toHaveURL('/studio')
+      await expect(stage).toHaveCount(0)
+      await expect.poll(audioTime).toBeGreaterThan(videoBefore - 0.5)
+      await expect.poll(audioPaused).toBe(false)
+    }
+
+    const fromTopBar = await expectQueueResume(() =>
+      topBar.getByRole('link', { name: 'Player Queue' }).click(),
+    )
+    await expect(topBar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
+      'href',
+      '/studio',
+    )
+    await topBar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await expectQueueMinimized(fromTopBar)
+
+    const fromSidebar = await expectQueueResume(() =>
+      sidebar.getByRole('link', { name: 'Player Queue' }).click(),
+    )
+    await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
+      'href',
+      '/studio',
+    )
+    await sidebar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await expectQueueMinimized(fromSidebar)
+
+    const fromPlayerBar = await expectQueueResume(() =>
+      playerBar.getByRole('link', { name: /Open player queue/i }).click(),
+    )
+    await expect(playerBar.getByRole('link', { name: /Minimize player queue/i })).toBeVisible()
+    await playerBar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await expectQueueMinimized(fromPlayerBar)
   })
 })

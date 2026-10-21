@@ -33,6 +33,8 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
+- fix(studio): address player queue resume review feedback (aa87ad7)
+- fix(studio): resume queue playback and toggle minimize (243af74)
 - fix(studio): address player queue review feedback (c464ae3)
 - fix(auth): trust proxy IPs and add OAuth error page (a3a95db)
 - fix(studio): align console tab title with the fallback track (c519a74)
@@ -79,6 +81,7 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
 - docs(auth): correct session failure note (ed2f4c3)
