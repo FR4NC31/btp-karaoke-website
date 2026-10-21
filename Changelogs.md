@@ -2,11 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 21, 2026
+Last updated: October 22, 2026
 
 ### Features
 
-- feat(profile): add PH location cascade (07f9741)
+- feat(profile): add PH location cascade (a30d931)
 - feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
@@ -35,6 +35,7 @@ Last updated: October 21, 2026
 
 ### Bug Fixes
 
+- fix(profile): guard location saves and PSGC loads (83e386f)
 - fix(studio): address persistent player review feedback (ad3f398)
 - fix(studio): finish persistent player playback and coverage (29a1279)
 - fix(studio): address player queue resume review feedback (aa87ad7)
@@ -85,6 +86,8 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- Merge pull request #29 from FR4NC31/feat/persistent-player-surface (8ce57bb)
+- Merge pull request #28 from FR4NC31/fix/player-queue-resume-toggle (6cdb5b6)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
