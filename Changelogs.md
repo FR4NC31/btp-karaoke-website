@@ -36,6 +36,7 @@ Last updated: October 22, 2026
 ### Bug Fixes
 
 - fix(player): retry catalogs after effect cleanup (c940315)
+- fix(profile): cover sign-up and tighten location guard (101b018)
 - fix(profile): guard location saves and PSGC loads (83e386f)
 - fix(studio): address persistent player review feedback (ad3f398)
 - fix(studio): finish persistent player playback and coverage (29a1279)
