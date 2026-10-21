@@ -722,6 +722,18 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   Play button or a console session hands back on exit (KARAOKE-010).
 - **Automation:** Playwright — **Status: Automated**
 
+### PLAYER-010
+
+- **Title:** Direct console load retries the catalog after StrictMode cleanup
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/player-queue` directly with a seeded lounge queue
+  and delay the first `/api/media` response.
+- **Expected:** StrictMode's first effect is cleaned up before that response
+  arrives; the replacement effect issues a second catalog request instead of
+  skipping it. The test counts requests; queue-source resolution is covered by
+  the karaoke suite.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Profile — `frontend/tests/e2e/profile/profile.spec.ts`

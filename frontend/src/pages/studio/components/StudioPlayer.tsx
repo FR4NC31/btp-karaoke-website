@@ -82,20 +82,24 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
   const activeRow = queued ?? (queueTrackId !== null ? lastQueuedRow : null)
 
   const [catalog, setCatalog] = useState<MediaItem[]>([])
-  const catalogRequestedRef = useRef(false)
+  const catalogLoadedRef = useRef(false)
   useEffect(() => {
     // The hub already fetches the catalog. The player only needs it once there
     // is a queue row to resolve, so a hidden player with an empty queue does no
     // duplicate catalog work.
-    if (queueRows.length === 0 || catalogRequestedRef.current) return
-    catalogRequestedRef.current = true
+    if (queueRows.length === 0 || catalogLoadedRef.current) return
     let alive = true
     fetchMediaCatalog()
       .then((result) => {
-        if (alive) setCatalog(result.items)
+        if (!alive) return
+        // Only latch a response that actually reached this effect. A cleanup
+        // between StrictMode's double mount (or a queue change mid-fetch) must
+        // leave the latch open so the replacement effect can retry.
+        catalogLoadedRef.current = true
+        setCatalog(result.items)
       })
       .catch(() => {
-        catalogRequestedRef.current = false
+        if (alive) catalogLoadedRef.current = false
       })
     return () => {
       alive = false
@@ -103,19 +107,22 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
   }, [queueRows.length])
 
   const [adminCatalog, setAdminCatalog] = useState<AdminMediaItem[]>([])
-  const adminCatalogRequestedRef = useRef(false)
+  const adminCatalogLoadedRef = useRef(false)
   useEffect(() => {
     // Staff details only render in the expanded console; don't fetch the admin
     // catalog while the player is mini or hidden.
-    if (!isAdmin || !expanded || adminCatalogRequestedRef.current) return
-    adminCatalogRequestedRef.current = true
+    if (!isAdmin || !expanded || adminCatalogLoadedRef.current) return
     let alive = true
     fetchAdminMedia()
       .then((result) => {
-        if (alive) setAdminCatalog(result.items)
+        if (!alive) return
+        // Minimizing during the fetch aborts this attempt; leaving the latch
+        // closed is what lets the next expand fetch the admin details again.
+        adminCatalogLoadedRef.current = true
+        setAdminCatalog(result.items)
       })
       .catch(() => {
-        adminCatalogRequestedRef.current = false
+        if (alive) adminCatalogLoadedRef.current = false
       })
     return () => {
       alive = false

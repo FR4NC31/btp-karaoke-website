@@ -35,6 +35,7 @@ Last updated: October 22, 2026
 
 ### Bug Fixes
 
+- fix(player): retry catalogs after effect cleanup (c940315)
 - fix(profile): guard location saves and PSGC loads (83e386f)
 - fix(studio): address persistent player review feedback (ad3f398)
 - fix(studio): finish persistent player playback and coverage (29a1279)
@@ -86,6 +87,8 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- docs(testing): scope PLAYER-010 to the request retry (446668d)
+- Merge pull request #31 from FR4NC31/feat/profile-location (f8522d6)
 - Merge pull request #29 from FR4NC31/feat/persistent-player-surface (8ce57bb)
 - Merge pull request #28 from FR4NC31/fix/player-queue-resume-toggle (6cdb5b6)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
