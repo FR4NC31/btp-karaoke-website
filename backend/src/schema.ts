@@ -54,6 +54,15 @@ export const user = pgTable('user', {
   lastName: text('last_name').notNull(),
   contactNum: text('contact_num').notNull(),
   /**
+   * Philippines location, nullable for accounts that have not set one yet.
+   * Barangay + city/municipality + province only — no street address.
+   * Declared in src/auth.ts (additionalFields) and added to an existing
+   * database by the accompanying Drizzle migration.
+   */
+  province: text('province'),
+  cityMunicipality: text('city_municipality'),
+  barangay: text('barangay'),
+  /**
    * Authorization flag: 'user' (default) or 'admin'. Mirrored here so the
    * column can ride the normal Drizzle migration path (drizzle/0001_*.sql);
    * Better Auth reads it through `user.additionalFields.role` in src/auth.ts,

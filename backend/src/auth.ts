@@ -104,6 +104,22 @@ export const auth = betterAuth({
         type: 'string',
         required: true,
       },
+      // Philippines-only location. Barangay + city/municipality + province is
+      // as specific as the profile goes — no street address is stored.
+      // Optional so existing accounts and Google sign-ups stay valid; the
+      // location editor only saves when all three are chosen.
+      province: {
+        type: 'string',
+        required: false,
+      },
+      city_municipality: {
+        type: 'string',
+        required: false,
+      },
+      barangay: {
+        type: 'string',
+        required: false,
+      },
       // Authorization flag. `input: false` + `defaultValue` is the whole
       // security story here: Better Auth overwrites any role a client sends
       // during sign-up with the default, and rejects the field outright on

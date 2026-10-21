@@ -1,3 +1,9 @@
+export type ProfileLocation = {
+  province: string
+  cityMunicipality: string
+  barangay: string
+}
+
 export type ProfileIdentity = {
   image?: string | null
   fullName: string
@@ -6,4 +12,5 @@ export type ProfileIdentity = {
   phone: string
   handle: string
   memberSince: string
+  location: ProfileLocation
 }
