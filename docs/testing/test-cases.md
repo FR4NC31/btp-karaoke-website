@@ -752,6 +752,8 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P2
 - **Steps:** 1. Open `/studio/profile`. 2. Open **Add/Edit location**.
   3. Pick a province, then a city/municipality, then a barangay.
+  4. Click **Save location**, wait for **Location saved**, then reload
+  `/studio/profile`.
 - **Expected:** Choosing each level loads the next from the PSGC API; **Save
   location** persists the three names through Better Auth, and after a reload
   the session still renders the saved barangay/city/province. The test mocks

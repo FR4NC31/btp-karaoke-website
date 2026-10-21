@@ -1,7 +1,9 @@
 import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import { resolveAuthNetworkSettings } from './auth-settings.ts'
 import { pool } from './db.ts'
+import { validateLocationUpdate } from './location.ts'
 
 const { frontendOrigin, ipAddressHeaders, trustedProxies, errorURL } =
   resolveAuthNetworkSettings()
@@ -10,6 +12,26 @@ export const auth = betterAuth({
   // Shared pool (see db.ts) so auth and the booking queries ride the same
   // connections and TLS setup.
   database: pool,
+  // The location editor sends all three PSGC names together. Keep that contract
+  // at the API boundary too: update-user is public and must not be able to
+  // write a partial, blank, or unbounded location row.
+  databaseHooks: {
+    user: {
+      update: {
+        before: async (user) => {
+          const location = validateLocationUpdate(user)
+
+          if (location.kind === 'invalid') {
+            throw new APIError('BAD_REQUEST', { message: location.message })
+          }
+
+          if (location.kind === 'valid') {
+            return { data: { ...user, ...location.data } }
+          }
+        },
+      },
+    },
+  },
   // Rate-limit buckets are keyed by client IP. Behind a proxy/CDN the socket
   // address is the edge, so read the address header the edge overwrites.
   // AUTH_IP_ADDRESS_HEADERS / AUTH_TRUSTED_PROXIES are validated in

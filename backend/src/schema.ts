@@ -20,11 +20,13 @@ import {
  *     are created and re-created by `bun x auth@latest migrate` from
  *     backend/better-auth_migrations/, NOT from here.
  *   - Drizzle owns "service", "booking" and "media_item" (backend/drizzle/
- *     migrations).
+ *     migrations). It also adds the `role` and profile-location columns to
+ *     Better Auth's `user` table through migrations 0001 and 0007.
  *
- * `user` is declared below only so `booking.userId` can carry a real database
- * foreign key. Its CREATE is deliberately stripped out of the generated
- * migration — see backend/drizzle/0000_*.sql. On a fresh database, run
+ * `user` is declared below so `booking.userId` can carry a real database
+ * foreign key and so the snapshot mirrors the columns Better Auth manages. Its
+ * CREATE is deliberately stripped out of the generated migration — see
+ * backend/drizzle/0000_*.sql. On a fresh database, run
  * `bun x auth@latest migrate` BEFORE `npm run migrate`, or the booking FK has
  * nothing to point at.
  *
@@ -56,8 +58,8 @@ export const user = pgTable('user', {
   /**
    * Philippines location, nullable for accounts that have not set one yet.
    * Barangay + city/municipality + province only — no street address.
-   * Declared in src/auth.ts (additionalFields) and added to an existing
-   * database by the accompanying Drizzle migration.
+   * Declared in src/auth.ts (additionalFields), added to an existing database
+   * by drizzle/0007_*.sql, and guarded on update by src/location.ts.
    */
   province: text('province'),
   cityMunicipality: text('city_municipality'),

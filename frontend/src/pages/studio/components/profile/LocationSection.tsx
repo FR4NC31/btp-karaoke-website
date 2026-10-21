@@ -78,6 +78,9 @@ export default function LocationSection({ location, onSaved }: Props) {
     void load()
     return () => {
       alive = false
+      // The next effect may bail out early (no province/city selected), so a
+      // stale "Loading…" flag must not outlive this request.
+      setProvincesLoading(false)
     }
   }, [editing, reloadKey, location.province])
 
@@ -109,6 +112,7 @@ export default function LocationSection({ location, onSaved }: Props) {
     void load()
     return () => {
       alive = false
+      setCitiesLoading(false)
     }
   }, [editing, provinceCode, reloadKey, location.cityMunicipality])
 
@@ -140,6 +144,7 @@ export default function LocationSection({ location, onSaved }: Props) {
     void load()
     return () => {
       alive = false
+      setBarangaysLoading(false)
     }
   }, [editing, cityCode, reloadKey, location.barangay])
 

@@ -34,6 +34,10 @@ type RawLocation = {
 
 const cache = new Map<string, Promise<PhLocationOption[]>>()
 
+// A stalled PSGC request must not sit in the cache forever. The catch below
+// evicts it, so the editor's Retry button can start a fresh request.
+const REQUEST_TIMEOUT_MS = 8_000
+
 function cached(key: string, load: () => Promise<PhLocationOption[]>) {
   const existing = cache.get(key)
   if (existing) return existing
@@ -51,6 +55,7 @@ function cached(key: string, load: () => Promise<PhLocationOption[]>) {
 async function fetchLocations(path: string): Promise<PhLocationOption[]> {
   const response = await fetch(`${API_ROOT}${path}`, {
     headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   })
   if (!response.ok) {
     throw new Error(`Location API returned ${response.status}`)
