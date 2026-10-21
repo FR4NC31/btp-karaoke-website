@@ -6,6 +6,7 @@ Last updated: October 21, 2026
 
 ### Features
 
+- feat(profile): add PH location cascade (07f9741)
 - feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
 - feat(admin): take reservations in a desk modal (0d2fe27)
@@ -79,6 +80,7 @@ Last updated: October 21, 2026
 
 ### Other Changes
 
+- Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
 - docs(auth): correct session failure note (ed2f4c3)
