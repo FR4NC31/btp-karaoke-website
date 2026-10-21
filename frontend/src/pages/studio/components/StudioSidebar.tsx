@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router'
+import { Link, NavLink, useLocation } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   MusicNote03Icon,
@@ -22,6 +22,8 @@ const deskLinks = [
 
 export default function StudioSidebar() {
   const [activeSidebar, setActiveSidebar] = useState('Master Collections Vault')
+  const { pathname } = useLocation()
+  const onQueue = pathname.startsWith('/studio/player-queue')
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
@@ -43,24 +45,33 @@ export default function StudioSidebar() {
         <div>
           <p className="mb-2 px-1 text-[10px] font-bold tracking-widest text-primary uppercase">Studio Desk</p>
           <ul className="space-y-1">
-            {deskLinks.map((link) => (
-              <li key={link.to}>
-                <NavLink
-                  to={link.to}
-                  end={link.end}
-                  className={({ isActive }) =>
-                    `flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
+            {deskLinks.map((link) => {
+              const isQueue = link.to === '/studio/player-queue'
+              const isActive = isQueue
+                ? onQueue
+                : link.end
+                  ? pathname === link.to
+                  : pathname.startsWith(link.to)
+              return (
+                <li key={link.to}>
+                  <Link
+                    to={isQueue && onQueue ? '/studio' : link.to}
+                    aria-label={
+                      isQueue ? (onQueue ? 'Minimize player queue' : 'Player Queue') : undefined
+                    }
+                    title={isQueue && onQueue ? 'Minimize player queue' : undefined}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
                       isActive
                         ? 'bg-primary-soft text-primary'
                         : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
-                    }`
-                  }
-                >
-                  <HugeiconsIcon icon={link.icon} size={12} />
-                  <span className="truncate">{link.label}</span>
-                </NavLink>
-              </li>
-            ))}
+                    }`}
+                  >
+                    <HugeiconsIcon icon={link.icon} size={12} />
+                    <span className="truncate">{link.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
             {isAdmin && (
               <li>
                 <NavLink

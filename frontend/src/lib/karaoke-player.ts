@@ -124,6 +124,15 @@ export function useKaraokeVideo(): KaraokeVideoApi {
         if (pipRef.current && mini && sameSource(el, mini)) {
           if (mini.currentTime > 1) el.currentTime = mini.currentTime
           if (!mini.paused) void el.play().catch(() => {})
+        } else {
+          const music = musicRef.current
+          if (music && sameSource(el, music)) {
+            const resume = !music.paused
+            if (music.currentTime > 0) el.currentTime = music.currentTime
+            music.pause()
+            musicHandoffRef.current = false
+            if (resume) void el.play().catch(() => {})
+          }
         }
         pipRef.current = false
         setPip(false)
