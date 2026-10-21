@@ -88,6 +88,7 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- test(profile): cover sign-up location guard (d28d137)
 - docs(testing): scope PLAYER-010 to the request retry (446668d)
 - Merge pull request #31 from FR4NC31/feat/profile-location (f8522d6)
 - Merge pull request #29 from FR4NC31/feat/persistent-player-surface (8ce57bb)
