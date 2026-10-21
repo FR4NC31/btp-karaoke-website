@@ -588,12 +588,13 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Priority:** P1
 - **Steps:** 1. Start the video song, let it pass ~1.5 s, then click **Back**
   so the hub continues the track through its audio element. 2. Click
-  **Player Queue** in the top bar. 3. Click **Player Queue** again while the
-  console is open.
+  **Player Queue** in the top bar. 3. Click the top-bar **Minimize player
+  queue** control, then repeat the open/minimize cycle from the sidebar and the
+  player-bar track block.
 - **Expected:** The console reopens on the same source at the hub's carried-over
-  position and keeps playing instead of restarting at 0:00. Clicking the queue
-  control again returns to `/studio`, removes the console video, and hands
-  playback back to the hub audio at the same position.
+  position and keeps playing instead of restarting at 0:00. Each minimize
+  control returns to `/studio`, removes the console video, and hands playback
+  back to the hub audio at the same position.
 - **Automation:** Playwright — **Status: Automated**
 
 ---

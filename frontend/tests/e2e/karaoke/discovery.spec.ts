@@ -716,31 +716,53 @@ test.describe('karaoke discovery', () => {
     await expect.poll(audioPaused).toBe(false)
 
     const topBar = page.getByRole('banner')
-    await topBar.getByRole('link', { name: 'Player Queue' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
-    await expect(stage).toHaveAttribute('src', stageSource ?? '')
-    await expect.poll(stageTime).toBeGreaterThan(beforeHandoff - 0.5)
-    await expect.poll(stagePaused).toBe(false)
-    await expect(
-      page.getByRole('contentinfo').getByRole('link', { name: /Minimize player queue/i }),
-    ).toBeVisible()
     const sidebar = page
       .getByRole('complementary')
       .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
-    await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
-      'href',
-      '/studio',
-    )
+    const playerBar = page.getByRole('contentinfo')
 
-    const beforeMinimize = await stageTime()
+    async function expectQueueResume(openQueue: () => Promise<void>) {
+      const audioBefore = await audioTime()
+      await openQueue()
+      await expect(page).toHaveURL('/studio/player-queue')
+      await expect(stage).toHaveAttribute('src', stageSource ?? '')
+      await expect.poll(stageTime).toBeGreaterThan(audioBefore - 0.5)
+      await expect.poll(stagePaused).toBe(false)
+      return stageTime()
+    }
+
+    async function expectQueueMinimized(videoBefore: number) {
+      await expect(page).toHaveURL('/studio')
+      await expect(stage).toHaveCount(0)
+      await expect.poll(audioTime).toBeGreaterThan(videoBefore - 0.5)
+      await expect.poll(audioPaused).toBe(false)
+    }
+
+    const fromTopBar = await expectQueueResume(() =>
+      topBar.getByRole('link', { name: 'Player Queue' }).click(),
+    )
     await expect(topBar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
       'href',
       '/studio',
     )
     await topBar.getByRole('link', { name: /Minimize player queue/i }).click()
-    await expect(page).toHaveURL('/studio')
-    await expect(stage).toHaveCount(0)
-    await expect.poll(audioTime).toBeGreaterThan(beforeMinimize - 0.5)
-    await expect.poll(audioPaused).toBe(false)
+    await expectQueueMinimized(fromTopBar)
+
+    const fromSidebar = await expectQueueResume(() =>
+      sidebar.getByRole('link', { name: 'Player Queue' }).click(),
+    )
+    await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
+      'href',
+      '/studio',
+    )
+    await sidebar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await expectQueueMinimized(fromSidebar)
+
+    const fromPlayerBar = await expectQueueResume(() =>
+      playerBar.getByRole('link', { name: /Open player queue/i }).click(),
+    )
+    await expect(playerBar.getByRole('link', { name: /Minimize player queue/i })).toBeVisible()
+    await playerBar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await expectQueueMinimized(fromPlayerBar)
   })
 })

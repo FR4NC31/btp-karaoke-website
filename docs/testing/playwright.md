@@ -208,7 +208,7 @@ What the product actually implements today (test coverage is limited to this):
 | -------------------------------- | --------------------- | ------------------------- |
 | Media hub sections (video/music/radio) | Working — DB-backed catalog curated from `/admin/media`; empty sections render nothing | KARAOKE-001/003/005, SMOKE-004 |
 | Video song → console hop          | Working (link)        | KARAOKE-002, SMOKE-005    |
-| Player queue navigation          | Working — the top bar, sidebar, player-bar track block, and non-control bar surface open `/studio/player-queue`; clicking the active queue control minimizes back to `/studio` and the hub-to-console handoff resumes at the carried-over position. Transport and seek controls keep their own actions | KARAOKE-016/017 |
+| Player queue navigation          | Working — the top bar, sidebar, player-bar track block, and non-control bar surface open `/studio/player-queue`; clicking the active queue control minimizes back to `/studio`. When the audio and video URLs match, the hub-to-console handoff resumes at the carried-over position. Transport and seek controls keep their own actions | KARAOKE-016/017 |
 | Local video via shell player bar  | Working (real `<video>`) | KARAOKE-006            |
 | Sidebar session selection        | Working (styling)     | KARAOKE-004               |
 | Player play/pause/like toggles   | Working (real lobby track on the hub; the console's on-air track renames the bar) | PLAYER-001/003/004/008 |

@@ -56,6 +56,7 @@ export default function StudioSidebar() {
                 <li key={link.to}>
                   <Link
                     to={isQueue && onQueue ? '/studio' : link.to}
+                    aria-current={isActive ? 'page' : undefined}
                     aria-label={
                       isQueue ? (onQueue ? 'Minimize player queue' : 'Player Queue') : undefined
                     }
