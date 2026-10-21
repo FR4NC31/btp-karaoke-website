@@ -88,6 +88,7 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- test(auth): tighten sign-up guard assertion (fe70938)
 - test(profile): cover sign-up location guard (e514df3)
 - Merge pull request #32 from FR4NC31/fix/player-catalog-latch (ed142f8)
 - docs(testing): scope PLAYER-010 to the request retry (446668d)
