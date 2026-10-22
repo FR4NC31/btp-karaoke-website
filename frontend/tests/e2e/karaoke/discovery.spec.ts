@@ -331,7 +331,7 @@ test.describe('karaoke discovery', () => {
     await expect(dialog.getByRole('heading', { name: 'The Reason' })).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Add to Your Library' })).toBeDisabled()
     await expect(dialog.getByRole('button', { name: 'Go to artist radio' })).toBeDisabled()
-    await expect(dialog.getByRole('button', { name: 'Add to playlist' })).toBeDisabled()
+    await expect(dialog.getByRole('button', { name: 'Add to playlist' })).toBeEnabled()
     await expect(dialog.getByRole('button', { name: 'Share' })).toBeDisabled()
     await dialog.getByRole('button', { name: 'Add to queue' }).click()
     await expect(dialog.getByRole('button', { name: 'Added to queue' })).toBeVisible()

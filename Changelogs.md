@@ -2,10 +2,14 @@
 
 ## Unreleased
 
-Last updated: October 22, 2026
+Last updated: October 23, 2026
 
 ### Features
 
+- feat(studio): add playlist skeletons and animated equalizer (d060a96)
+- feat(studio): add trending sets and playlist deletion (4e4d9fe)
+- feat(studio): polish playlist artwork and navigation (beca975)
+- feat(studio): add playlist library and genre filter (fb71ef6)
 - feat(profile): add PH location cascade (a30d931)
 - feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
@@ -35,6 +39,8 @@ Last updated: October 22, 2026
 
 ### Bug Fixes
 
+- fix: got fixed(maybe) (20db0c3)
+- fix(studio): toggle playlist detail shuffle mode (dbacdc1)
 - fix: changing skeleton loading in profile page (4b5387a)
 - fix(profile): cover sign-up and tighten location guard (2e5289d)
 - fix(player): retry catalogs after effect cleanup (c940315)
@@ -89,6 +95,7 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- Merge pull request #34 from FR4NC31/fix/profile-skeleton-ui (ba3fd58)
 - Merge pull request #33 from FR4NC31/feat/profile-location (9d03d1a)
 - docs(testing): label signup location coverage (cb6d8d9)
 - test(auth): tighten sign-up guard assertion (fe70938)

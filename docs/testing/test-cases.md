@@ -531,9 +531,10 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Steps:** 1. Open `/studio`. 2. Click **More options for The Reason** on
   the first card. 3. Click **Add to queue**. 4. Click **Open lounge queue**.
 - **Expected:** The dialog shows the track (title + artist · runtime) and the
-  button flips to **Added to queue**; the console's Upcoming Lounge Queue
-  carries the row with its remove action — hub and console share one list,
-  persisted to `localStorage` (`btp.lounge-queue`).
+  button flips to **Added to queue**; **Add to playlist** is enabled (radio
+  cards stay disabled); the console's Upcoming Lounge Queue carries the row
+  with its remove action — hub and console share one list, persisted to
+  `localStorage` (`btp.lounge-queue`).
 - **Automation:** Playwright — **Status: Automated**
 
 ### KARAOKE-014
@@ -664,6 +665,138 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 - **Expected:** The second selection keeps the same browser session and media
   source but restarts it at the beginning (playhead under 1 s) and plays; the
   persistent element does not resume from the earlier position.
+- **Automation:** Playwright — **Status: Automated**
+
+---
+
+## Playlists — `frontend/tests/e2e/karaoke/playlists.spec.ts`
+
+Seed state: 5 user playlists + Liked Songs, all in-memory (reload reseeds; no
+API). `/studio/playlists` is the library index; `/studio/playlists/:id` is a
+set detail.
+
+### PLAYLIST-001
+
+- **Title:** The library shows Liked Songs and five saved sets
+- **Priority:** P1
+- **Steps:** 1. Open `/studio/playlists`.
+- **Expected:** h1 **Playlists**; the separate system strip (h2 **Liked
+  Songs**), **Trending** (h2) with **Trending Audio** and **Trending Video**
+  curated cards, and **Your Playlists** (h2) are visible; stats read **5
+  playlists · 35 tracks · 2h 18m**; 5 user playlist `<article>` cards render
+  (Late Night OPM present); the solid top-right **New Playlist** button is the
+  only creation entry (no in-grid create card); the **Filter playlists** button
+  is present.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-002
+
+- **Title:** The genre filter narrows the saved sets
+- **Priority:** P1
+- **Steps:** 1. Click **Filter playlists**. 2. Click **OPM** (2 playlists),
+  then **Rock** (1 playlist). 3. Click **Done**. 4. Click **Clear**.
+- **Expected:** The anchored filter popover lists all 8 genres with counts and
+  `aria-pressed` toggles; multi-select is OR (OPM + Rock = 3 of 5 sets, no
+  duplicates). Late Night OPM, Acoustic Reset and High-Energy KTV remain;
+  Duets & Harmonies is hidden. **Clear** restores all 5 cards.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-003
+
+- **Title:** A saved set opens its tracklist and starts the console
+- **Priority:** P1
+- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. Click the icon-only
+  **Play** button (accessible name `Play Late Night OPM`).
+- **Expected:** Detail h1 **Late Night OPM**; **Tracklist** section with 9
+  rows (The Reason included); Play resolves the catalog track, clears/replaces
+  the lounge queue, navigates to `/studio/player-queue` and autoplays it. The
+  player bar shows The Reason and the Upcoming Lounge Queue has its remove
+  action. The breadcrumb **All playlists** and top-bar Back return to
+  `/studio/playlists`.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-004
+
+- **Title:** The New Playlist dialog adds a saved set
+- **Priority:** P1
+- **Steps:** 1. Click **New Playlist**. 2. Fill **Playlist name** and
+  **Description**, choose **Genre** OPM. 3. Click **Create playlist**.
+- **Expected:** The dialog closes; a new card **Friday Night OPM** appears in
+  Your Playlists with **0 songs** / **empty playlist**. Creation is in-memory
+  and survives route hops (resets on reload).
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-005
+
+- **Title:** A media card adds its song to a playlist
+- **Priority:** P1
+- **Steps:** 1. On `/studio`, open **More options for The Reason** and click
+  **Add to playlist**. 2. Click **Acoustic Reset**. 3. Click **Done**. 4. Open
+  **Playlists → Acoustic Reset**.
+- **Expected:** **Add to playlist** is enabled for queueable cards (radio stays
+  disabled); the picker lists existing sets with already-added sets disabled;
+  Acoustic Reset accepts The Reason (button becomes disabled / Already added),
+  and its tracklist grows from 6 to 7 rows.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-006
+
+- **Title:** A saved set can be deleted
+- **Priority:** P1
+- **Steps:** 1. On `/studio/playlists`, open **More options for New Set Ideas**.
+  2. Click **Delete playlist**. 3. Confirm **Delete playlist** in the dialog.
+- **Expected:** The confirmation dialog names the set and warns that the songs
+  stay in the media hub; confirming fades the card out, removes it from Your
+  Playlists (5 → 4 cards) and updates the stats to **4 playlists · 35 tracks ·
+  2h 18m**. Deleting is in-memory and resets on reload; curated/system sets
+  have no delete action.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-007
+
+- **Title:** A song can be removed from a playlist
+- **Priority:** P1
+- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. In the **Die With A
+  Smile** row, click **Remove Die With A Smile from playlist**.
+- **Expected:** The row fades out, the tracklist drops from 9 to 8 rows and the
+  set's counts/duration update. Liked Songs and curated sets keep their remove
+  actions disabled.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-008
+
+- **Title:** The library shows a component-shaped loading skeleton
+- **Priority:** P2
+- **Steps:** 1. Throttle `/api/media` (the test delays the response). 2. Open
+  `/studio/playlists`.
+- **Expected:** A `status` region named **Loading playlists** mirrors the page:
+  header, Liked Songs strip, two Trending cards and five playlist cards. It
+  keeps pulsing (motion-reduced users get a static frame). When the catalog
+  resolves, the real h1 **Playlists** replaces it and the status region leaves
+  the DOM.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-009
+
+- **Title:** A playlist detail shows its own loading skeleton
+- **Priority:** P2
+- **Steps:** 1. Throttle `/api/media`. 2. Open
+  `/studio/playlists/late-night-opm`.
+- **Expected:** A `status` region named **Loading playlist** mirrors the detail
+  hero (mosaic, title/meta/actions) and eight track rows. It yields to the real
+  h1 **Late Night OPM** when the catalog resolves, with no layout flash.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-010
+
+- **Title:** The detail shuffle button toggles on and off
+- **Priority:** P1
+- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. Click **Shuffle Late
+  Night OPM** twice, then turn it on and press Play.
+- **Expected:** The detail shuffle control is an `aria-pressed` toggle: it turns
+  warning-colored on, stays on the detail page, and turns back off on the second
+  click. With shuffle on, Play opens the console and the PlayerBar's **Shuffle**
+  control starts pressed; clicking that control turns shuffle off again.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
