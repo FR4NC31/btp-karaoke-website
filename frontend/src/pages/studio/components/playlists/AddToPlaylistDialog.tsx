@@ -5,6 +5,7 @@ import {
   MusicNote02Icon,
   PlusSignIcon,
   Tick02Icon,
+  Video01Icon,
 } from '@hugeicons/core-free-icons'
 import {
   Dialog,
@@ -45,7 +46,7 @@ function SongThumb({ song }: { song: AddToPlaylistSong }) {
 
   return (
     <span className="grid size-11 shrink-0 place-items-center rounded-md bg-surface-elevated text-text-muted">
-      <HugeiconsIcon icon={MusicNote02Icon} size={19} />
+      <HugeiconsIcon icon={song.kind === 'video' ? Video01Icon : MusicNote02Icon} size={19} />
     </span>
   )
 }

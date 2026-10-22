@@ -58,7 +58,7 @@ test.describe('playlists', () => {
     await expect(tracklist.getByRole('listitem')).toHaveCount(9)
     await expect(tracklist.getByText('The Reason')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Play', exact: true }).click()
+    await page.getByRole('button', { name: 'Play Late Night OPM', exact: true }).click()
     await expect(page).toHaveURL('/studio/player-queue')
     await expect(page.getByRole('contentinfo')).toContainText('The Reason')
 

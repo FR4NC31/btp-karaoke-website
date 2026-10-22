@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  DiscAlbumIcon,
-  Mic01Icon,
   MusicNote02Icon,
   Playlist01Icon,
+  Video01Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '../../../../lib/utils'
 import type { MediaItem } from '../../../../lib/media-api'
@@ -13,8 +12,6 @@ import {
   type PlaylistTone,
   type PlaylistTrack,
 } from './mock-playlists'
-
-const TILE_ICONS = [MusicNote02Icon, Mic01Icon, DiscAlbumIcon, Playlist01Icon]
 
 function titleKey(value: string): string {
   return value.trim().toLowerCase()
@@ -27,7 +24,7 @@ function MosaicTile({
 }: {
   cover: string | null
   background: string
-  icon: (typeof TILE_ICONS)[number]
+  icon: typeof MusicNote02Icon
 }) {
   const [failed, setFailed] = useState(false)
 
@@ -73,6 +70,19 @@ export default function PlaylistMosaic({
 }) {
   const empty = tracks.length === 0
 
+  // Cover art first: a playlist can hold seed rows without artwork plus an
+  // uploaded song whose thumbnail we do have. Surface that thumbnail on the
+  // card instead of hiding it behind three icon tiles.
+  const orderedTracks = tracks
+    .map((track) => ({
+      track,
+      cover:
+        track.coverUrl ??
+        byTitle.get(titleKey(track.title))?.coverUrl ??
+        null,
+    }))
+    .sort((a, b) => Number(Boolean(b.cover)) - Number(Boolean(a.cover)))
+
   return (
     <div
       aria-hidden="true"
@@ -82,18 +92,20 @@ export default function PlaylistMosaic({
       )}
     >
       {Array.from({ length: 4 }, (_, index) => {
-        const track = tracks[index]
-        const cover =
-          track?.coverUrl ??
-          (track ? byTitle.get(titleKey(track.title))?.coverUrl : null) ??
-          null
+        const tile = orderedTracks[index]
+        const track = tile?.track
+        const icon = track
+          ? track.kind === 'video'
+            ? Video01Icon
+            : MusicNote02Icon
+          : Playlist01Icon
 
         return (
           <MosaicTile
             key={track?.id ?? `empty-${index}`}
-            cover={cover}
+            cover={tile?.cover ?? null}
             background={TONE_TILES[tone][index] ?? TONE_TILES.charcoal[0]}
-            icon={TILE_ICONS[index] ?? MusicNote02Icon}
+            icon={icon}
           />
         )
       })}

@@ -703,13 +703,14 @@ set detail.
 
 - **Title:** A saved set opens its tracklist and starts the console
 - **Priority:** P1
-- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. Click the main
-  **Play** button.
+- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. Click the icon-only
+  **Play** button (accessible name `Play Late Night OPM`).
 - **Expected:** Detail h1 **Late Night OPM**; **Tracklist** section with 9
   rows (The Reason included); Play resolves the catalog track, clears/replaces
   the lounge queue, navigates to `/studio/player-queue` and autoplays it. The
   player bar shows The Reason and the Upcoming Lounge Queue has its remove
-  action.
+  action. The breadcrumb **All playlists** and top-bar Back return to
+  `/studio/playlists`.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYLIST-004

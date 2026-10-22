@@ -21,6 +21,8 @@ export default function StudioTopBar() {
   const showBack = pathname !== '/studio'
   const onQueue = pathname.startsWith('/studio/player-queue')
   const onPlaylists = pathname.startsWith('/studio/playlists')
+  const onPlaylistDetail = pathname.startsWith('/studio/playlists/')
+  const backTo = onPlaylistDetail ? '/studio/playlists' : '/studio'
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
@@ -29,8 +31,9 @@ export default function StudioTopBar() {
       <div className="flex shrink-0 items-center gap-3">
         {showBack && (
           <Link
-            to="/studio"
+            to={backTo}
             aria-label="Back"
+            title={onPlaylistDetail ? 'Back to playlists' : 'Back to studio'}
             className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />

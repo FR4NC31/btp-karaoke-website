@@ -1,6 +1,7 @@
 import { Link, useOutletContext, useParams } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  ArrowLeft01Icon,
   ArrowRight01Icon,
   PlayIcon,
   Playlist01Icon,
@@ -95,9 +96,10 @@ export default function PlaylistDetailPage() {
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[10px] font-semibold tracking-wider uppercase">
         <Link
           to="/studio/playlists"
-          className="text-text-muted transition hover:text-text-primary"
+          className="inline-flex items-center gap-1.5 text-text-muted transition hover:text-text-primary"
         >
-          Playlists
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={12} />
+          All playlists
         </Link>
         <span className="text-text-muted">/</span>
         <span className="truncate text-text-secondary">{playlist.name}</span>
@@ -140,21 +142,23 @@ export default function PlaylistDetailPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <button
               type="button"
+              aria-label={`Play ${playlist.name}`}
+              title="Play"
               onClick={() => void playPlaylist(playlist)}
               disabled={count === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-[11px] font-bold tracking-wider text-text-primary uppercase transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
+              className="grid size-10 place-items-center rounded-lg bg-primary text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
             >
-              <HugeiconsIcon icon={PlayIcon} size={15} />
-              Play
+              <HugeiconsIcon icon={PlayIcon} size={17} />
             </button>
             <button
               type="button"
+              aria-label={`Shuffle ${playlist.name}`}
+              title="Shuffle"
               onClick={() => void playPlaylist(playlist, { shuffle: true })}
               disabled={count === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface-elevated px-4 text-[11px] font-bold tracking-wider text-text-secondary uppercase transition hover:border-primary/40 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
+              className="grid size-10 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/40 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
             >
-              <HugeiconsIcon icon={ShuffleIcon} size={15} />
-              Shuffle
+              <HugeiconsIcon icon={ShuffleIcon} size={17} />
             </button>
             {playlist.system ? (
               <span className="ml-1 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">

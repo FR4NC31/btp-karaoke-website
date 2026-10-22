@@ -3,24 +3,29 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Delete02Icon,
   MoreHorizontalIcon,
+  MusicNote02Icon,
   PlayIcon,
   Queue01Icon,
+  Video01Icon,
 } from '@hugeicons/core-free-icons'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../../components/ui/popover'
 import { cn } from '../../../../lib/utils'
-import placeholderAlbum from '../../../../assets/placeholder-album.svg'
 import type { PlaylistTrack } from './mock-playlists'
 
-function TrackCover({ coverUrl }: { coverUrl: string | null }) {
+function TrackCover({
+  coverUrl,
+  kind,
+}: {
+  coverUrl: string | null
+  kind: PlaylistTrack['kind']
+}) {
   const [failed, setFailed] = useState(false)
 
   if (!coverUrl || failed) {
     return (
-      <img
-        src={placeholderAlbum}
-        alt=""
-        className="size-9 shrink-0 rounded-md border border-border object-cover"
-      />
+      <span className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-surface-elevated text-text-muted">
+        <HugeiconsIcon icon={kind === 'video' ? Video01Icon : MusicNote02Icon} size={15} />
+      </span>
     )
   }
 
@@ -97,7 +102,7 @@ export default function PlaylistTrackRow({
       </button>
 
       <div className="flex min-w-0 items-center gap-2.5">
-        <TrackCover coverUrl={coverUrl} />
+        <TrackCover coverUrl={coverUrl} kind={track.kind} />
         <div className="min-w-0">
           <p className={cn('truncate text-[13px] font-semibold', playing && 'text-primary')}>
             {track.title}

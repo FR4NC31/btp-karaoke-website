@@ -55,7 +55,7 @@ export interface NewTrackInput {
   kind?: 'video' | 'music'
 }
 
-type TrackSeed = Omit<PlaylistTrack, 'id' | 'added'>
+type TrackSeed = Omit<PlaylistTrack, 'id' | 'added' | 'kind'>
 
 const trackSeeds = {
   reason: {
@@ -66,7 +66,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   dieWithASmile: {
     title: 'Die With A Smile',
@@ -76,7 +75,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   espresso: {
     title: 'Espresso',
@@ -86,7 +84,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   beautifulThings: {
     title: 'Beautiful Things',
@@ -96,7 +93,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   lovely: {
     title: 'Lovely',
@@ -106,7 +102,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   hulingSandali: {
     title: 'Huling Sandali',
@@ -116,7 +111,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   sana: {
     title: 'Sana',
@@ -126,7 +120,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   tadhana: {
     title: 'Tadhana',
@@ -136,7 +129,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   buwan: {
     title: 'Buwan',
@@ -146,7 +138,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   narda: {
     title: 'Narda',
@@ -156,7 +147,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   twoFourteen: {
     title: '214',
@@ -166,7 +156,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   kisapmata: {
     title: 'Kisapmata',
@@ -176,7 +165,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   bakitPartTwo: {
     title: 'Bakit Part 2',
@@ -186,7 +174,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   awitNgKabataan: {
     title: 'Awit ng Kabataan',
@@ -196,7 +183,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   paraSaAkin: {
     title: 'Para sa Akin',
@@ -206,7 +192,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   ikaw: {
     title: 'Ikaw',
@@ -216,7 +201,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   sundo: {
     title: 'Sundo',
@@ -226,7 +210,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   magbalik: {
     title: 'Magbalik',
@@ -236,7 +219,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   jeepney: {
     title: 'Jeepney',
@@ -246,7 +228,6 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
   migraine: {
     title: 'Migraine',
@@ -256,12 +237,18 @@ const trackSeeds = {
     coverUrl: null,
     sourceUrl: null,
     mediaId: null,
-    kind: 'video',
   },
 } satisfies Record<string, TrackSeed>
 
 function track(key: keyof typeof trackSeeds, added: string): PlaylistTrack {
-  return { id: `seed-${key}`, ...trackSeeds[key], added }
+  return {
+    id: `seed-${key}`,
+    ...trackSeeds[key],
+    // The mock catalog only ships The Reason as a karaoke video; the rest are
+    // audio rows, which drives the mosaic/tracklist fallback icon.
+    kind: key === 'reason' ? 'video' : 'music',
+    added,
+  }
 }
 
 export const TONE_TILES: Record<PlaylistTone, [string, string, string, string]> = {
