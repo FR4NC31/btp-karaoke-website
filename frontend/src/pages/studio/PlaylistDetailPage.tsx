@@ -14,6 +14,7 @@ import { usePageTitle } from '../../lib/page-title'
 import { usePlaylistLibrary } from '../../lib/playlist-library'
 import type { KaraokeVideoApi } from '../../lib/karaoke-player'
 import DeletePlaylistDialog from './components/playlists/DeletePlaylistDialog'
+import PlaylistDetailSkeleton from './components/playlists/PlaylistDetailSkeleton'
 import PlaylistMosaic from './components/playlists/PlaylistMosaic'
 import PlaylistTrackRow from './components/playlists/PlaylistTrackRow'
 import {
@@ -37,7 +38,7 @@ export default function PlaylistDetailPage() {
   const playlist = findPlaylist(playlistId)
   usePageTitle(playlist?.name ?? 'Playlist')
 
-  const { items, byTitle } = usePlaylistCatalog()
+  const { items, byTitle, loaded } = usePlaylistCatalog()
   const { playPlaylist, playTracks } = usePlaylistPlayback()
   const { add } = useLoungeQueue()
   const player = useOutletContext<KaraokeVideoApi>()
@@ -74,6 +75,10 @@ export default function PlaylistDetailPage() {
         </Link>
       </div>
     )
+  }
+
+  if (!loaded) {
+    return <PlaylistDetailSkeleton />
   }
 
   const count = playlist.tracks.length

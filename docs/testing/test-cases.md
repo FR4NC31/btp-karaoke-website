@@ -763,6 +763,30 @@ set detail.
   actions disabled.
 - **Automation:** Playwright — **Status: Automated**
 
+### PLAYLIST-008
+
+- **Title:** The library shows a component-shaped loading skeleton
+- **Priority:** P2
+- **Steps:** 1. Throttle `/api/media` (the test delays the response). 2. Open
+  `/studio/playlists`.
+- **Expected:** A `status` region named **Loading playlists** mirrors the page:
+  header, Liked Songs strip, two Trending cards and five playlist cards. It
+  keeps pulsing (motion-reduced users get a static frame). When the catalog
+  resolves, the real h1 **Playlists** replaces it and the status region leaves
+  the DOM.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-009
+
+- **Title:** A playlist detail shows its own loading skeleton
+- **Priority:** P2
+- **Steps:** 1. Throttle `/api/media`. 2. Open
+  `/studio/playlists/late-night-opm`.
+- **Expected:** A `status` region named **Loading playlist** mirrors the detail
+  hero (mosaic, title/meta/actions) and eight track rows. It yields to the real
+  h1 **Late Night OPM** when the catalog resolves, with no layout flash.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Player — `frontend/tests/e2e/player/player.spec.ts`

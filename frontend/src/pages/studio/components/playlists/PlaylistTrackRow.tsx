@@ -8,6 +8,7 @@ import {
   Queue01Icon,
   Video01Icon,
 } from '@hugeicons/core-free-icons'
+import equalizerIcon from '../../../../assets/icons/equalizer.svg'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../../components/ui/popover'
 import { cn } from '../../../../lib/utils'
 import type { PlaylistTrack } from './mock-playlists'
@@ -43,11 +44,12 @@ function TrackCover({
 
 function Equalizer() {
   return (
-    <span className="flex h-4 items-end gap-0.5 text-primary" aria-hidden="true">
-      <span className="h-2 w-0.5 rounded-full bg-current" />
-      <span className="h-4 w-0.5 rounded-full bg-current" />
-      <span className="h-3 w-0.5 rounded-full bg-current" />
-    </span>
+    <img
+      src={equalizerIcon}
+      alt=""
+      aria-hidden="true"
+      className="size-4 shrink-0 object-contain"
+    />
   )
 }
 

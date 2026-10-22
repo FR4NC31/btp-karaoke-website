@@ -85,7 +85,7 @@ export default function PlaylistCard({
     <article
       aria-labelledby={titleId}
       className={cn(
-        'group flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-[border-color,opacity,transform] duration-200 hover:border-primary/45',
+        'group flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-[border-color,opacity,transform] duration-200 hover:border-primary/45 motion-safe:hover:-translate-y-0.5',
         removing &&
           'pointer-events-none opacity-0 motion-safe:-translate-y-1 motion-safe:scale-[0.98]',
       )}

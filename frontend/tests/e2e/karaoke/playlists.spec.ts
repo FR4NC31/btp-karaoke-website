@@ -163,4 +163,34 @@ test.describe('playlists', () => {
     await expect(row).toHaveCount(0)
     await expect(tracklist.getByRole('listitem')).toHaveCount(8)
   })
+
+  test('PLAYLIST-008: the library shows a component-shaped loading skeleton', async ({
+    page,
+  }) => {
+    await page.route('**/api/media', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 900))
+      await route.continue()
+    })
+
+    await page.goto('/studio/playlists')
+
+    await expect(page.getByRole('status', { name: 'Loading playlists' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Playlists' })).toBeVisible()
+    await expect(page.getByRole('status', { name: 'Loading playlists' })).toHaveCount(0)
+  })
+
+  test('PLAYLIST-009: a playlist detail shows its own loading skeleton', async ({ page }) => {
+    await page.route('**/api/media', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 900))
+      await route.continue()
+    })
+
+    await page.goto('/studio/playlists/late-night-opm')
+
+    await expect(page.getByRole('status', { name: 'Loading playlist' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Late Night OPM' }),
+    ).toBeVisible()
+    await expect(page.getByRole('status', { name: 'Loading playlist' })).toHaveCount(0)
+  })
 })

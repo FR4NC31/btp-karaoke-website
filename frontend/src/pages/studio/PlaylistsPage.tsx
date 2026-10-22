@@ -13,6 +13,7 @@ import DeletePlaylistDialog from './components/playlists/DeletePlaylistDialog'
 import GenreFilterMenu from './components/playlists/GenreFilterMenu'
 import LikedSongsStrip from './components/playlists/LikedSongsStrip'
 import PlaylistCard from './components/playlists/PlaylistCard'
+import PlaylistsSkeleton from './components/playlists/PlaylistsSkeleton'
 import TrendingPlaylistCard from './components/playlists/TrendingPlaylistCard'
 import {
   libraryDuration,
@@ -31,7 +32,7 @@ export default function PlaylistsPage() {
     createPlaylist,
     deletePlaylist,
   } = usePlaylistLibrary()
-  const { byTitle } = usePlaylistCatalog()
+  const { byTitle, loaded } = usePlaylistCatalog()
   const { playPlaylist } = usePlaylistPlayback()
   const [createOpen, setCreateOpen] = useState(false)
   const [activeGenres, setActiveGenres] = useState<PlaylistGenre[]>([])
@@ -79,6 +80,10 @@ export default function PlaylistsPage() {
     setActiveGenres((current) =>
       current.includes(genre) ? current.filter((item) => item !== genre) : [...current, genre],
     )
+  }
+
+  if (!loaded) {
+    return <PlaylistsSkeleton />
   }
 
   return (
