@@ -5,6 +5,7 @@ import StudioSidebar from './components/StudioSidebar'
 import PlayerBar from './components/PlayerBar'
 import StudioPlayer from './components/StudioPlayer'
 import StudioSkeleton from './components/StudioSkeleton'
+import ProfileSkeleton from './components/profile/ProfileSkeleton'
 import { useKaraokeVideo } from '../../lib/karaoke-player'
 import { LoungeQueueProvider, useLoungeQueueState } from '../../lib/lounge-queue'
 
@@ -18,6 +19,7 @@ export default function StudioShell() {
   const { pathname } = useLocation()
 
   const onConsole = pathname.startsWith('/studio/player-queue')
+  const onProfile = pathname.startsWith('/studio/profile')
   const skipSkeleton = onConsole
   const showPlayerBar = player.started || onConsole
 
@@ -37,7 +39,7 @@ export default function StudioShell() {
           <LoungeQueueProvider api={queue}>
             <div className="min-h-0 flex-1 overflow-y-auto p-6">
               {loading && !skipSkeleton ? (
-                <StudioSkeleton />
+                onProfile ? <ProfileSkeleton /> : <StudioSkeleton />
               ) : (
                 <Outlet context={player} />
               )}
