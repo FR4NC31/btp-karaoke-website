@@ -39,6 +39,7 @@ Last updated: October 23, 2026
 
 ### Bug Fixes
 
+- fix(studio): toggle playlist detail shuffle mode (dbacdc1)
 - fix: changing skeleton loading in profile page (4b5387a)
 - fix(profile): cover sign-up and tighten location guard (2e5289d)
 - fix(player): retry catalogs after effect cleanup (c940315)
