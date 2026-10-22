@@ -129,7 +129,13 @@ export default function PlaylistCard({
               </p>
             </div>
             <div className="pt-1.5">
-              <MenuRow onClick={() => onPlay(playlist)} disabled={empty}>
+              <MenuRow
+                onClick={() => {
+                  setMenuOpen(false)
+                  onPlay(playlist)
+                }}
+                disabled={empty}
+              >
                 <HugeiconsIcon icon={PlayIcon} size={15} />
                 Play playlist
               </MenuRow>
@@ -179,6 +185,7 @@ export default function PlaylistCard({
         <Link
           id={titleId}
           to={`/studio/playlists/${playlist.id}`}
+          tabIndex={-1}
           className="line-clamp-2 font-heading text-lg leading-tight font-bold tracking-wide uppercase transition hover:text-primary"
         >
           {playlist.name}

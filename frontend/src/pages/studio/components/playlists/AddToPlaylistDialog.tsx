@@ -15,7 +15,7 @@ import {
 } from '../../../../components/ui/dialog'
 import { cn } from '../../../../lib/utils'
 import { usePlaylistLibrary } from '../../../../lib/playlist-library'
-import type { PlaylistTrack } from './mock-playlists'
+import { sameTrack, type PlaylistTrack } from './mock-playlists'
 
 type AddToPlaylistSong = Pick<
   PlaylistTrack,
@@ -95,9 +95,7 @@ export default function AddToPlaylistDialog({
         <div className="min-h-0 overflow-y-auto px-3 py-3">
           <ul className="space-y-1">
             {userPlaylists.map((playlist) => {
-              const added = playlist.tracks.some(
-                (track) => track.title.trim().toLowerCase() === song.title.trim().toLowerCase(),
-              )
+              const added = playlist.tracks.some((track) => sameTrack(track, song))
               return (
                 <li key={playlist.id}>
                   <button

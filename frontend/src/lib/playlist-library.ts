@@ -9,6 +9,7 @@ import {
 import type { ReactNode } from 'react'
 import {
   allPlaylists,
+  sameTrack,
   type NewPlaylistInput,
   type NewTrackInput,
   type Playlist,
@@ -16,10 +17,6 @@ import {
 } from '../pages/studio/components/playlists/mock-playlists'
 
 const CREATE_TONES: PlaylistTone[] = ['red', 'rose', 'amber', 'teal', 'charcoal']
-
-function titleKey(title: string): string {
-  return title.trim().toLowerCase()
-}
 
 function slugify(name: string): string {
   const slug = name
@@ -69,19 +66,18 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
   }, [])
 
   const addTrack = useCallback((playlistId: string, input: NewTrackInput) => {
+    const trackId = crypto.randomUUID()
     setPlaylists((rows) =>
       rows.map((playlist) => {
         if (playlist.id !== playlistId || playlist.system) return playlist
-        if (playlist.tracks.some((track) => titleKey(track.title) === titleKey(input.title))) {
-          return playlist
-        }
+        if (playlist.tracks.some((track) => sameTrack(track, input))) return playlist
         return {
           ...playlist,
           updated: 'Just now',
           tracks: [
             ...playlist.tracks,
             {
-              id: crypto.randomUUID(),
+              id: trackId,
               title: input.title,
               artist: input.artist,
               album: input.album ?? '',

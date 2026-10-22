@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useOutletContext } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   FilterHorizontalIcon,
@@ -7,6 +8,7 @@ import {
   TrendingUpIcon,
 } from '@hugeicons/core-free-icons'
 import MediaCarousel from '../../components/MediaCarousel'
+import type { KaraokeVideoApi } from '../../lib/karaoke-player'
 import { usePlaylistLibrary } from '../../lib/playlist-library'
 import CreatePlaylistDialog from './components/playlists/CreatePlaylistDialog'
 import DeletePlaylistDialog from './components/playlists/DeletePlaylistDialog'
@@ -32,21 +34,14 @@ export default function PlaylistsPage() {
     createPlaylist,
     deletePlaylist,
   } = usePlaylistLibrary()
-  const { byTitle, loaded } = usePlaylistCatalog()
+  const { byTitle, loaded, error: catalogError, retry: retryCatalog } = usePlaylistCatalog()
   const { playPlaylist } = usePlaylistPlayback()
+  const player = useOutletContext<KaraokeVideoApi>()
   const [createOpen, setCreateOpen] = useState(false)
   const [activeGenres, setActiveGenres] = useState<PlaylistGenre[]>([])
   const [pendingDelete, setPendingDelete] = useState<Playlist | null>(null)
-  const [deletingPlaylist, setDeletingPlaylist] = useState<Playlist | null>(null)
-
-  useEffect(() => {
-    if (!deletingPlaylist) return
-    const timer = window.setTimeout(() => {
-      deletePlaylist(deletingPlaylist.id)
-      setDeletingPlaylist(null)
-    }, 200)
-    return () => window.clearTimeout(timer)
-  }, [deletePlaylist, deletingPlaylist])
+  const [deletingIds, setDeletingIds] = useState<string[]>([])
+  const [playError, setPlayError] = useState('')
 
   const filtered = useMemo(
     () =>
@@ -59,10 +54,17 @@ export default function PlaylistsPage() {
   )
 
   const totalTracks = userPlaylists.reduce((count, playlist) => count + playlist.tracks.length, 0)
-  const stats = `${userPlaylists.length} playlists · ${totalTracks} tracks · ${libraryDuration(userPlaylists)}`
+  const playlistCount = `${userPlaylists.length} ${userPlaylists.length === 1 ? 'playlist' : 'playlists'}`
+  const trackCount = `${totalTracks} ${totalTracks === 1 ? 'track' : 'tracks'}`
+  const stats = `${playlistCount} · ${trackCount} · ${libraryDuration(userPlaylists)}`
 
   function play(playlist: Playlist) {
-    void playPlaylist(playlist)
+    setPlayError('')
+    void playPlaylist(playlist, { shuffle: player.shuffle }).then((result) => {
+      if (result === 'empty') {
+        setPlayError(`Nothing in ${playlist.name} has a playable source yet.`)
+      }
+    })
   }
 
   function create(input: NewPlaylistInput) {
@@ -72,8 +74,15 @@ export default function PlaylistsPage() {
 
   function confirmDelete() {
     if (!pendingDelete) return
+    const playlist = pendingDelete
     setPendingDelete(null)
-    setDeletingPlaylist(pendingDelete)
+    setDeletingIds((current) =>
+      current.includes(playlist.id) ? current : [...current, playlist.id],
+    )
+    window.setTimeout(() => {
+      deletePlaylist(playlist.id)
+      setDeletingIds((current) => current.filter((id) => id !== playlist.id))
+    }, 200)
   }
 
   function toggleGenre(genre: PlaylistGenre) {
@@ -122,6 +131,31 @@ export default function PlaylistsPage() {
           </button>
         </div>
       </header>
+
+      {catalogError ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-error/40 bg-error/10 px-4 py-3 text-xs text-text-secondary"
+        >
+          <p>Cover art and playback matching could not load. Saved sources still play.</p>
+          <button
+            type="button"
+            onClick={retryCatalog}
+            className="rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-[10px] font-bold tracking-wider text-text-primary uppercase transition hover:border-primary/40"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {playError ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-text-secondary"
+        >
+          {playError}
+        </div>
+      ) : null}
 
       <LikedSongsStrip playlist={likedSongs} onPlay={play} />
 
@@ -199,8 +233,8 @@ export default function PlaylistsPage() {
           aside={
             <span className="text-xs text-primary">
               {activeGenres.length > 0
-                ? `${filtered.length} of ${userPlaylists.length} playlists`
-                : `${userPlaylists.length} playlists`}
+                ? `${filtered.length} of ${userPlaylists.length} ${userPlaylists.length === 1 ? 'playlist' : 'playlists'}`
+                : playlistCount}
             </span>
           }
           itemClassName="[&>*]:w-full md:[&>*]:w-[calc((100%-4rem)/5)] md:[&>*]:min-w-[13rem]"
@@ -213,7 +247,7 @@ export default function PlaylistsPage() {
                 byTitle={byTitle}
                 onPlay={play}
                 onRequestDelete={setPendingDelete}
-                removing={deletingPlaylist?.id === playlist.id}
+                removing={deletingIds.includes(playlist.id)}
               />
             </li>
           ))}
@@ -221,18 +255,45 @@ export default function PlaylistsPage() {
 
         {filtered.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-surface px-5 py-10 text-center">
-            <HugeiconsIcon icon={FilterHorizontalIcon} size={24} className="mx-auto text-text-muted" />
-            <p className="mt-3 text-sm font-semibold">No playlists match those genres</p>
-            <p className="mt-1 text-xs text-text-muted">
-              Clear the filter or create a new set for this mood.
-            </p>
-            <button
-              type="button"
-              onClick={() => setActiveGenres([])}
-              className="mt-4 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-[10px] font-bold tracking-wider text-text-secondary uppercase transition hover:text-text-primary"
-            >
-              Clear filter
-            </button>
+            {userPlaylists.length === 0 ? (
+              <>
+                <HugeiconsIcon
+                  icon={Playlist01Icon}
+                  size={24}
+                  className="mx-auto text-text-muted"
+                />
+                <p className="mt-3 text-sm font-semibold">No playlists yet</p>
+                <p className="mt-1 text-xs text-text-muted">
+                  Create your first set and send it to the lounge console.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
+                  className="mt-4 rounded-lg bg-primary px-3 py-2 text-[10px] font-bold tracking-wider text-text-primary uppercase transition hover:bg-primary-hover"
+                >
+                  New Playlist
+                </button>
+              </>
+            ) : (
+              <>
+                <HugeiconsIcon
+                  icon={FilterHorizontalIcon}
+                  size={24}
+                  className="mx-auto text-text-muted"
+                />
+                <p className="mt-3 text-sm font-semibold">No playlists match those genres</p>
+                <p className="mt-1 text-xs text-text-muted">
+                  Clear the filter or create a new set for this mood.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveGenres([])}
+                  className="mt-4 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-[10px] font-bold tracking-wider text-text-secondary uppercase transition hover:text-text-primary"
+                >
+                  Clear filter
+                </button>
+              </>
+            )}
           </div>
         ) : null}
       </section>

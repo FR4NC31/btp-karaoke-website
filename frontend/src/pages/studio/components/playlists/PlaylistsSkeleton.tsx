@@ -1,7 +1,9 @@
-function Bar({ className = '' }: { className?: string }) {
+function Bar({ className = '', rounded = true }: { className?: string; rounded?: boolean }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-surface-elevated motion-reduce:animate-none ${className}`}
+      className={`animate-pulse bg-surface-elevated motion-reduce:animate-none ${
+        rounded ? 'rounded-md' : ''
+      } ${className}`}
     />
   )
 }
@@ -10,7 +12,7 @@ function MosaicSkeleton({ className = '' }: { className?: string }) {
   return (
     <div className={`grid grid-cols-2 grid-rows-2 gap-px overflow-hidden bg-border ${className}`}>
       {Array.from({ length: 4 }, (_, i) => (
-        <Bar key={i} className="h-full w-full rounded-none" />
+        <Bar key={i} rounded={false} className="h-full w-full" />
       ))}
     </div>
   )

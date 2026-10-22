@@ -43,7 +43,7 @@ export default function MediaCard({
   const TitleTag = titleAs === 'h1' ? 'h1' : 'p'
   const { add, items } = useLoungeQueue()
   const queueable = Boolean(queue && (queue.kind === 'video' || queue.src))
-  const playlistable = Boolean(queue)
+  const playlistable = queueable
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [playlistOpen, setPlaylistOpen] = useState(false)
   const [added, setAdded] = useState(false)
@@ -78,7 +78,7 @@ export default function MediaCard({
   }
 
   const openPlaylistDialog = () => {
-    setOptionsOpen(false)
+    openOptions(false)
     setPlaylistOpen(true)
   }
 
@@ -160,19 +160,21 @@ export default function MediaCard({
         </Popover>
       </div>
 
-      <AddToPlaylistDialog
-        open={playlistOpen}
-        onOpenChange={setPlaylistOpen}
-        song={{
-          title,
-          artist: subtitle,
-          duration: queue?.len ?? '',
-          coverUrl: coverUrl ?? null,
-          sourceUrl: queue?.src ?? null,
-          mediaId: queue?.mediaId ?? null,
-          kind: queue?.kind ?? 'video',
-        }}
-      />
+      {playlistOpen ? (
+        <AddToPlaylistDialog
+          open
+          onOpenChange={setPlaylistOpen}
+          song={{
+            title,
+            artist: subtitle,
+            duration: queue?.len ?? '',
+            coverUrl: coverUrl ?? null,
+            sourceUrl: queue?.src ?? null,
+            mediaId: queue?.mediaId ?? null,
+            kind: queue?.kind ?? 'video',
+          }}
+        />
+      ) : null}
     </article>
   )
 }

@@ -164,9 +164,10 @@ test.describe('playlists', () => {
     await expect(tracklist.getByRole('listitem')).toHaveCount(8)
   })
 
-  test('PLAYLIST-008: the library shows a component-shaped loading skeleton', async ({
-    page,
-  }) => {
+  test(
+    'PLAYLIST-008: the library shows a component-shaped loading skeleton',
+    { tag: '@p1' },
+    async ({ page }) => {
     await page.route('**/api/media', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 900))
       await route.continue()
@@ -179,7 +180,10 @@ test.describe('playlists', () => {
     await expect(page.getByRole('status', { name: 'Loading playlists' })).toHaveCount(0)
   })
 
-  test('PLAYLIST-009: a playlist detail shows its own loading skeleton', async ({ page }) => {
+  test(
+    'PLAYLIST-009: a playlist detail shows its own loading skeleton',
+    { tag: '@p1' },
+    async ({ page }) => {
     await page.route('**/api/media', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 900))
       await route.continue()
@@ -194,7 +198,10 @@ test.describe('playlists', () => {
     await expect(page.getByRole('status', { name: 'Loading playlist' })).toHaveCount(0)
   })
 
-  test('PLAYLIST-010: the detail shuffle button toggles on and off', async ({ page }) => {
+  test(
+    'PLAYLIST-010: the detail shuffle button toggles on and off',
+    { tag: '@p1' },
+    async ({ page }) => {
     await page.goto('/studio/playlists/late-night-opm')
 
     const shuffle = page.getByRole('button', { name: 'Shuffle Late Night OPM' })

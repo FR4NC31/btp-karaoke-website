@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -21,11 +21,12 @@ import {
   playlistDuration,
   type PlaylistTrack,
 } from './components/playlists/mock-playlists'
+import { usePlaylistCatalog } from './components/playlists/use-playlist-catalog'
 import {
-  matchMediaItem,
-  usePlaylistCatalog,
-} from './components/playlists/use-playlist-catalog'
-import { usePlaylistPlayback } from './components/playlists/use-playlist-playback'
+  resolvePlaylistTrack,
+  usePlaylistPlayback,
+  type PlaybackResult,
+} from './components/playlists/use-playlist-playback'
 
 function titleKey(value: string): string {
   return value.trim().toLowerCase()
@@ -38,21 +39,19 @@ export default function PlaylistDetailPage() {
   const playlist = findPlaylist(playlistId)
   usePageTitle(playlist?.name ?? 'Playlist')
 
-  const { items, byTitle, loaded } = usePlaylistCatalog()
+  const {
+    items,
+    byTitle,
+    loaded,
+    error: catalogError,
+    retry: retryCatalog,
+  } = usePlaylistCatalog()
   const { playPlaylist, playTracks } = usePlaylistPlayback()
   const { add } = useLoungeQueue()
   const player = useOutletContext<KaraokeVideoApi>()
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [removingTrackId, setRemovingTrackId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!removingTrackId || !playlist) return
-    const timer = window.setTimeout(() => {
-      removeTrack(playlist.id, removingTrackId)
-      setRemovingTrackId(null)
-    }, 200)
-    return () => window.clearTimeout(timer)
-  }, [playlist, removeTrack, removingTrackId])
+  const [removingTrackIds, setRemovingTrackIds] = useState<string[]>([])
+  const [playError, setPlayError] = useState('')
 
   if (!playlist) {
     return (
@@ -81,21 +80,26 @@ export default function PlaylistDetailPage() {
     return <PlaylistDetailSkeleton />
   }
 
+  const playlistIdValue = playlist.id
   const count = playlist.tracks.length
   const duration = playlistDuration(playlist.tracks)
   const curated = playlist.system && playlist.id !== 'liked-songs'
   const onAirKey = player.onAir ? titleKey(player.onAir.title) : null
 
   function resolve(track: PlaylistTrack) {
-    const item = matchMediaItem(track.title, track.mediaId, items)
-    const source = item?.sourceUrl ?? track.sourceUrl
-    const kind: 'video' | 'music' = item
-      ? item.section === 'music'
-        ? 'music'
-        : 'video'
-      : (track.kind ?? 'video')
-    const playable = Boolean(item || source) && !(kind === 'music' && !source)
-    return { item, source, kind, playable }
+    return resolvePlaylistTrack(track, items)
+  }
+
+  const playableCount = playlist.tracks.filter((track) => resolve(track).playable).length
+
+  function startPlayback(
+    result: Promise<PlaybackResult>,
+    emptyMessage = 'Nothing in this set has a playable source yet.',
+  ) {
+    setPlayError('')
+    void result.then((outcome) => {
+      if (outcome === 'empty') setPlayError(emptyMessage)
+    })
   }
 
   function queueTrack(track: PlaylistTrack) {
@@ -112,6 +116,16 @@ export default function PlaylistDetailPage() {
     })
   }
 
+  function requestRemove(trackId: string) {
+    setRemovingTrackIds((current) =>
+      current.includes(trackId) ? current : [...current, trackId],
+    )
+    window.setTimeout(() => {
+      removeTrack(playlistIdValue, trackId)
+      setRemovingTrackIds((current) => current.filter((id) => id !== trackId))
+    }, 200)
+  }
+
   return (
     <div className="space-y-7">
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[10px] font-semibold tracking-wider uppercase">
@@ -125,6 +139,31 @@ export default function PlaylistDetailPage() {
         <span className="text-text-muted">/</span>
         <span className="truncate text-text-secondary">{playlist.name}</span>
       </nav>
+
+      {catalogError ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-error/40 bg-error/10 px-4 py-3 text-xs text-text-secondary"
+        >
+          <p>Cover art and playback matching could not load. Saved sources still play.</p>
+          <button
+            type="button"
+            onClick={retryCatalog}
+            className="rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-[10px] font-bold tracking-wider text-text-primary uppercase transition hover:border-primary/40"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {playError ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-xs text-text-secondary"
+        >
+          {playError}
+        </div>
+      ) : null}
 
       <section className="flex flex-col gap-5 sm:flex-row sm:items-end">
         <div className="w-40 shrink-0 sm:w-52">
@@ -166,8 +205,10 @@ export default function PlaylistDetailPage() {
               type="button"
               aria-label={`Play ${playlist.name}`}
               title="Play"
-              onClick={() => void playPlaylist(playlist, { shuffle: player.shuffle })}
-              disabled={count === 0}
+              onClick={() =>
+                startPlayback(playPlaylist(playlist, { shuffle: player.shuffle }))
+              }
+              disabled={playableCount === 0}
               className="grid size-10 place-items-center rounded-lg bg-primary text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
             >
               <HugeiconsIcon icon={PlayIcon} size={17} />
@@ -178,7 +219,7 @@ export default function PlaylistDetailPage() {
               aria-pressed={player.shuffle}
               title={player.shuffle ? 'Shuffle on' : 'Shuffle off'}
               onClick={() => player.setShuffle(!player.shuffle)}
-              disabled={count === 0}
+              disabled={playableCount === 0}
               className={`grid size-10 place-items-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-45 ${
                 player.shuffle
                   ? 'border-warning/40 bg-warning/10 text-warning'
@@ -260,13 +301,15 @@ export default function PlaylistDetailPage() {
                   canPlay={resolve(track).playable}
                   canQueue={resolve(track).playable}
                   canRemove={!playlist.system}
-                  removing={removingTrackId === track.id}
+                  removing={removingTrackIds.includes(track.id)}
                   removeNote={
                     curated ? 'This curated set is managed by the studio.' : undefined
                   }
-                  onPlay={() => void playTracks([track])}
+                  onPlay={() =>
+                    startPlayback(playTracks([track]), 'This track has no playable source yet.')
+                  }
                   onQueue={() => queueTrack(track)}
-                  onRemove={() => setRemovingTrackId(track.id)}
+                  onRemove={() => requestRemove(track.id)}
                 />
               ))}
             </ol>

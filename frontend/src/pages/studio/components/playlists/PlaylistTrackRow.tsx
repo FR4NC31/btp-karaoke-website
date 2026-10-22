@@ -80,6 +80,8 @@ export default function PlaylistTrackRow({
   onQueue: () => void
   onRemove: () => void
 }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <li
       className={cn(
@@ -92,7 +94,7 @@ export default function PlaylistTrackRow({
         type="button"
         onClick={onPlay}
         disabled={!canPlay}
-        aria-label={`Play ${track.title}`}
+        aria-label={playing ? `Now playing ${track.title}` : `Play ${track.title}`}
         className="grid size-8 place-items-center rounded text-[11px] font-semibold text-text-muted transition group-hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
       >
         {playing ? (
@@ -146,7 +148,7 @@ export default function PlaylistTrackRow({
           </button>
         ) : null}
 
-        <Popover>
+        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -165,7 +167,10 @@ export default function PlaylistTrackRow({
           >
             <button
               type="button"
-              onClick={onQueue}
+              onClick={() => {
+                setMenuOpen(false)
+                onQueue()
+              }}
               disabled={!canQueue}
               className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-elevated hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
             >
@@ -174,7 +179,10 @@ export default function PlaylistTrackRow({
             </button>
             <button
               type="button"
-              onClick={onRemove}
+              onClick={() => {
+                setMenuOpen(false)
+                onRemove()
+              }}
               disabled={!canRemove}
               className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-elevated hover:text-error disabled:cursor-not-allowed disabled:opacity-45"
             >

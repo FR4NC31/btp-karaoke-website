@@ -23,7 +23,8 @@ export default function TrendingPlaylistCard({
   const titleId = useId()
   const count = playlist.tracks.length
   const duration = playlistDuration(playlist.tracks)
-  const isVideo = playlist.id === 'trending-video'
+  const isVideo =
+    playlist.tracks.length > 0 && playlist.tracks.every((track) => track.kind === 'video')
 
   return (
     <article

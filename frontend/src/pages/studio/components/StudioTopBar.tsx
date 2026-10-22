@@ -27,8 +27,8 @@ export default function StudioTopBar() {
   const isAdmin = data?.user.role === 'admin'
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
-      <div className="flex shrink-0 items-center gap-3">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {showBack && (
           <Link
             to={backTo}
@@ -61,7 +61,7 @@ export default function StudioTopBar() {
         <HugeiconsIcon icon={ChevronDownIcon} size={14} />
       </button>
 
-      <div className="relative mx-auto w-full min-w-0 max-w-md">
+      <div className="relative mx-auto hidden w-full min-w-0 max-w-md sm:block">
         <HugeiconsIcon
           icon={Search01Icon}
           size={16}
@@ -77,7 +77,7 @@ export default function StudioTopBar() {
         </kbd>
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Link
           to="/studio/playlists"
           aria-label="Playlists"

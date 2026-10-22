@@ -43,7 +43,11 @@ export default function GenreFilterMenu({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Filter playlists"
+          aria-label={
+            selected.length > 0
+              ? `Filter playlists, ${selected.length} selected`
+              : 'Filter playlists'
+          }
           aria-haspopup="dialog"
           className={cn(
             'inline-flex h-10 items-center gap-2 rounded-lg border px-3.5 text-[11px] font-bold tracking-wider uppercase transition',

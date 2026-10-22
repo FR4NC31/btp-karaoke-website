@@ -1,13 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMediaCatalog, type MediaItem } from '../../../../lib/media-api'
 
 let cachedCatalog: MediaItem[] | null = null
+let catalogRequest: Promise<MediaItem[]> | null = null
 
 export async function loadPlaylistCatalog(): Promise<MediaItem[]> {
   if (cachedCatalog) return cachedCatalog
-  const result = await fetchMediaCatalog()
-  cachedCatalog = result.items
-  return result.items
+  if (!catalogRequest) {
+    catalogRequest = fetchMediaCatalog()
+      .then((result) => {
+        cachedCatalog = result.items
+        return result.items
+      })
+      .catch((error: unknown) => {
+        catalogRequest = null
+        throw error
+      })
+  }
+  return catalogRequest
 }
 
 function titleKey(value: string): string {
@@ -30,21 +40,35 @@ export function matchMediaItem(
 
 export function usePlaylistCatalog() {
   const [items, setItems] = useState<MediaItem[] | null>(cachedCatalog)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (items) return
     let alive = true
     loadPlaylistCatalog()
       .then((result) => {
-        if (alive) setItems(result)
+        if (!alive) return
+        setItems(result)
+        setError(null)
       })
-      .catch(() => {
-        if (alive) setItems([])
+      .catch((reason: unknown) => {
+        if (!alive) return
+        setItems([])
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : 'Could not load the media catalog for playlists.',
+        )
       })
     return () => {
       alive = false
     }
   }, [items])
+
+  const retry = useCallback(() => {
+    setError(null)
+    setItems(null)
+  }, [])
 
   const byTitle = useMemo(() => {
     const map = new Map<string, MediaItem>()
@@ -60,5 +84,7 @@ export function usePlaylistCatalog() {
     items: items ?? [],
     byTitle,
     loaded: items !== null,
+    error,
+    retry,
   }
 }

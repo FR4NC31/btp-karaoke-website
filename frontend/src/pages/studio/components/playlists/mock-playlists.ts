@@ -55,6 +55,24 @@ export interface NewTrackInput {
   kind?: 'video' | 'music'
 }
 
+type TrackIdentity = {
+  title: string
+  artist: string
+  mediaId?: string | null
+}
+
+function identityKey(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+export function sameTrack(a: TrackIdentity, b: TrackIdentity): boolean {
+  if (a.mediaId && b.mediaId) return a.mediaId === b.mediaId
+  return (
+    identityKey(a.title) === identityKey(b.title) &&
+    identityKey(a.artist) === identityKey(b.artist)
+  )
+}
+
 type TrackSeed = Omit<PlaylistTrack, 'id' | 'added' | 'kind'>
 
 const trackSeeds = {
@@ -456,10 +474,12 @@ export function parseDuration(value: string): number {
 export function playlistDuration(tracks: PlaylistTrack[]): string {
   const total = tracks.reduce((seconds, item) => seconds + parseDuration(item.duration), 0)
   if (total === 0) return '0 min'
-  if (total < 3600) return `${Math.max(1, Math.round(total / 60))} min`
 
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.round((total % 3600) / 60)
+  const totalMinutes = Math.max(1, Math.round(total / 60))
+  if (totalMinutes < 60) return `${totalMinutes} min`
+
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
   return minutes > 0 ? `${hours} hr ${minutes} min` : `${hours} hr`
 }
 
@@ -472,7 +492,8 @@ export function libraryDuration(playlists: Playlist[]): string {
   )
   if (total === 0) return '0m'
 
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.round((total % 3600) / 60)
+  const totalMinutes = Math.round(total / 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
 }

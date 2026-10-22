@@ -179,6 +179,7 @@ export default function MediaCardMenu({
           label="Add to playlist"
           onClick={playlistable ? onAddToPlaylist : undefined}
           disabled={!playlistable}
+          soon={!playlistable}
         />
         <MenuRow icon={Share01Icon} label="Share" disabled soon />
       </div>
