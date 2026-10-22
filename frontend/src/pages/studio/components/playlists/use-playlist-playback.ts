@@ -5,19 +5,6 @@ import type { MediaItem } from '../../../../lib/media-api'
 import type { Playlist, PlaylistTrack } from './mock-playlists'
 import { loadPlaylistCatalog, matchMediaItem } from './use-playlist-catalog'
 
-function shuffleRows<T>(rows: T[]): T[] {
-  const next = [...rows]
-  for (let index = next.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1))
-    const current = next[index]
-    const swap = next[swapIndex]
-    if (current === undefined || swap === undefined) continue
-    next[index] = swap
-    next[swapIndex] = current
-  }
-  return next
-}
-
 function buildMediaItem(track: PlaylistTrack, source: string): MediaItem {
   return {
     id: `playlist-${track.id}`,
@@ -89,12 +76,16 @@ export function usePlaylistPlayback() {
       const resolved = await resolveRows(tracks)
       if (resolved.length === 0) return false
 
-      const ordered = options?.shuffle ? shuffleRows(resolved) : resolved
-      const first = ordered[0]
+      // Keep the queue in playlist order. Shuffle mode picks a random starter
+      // and StudioPlayer draws the rest, so turning shuffle off restores the
+      // original rail instead of leaving a pre-shuffled queue behind.
+      const first = options?.shuffle
+        ? (resolved[Math.floor(Math.random() * resolved.length)] ?? resolved[0])
+        : resolved[0]
       if (!first) return false
 
       clear()
-      ordered.forEach(({ row }) => add(row))
+      resolved.forEach(({ row }) => add(row))
       navigate('/studio/player-queue', {
         state: { autoplay: true, item: first.item },
       })

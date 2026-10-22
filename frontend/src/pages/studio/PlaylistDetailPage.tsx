@@ -166,7 +166,7 @@ export default function PlaylistDetailPage() {
               type="button"
               aria-label={`Play ${playlist.name}`}
               title="Play"
-              onClick={() => void playPlaylist(playlist)}
+              onClick={() => void playPlaylist(playlist, { shuffle: player.shuffle })}
               disabled={count === 0}
               className="grid size-10 place-items-center rounded-lg bg-primary text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
             >
@@ -175,10 +175,15 @@ export default function PlaylistDetailPage() {
             <button
               type="button"
               aria-label={`Shuffle ${playlist.name}`}
-              title="Shuffle"
-              onClick={() => void playPlaylist(playlist, { shuffle: true })}
+              aria-pressed={player.shuffle}
+              title={player.shuffle ? 'Shuffle on' : 'Shuffle off'}
+              onClick={() => player.setShuffle(!player.shuffle)}
               disabled={count === 0}
-              className="grid size-10 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/40 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
+              className={`grid size-10 place-items-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                player.shuffle
+                  ? 'border-warning/40 bg-warning/10 text-warning'
+                  : 'border-border bg-surface-elevated text-text-secondary hover:border-primary/40 hover:text-text-primary'
+              }`}
             >
               <HugeiconsIcon icon={ShuffleIcon} size={17} />
             </button>

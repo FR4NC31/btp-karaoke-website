@@ -193,4 +193,29 @@ test.describe('playlists', () => {
     ).toBeVisible()
     await expect(page.getByRole('status', { name: 'Loading playlist' })).toHaveCount(0)
   })
+
+  test('PLAYLIST-010: the detail shuffle button toggles on and off', async ({ page }) => {
+    await page.goto('/studio/playlists/late-night-opm')
+
+    const shuffle = page.getByRole('button', { name: 'Shuffle Late Night OPM' })
+    await expect(shuffle).toHaveAttribute('aria-pressed', 'false')
+
+    await shuffle.click()
+    await expect(shuffle).toHaveAttribute('aria-pressed', 'true')
+    await expect(shuffle).toHaveAttribute('title', 'Shuffle on')
+    await expect(page).toHaveURL('/studio/playlists/late-night-opm')
+
+    await shuffle.click()
+    await expect(shuffle).toHaveAttribute('aria-pressed', 'false')
+    await expect(shuffle).toHaveAttribute('title', 'Shuffle off')
+
+    await shuffle.click()
+    await page.getByRole('button', { name: 'Play Late Night OPM' }).click()
+    await page.waitForURL('**/studio/player-queue')
+
+    const barShuffle = page.getByRole('button', { name: 'Shuffle', exact: true })
+    await expect(barShuffle).toHaveAttribute('aria-pressed', 'true')
+    await barShuffle.click()
+    await expect(barShuffle).toHaveAttribute('aria-pressed', 'false')
+  })
 })

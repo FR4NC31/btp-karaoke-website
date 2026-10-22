@@ -787,6 +787,18 @@ set detail.
   h1 **Late Night OPM** when the catalog resolves, with no layout flash.
 - **Automation:** Playwright — **Status: Automated**
 
+### PLAYLIST-010
+
+- **Title:** The detail shuffle button toggles on and off
+- **Priority:** P1
+- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. Click **Shuffle Late
+  Night OPM** twice, then turn it on and press Play.
+- **Expected:** The detail shuffle control is an `aria-pressed` toggle: it turns
+  warning-colored on, stays on the detail page, and turns back off on the second
+  click. With shuffle on, Play opens the console and the PlayerBar's **Shuffle**
+  control starts pressed; clicking that control turns shuffle off again.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Player — `frontend/tests/e2e/player/player.spec.ts`
