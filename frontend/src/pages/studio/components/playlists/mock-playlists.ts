@@ -238,6 +238,24 @@ const trackSeeds = {
     sourceUrl: null,
     mediaId: null,
   },
+  theActor: {
+    title: 'The Actor',
+    artist: 'Michael Learns to Rock',
+    album: 'Trending Audio',
+    duration: '3:01',
+    coverUrl: null,
+    sourceUrl: null,
+    mediaId: null,
+  },
+  roses: {
+    title: 'Roses',
+    artist: 'The Chainsmokers',
+    album: 'Trending Audio',
+    duration: '3:43',
+    coverUrl: null,
+    sourceUrl: null,
+    mediaId: null,
+  },
 } satisfies Record<string, TrackSeed>
 
 function track(key: keyof typeof trackSeeds, added: string): PlaylistTrack {
@@ -249,6 +267,10 @@ function track(key: keyof typeof trackSeeds, added: string): PlaylistTrack {
     kind: key === 'reason' ? 'video' : 'music',
     added,
   }
+}
+
+function videoTrack(key: keyof typeof trackSeeds, added: string): PlaylistTrack {
+  return { ...track(key, added), kind: 'video' }
 }
 
 export const TONE_TILES: Record<PlaylistTone, [string, string, string, string]> = {
@@ -388,7 +410,42 @@ export const seedPlaylists: Playlist[] = [
   },
 ]
 
-export const allPlaylists = [likedSongs, ...seedPlaylists]
+export const trendingPlaylists: Playlist[] = [
+  {
+    id: 'trending-audio',
+    name: 'Trending Audio',
+    description: 'The most-played minus-one tracks in the lounge this week.',
+    genres: ['Pop', 'OPM'],
+    tone: 'rose',
+    updated: 'This week',
+    createdBy: 'BTP Editorial',
+    system: true,
+    tracks: [
+      track('theActor', 'This week'),
+      track('roses', 'This week'),
+      track('espresso', 'This week'),
+      track('beautifulThings', 'This week'),
+    ],
+  },
+  {
+    id: 'trending-video',
+    name: 'Trending Video',
+    description: 'Karaoke videos the room is reaching for right now.',
+    genres: ['High-Energy', 'Pop'],
+    tone: 'amber',
+    updated: 'This week',
+    createdBy: 'BTP Editorial',
+    system: true,
+    tracks: [
+      videoTrack('reason', 'This week'),
+      videoTrack('dieWithASmile', 'This week'),
+      videoTrack('lovely', 'This week'),
+      videoTrack('espresso', 'This week'),
+    ],
+  },
+]
+
+export const allPlaylists = [likedSongs, ...trendingPlaylists, ...seedPlaylists]
 
 export function parseDuration(value: string): number {
   const [minutes, seconds] = value.split(':').map(Number)

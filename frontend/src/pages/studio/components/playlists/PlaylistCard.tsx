@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -20,18 +20,22 @@ type PlaylistCardProps = {
   playlist: Playlist
   byTitle: Map<string, MediaItem>
   onPlay: (playlist: Playlist) => void
+  onRequestDelete: (playlist: Playlist) => void
+  removing?: boolean
 }
 
 function MenuRow({
   children,
   disabled,
   soon,
+  destructive,
   onClick,
   to,
 }: {
   children: ReactNode
   disabled?: boolean
   soon?: boolean
+  destructive?: boolean
   onClick?: () => void
   to?: string
 }) {
@@ -39,7 +43,9 @@ function MenuRow({
     'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-xs font-semibold transition',
     disabled
       ? 'cursor-not-allowed text-text-muted opacity-55'
-      : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
+      : destructive
+        ? 'text-text-muted hover:bg-error/10 hover:text-error'
+        : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
   )
 
   if (to && !disabled) {
@@ -62,8 +68,15 @@ function MenuRow({
   )
 }
 
-export default function PlaylistCard({ playlist, byTitle, onPlay }: PlaylistCardProps) {
+export default function PlaylistCard({
+  playlist,
+  byTitle,
+  onPlay,
+  onRequestDelete,
+  removing = false,
+}: PlaylistCardProps) {
   const titleId = useId()
+  const [menuOpen, setMenuOpen] = useState(false)
   const count = playlist.tracks.length
   const duration = playlistDuration(playlist.tracks)
   const empty = count === 0
@@ -71,7 +84,11 @@ export default function PlaylistCard({ playlist, byTitle, onPlay }: PlaylistCard
   return (
     <article
       aria-labelledby={titleId}
-      className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-primary/45"
+      className={cn(
+        'group flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-[border-color,opacity,transform] duration-200 hover:border-primary/45',
+        removing &&
+          'pointer-events-none opacity-0 motion-safe:-translate-y-1 motion-safe:scale-[0.98]',
+      )}
     >
       <div className="relative aspect-square">
         <PlaylistMosaic tracks={playlist.tracks} tone={playlist.tone} byTitle={byTitle} />
@@ -85,7 +102,7 @@ export default function PlaylistCard({ playlist, byTitle, onPlay }: PlaylistCard
           className="absolute inset-0 z-10 rounded-t-xl outline-primary/60 hover:outline-2 hover:-outline-offset-2 focus-visible:outline-2 focus-visible:-outline-offset-2"
         />
 
-        <Popover>
+        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -125,7 +142,13 @@ export default function PlaylistCard({ playlist, byTitle, onPlay }: PlaylistCard
                 <HugeiconsIcon icon={PencilEdit01Icon} size={15} />
                 Rename playlist
               </MenuRow>
-              <MenuRow disabled soon>
+              <MenuRow
+                destructive
+                onClick={() => {
+                  setMenuOpen(false)
+                  onRequestDelete(playlist)
+                }}
+              >
                 <HugeiconsIcon icon={Delete02Icon} size={15} />
                 Delete playlist
               </MenuRow>

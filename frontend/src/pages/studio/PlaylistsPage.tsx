@@ -1,16 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   FilterHorizontalIcon,
   Playlist01Icon,
   PlusSignIcon,
+  TrendingUpIcon,
 } from '@hugeicons/core-free-icons'
 import MediaCarousel from '../../components/MediaCarousel'
 import { usePlaylistLibrary } from '../../lib/playlist-library'
 import CreatePlaylistDialog from './components/playlists/CreatePlaylistDialog'
+import DeletePlaylistDialog from './components/playlists/DeletePlaylistDialog'
 import GenreFilterMenu from './components/playlists/GenreFilterMenu'
 import LikedSongsStrip from './components/playlists/LikedSongsStrip'
 import PlaylistCard from './components/playlists/PlaylistCard'
+import TrendingPlaylistCard from './components/playlists/TrendingPlaylistCard'
 import {
   libraryDuration,
   type NewPlaylistInput,
@@ -21,11 +24,28 @@ import { usePlaylistCatalog } from './components/playlists/use-playlist-catalog'
 import { usePlaylistPlayback } from './components/playlists/use-playlist-playback'
 
 export default function PlaylistsPage() {
-  const { userPlaylists, likedSongs, createPlaylist } = usePlaylistLibrary()
+  const {
+    userPlaylists,
+    trendingPlaylists,
+    likedSongs,
+    createPlaylist,
+    deletePlaylist,
+  } = usePlaylistLibrary()
   const { byTitle } = usePlaylistCatalog()
   const { playPlaylist } = usePlaylistPlayback()
   const [createOpen, setCreateOpen] = useState(false)
   const [activeGenres, setActiveGenres] = useState<PlaylistGenre[]>([])
+  const [pendingDelete, setPendingDelete] = useState<Playlist | null>(null)
+  const [deletingPlaylist, setDeletingPlaylist] = useState<Playlist | null>(null)
+
+  useEffect(() => {
+    if (!deletingPlaylist) return
+    const timer = window.setTimeout(() => {
+      deletePlaylist(deletingPlaylist.id)
+      setDeletingPlaylist(null)
+    }, 200)
+    return () => window.clearTimeout(timer)
+  }, [deletePlaylist, deletingPlaylist])
 
   const filtered = useMemo(
     () =>
@@ -47,6 +67,12 @@ export default function PlaylistsPage() {
   function create(input: NewPlaylistInput) {
     createPlaylist(input)
     setActiveGenres([])
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return
+    setPendingDelete(null)
+    setDeletingPlaylist(pendingDelete)
   }
 
   function toggleGenre(genre: PlaylistGenre) {
@@ -93,6 +119,35 @@ export default function PlaylistsPage() {
       </header>
 
       <LikedSongsStrip playlist={likedSongs} onPlay={play} />
+
+      <section aria-labelledby="trending-heading" className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <HugeiconsIcon icon={TrendingUpIcon} size={18} className="text-primary" />
+            <h2
+              id="trending-heading"
+              className="font-heading text-xl font-bold tracking-wide uppercase"
+            >
+              Trending
+            </h2>
+            <span className="text-[10px] tracking-widest text-text-muted uppercase">
+              Curated this week
+            </span>
+          </div>
+          <span className="text-xs text-primary">Audio + video</span>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {trendingPlaylists.map((playlist) => (
+            <TrendingPlaylistCard
+              key={playlist.id}
+              playlist={playlist}
+              byTitle={byTitle}
+              onPlay={play}
+            />
+          ))}
+        </div>
+      </section>
 
       <section aria-labelledby="your-playlists-heading">
         {activeGenres.length > 0 ? (
@@ -148,7 +203,13 @@ export default function PlaylistsPage() {
         >
           {filtered.map((playlist) => (
             <li key={playlist.id} className="flex">
-              <PlaylistCard playlist={playlist} byTitle={byTitle} onPlay={play} />
+              <PlaylistCard
+                playlist={playlist}
+                byTitle={byTitle}
+                onPlay={play}
+                onRequestDelete={setPendingDelete}
+                removing={deletingPlaylist?.id === playlist.id}
+              />
             </li>
           ))}
         </MediaCarousel>
@@ -177,6 +238,17 @@ export default function PlaylistsPage() {
       </div>
 
       <CreatePlaylistDialog open={createOpen} onOpenChange={setCreateOpen} onCreate={create} />
+
+      {pendingDelete ? (
+        <DeletePlaylistDialog
+          playlist={pendingDelete}
+          open
+          onOpenChange={(open) => {
+            if (!open) setPendingDelete(null)
+          }}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
     </div>
   )
 }

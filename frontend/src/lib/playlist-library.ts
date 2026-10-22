@@ -34,8 +34,10 @@ function slugify(name: string): string {
 export interface PlaylistLibraryApi {
   playlists: Playlist[]
   userPlaylists: Playlist[]
+  trendingPlaylists: Playlist[]
   likedSongs: Playlist
   createPlaylist: (input: NewPlaylistInput) => Playlist
+  deletePlaylist: (playlistId: string) => void
   addTrack: (playlistId: string, input: NewTrackInput) => void
   removeTrack: (playlistId: string, trackId: string) => void
   findPlaylist: (id: string) => Playlist | null
@@ -58,6 +60,12 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
     }
     setPlaylists((rows) => [...rows, created])
     return created
+  }, [])
+
+  const deletePlaylist = useCallback((playlistId: string) => {
+    setPlaylists((rows) =>
+      rows.filter((playlist) => playlist.id !== playlistId || playlist.system),
+    )
   }, [])
 
   const addTrack = useCallback((playlistId: string, input: NewTrackInput) => {
@@ -107,6 +115,10 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
     () => playlists.filter((playlist) => !playlist.system),
     [playlists],
   )
+  const trending = useMemo(
+    () => playlists.filter((playlist) => playlist.system && playlist.id !== 'liked-songs'),
+    [playlists],
+  )
   const liked = useMemo(
     () => playlists.find((playlist) => playlist.id === 'liked-songs') ?? allPlaylists[0]!,
     [playlists],
@@ -120,13 +132,25 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
     () => ({
       playlists,
       userPlaylists,
+      trendingPlaylists: trending,
       likedSongs: liked,
       createPlaylist,
+      deletePlaylist,
       addTrack,
       removeTrack,
       findPlaylist,
     }),
-    [playlists, userPlaylists, liked, createPlaylist, addTrack, removeTrack, findPlaylist],
+    [
+      playlists,
+      userPlaylists,
+      trending,
+      liked,
+      createPlaylist,
+      deletePlaylist,
+      addTrack,
+      removeTrack,
+      findPlaylist,
+    ],
   )
 }
 

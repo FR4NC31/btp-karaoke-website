@@ -681,10 +681,12 @@ set detail.
 - **Priority:** P1
 - **Steps:** 1. Open `/studio/playlists`.
 - **Expected:** h1 **Playlists**; the separate system strip (h2 **Liked
-  Songs**) and **Your Playlists** (h2) are visible; stats read **5 playlists ·
-  35 tracks · 2h 18m**; 5 playlist `<article>` cards render (Late Night OPM
-  present); the solid top-right **New Playlist** button is the only creation
-  entry (no in-grid create card); the **Filter playlists** button is present.
+  Songs**), **Trending** (h2) with **Trending Audio** and **Trending Video**
+  curated cards, and **Your Playlists** (h2) are visible; stats read **5
+  playlists · 35 tracks · 2h 18m**; 5 user playlist `<article>` cards render
+  (Late Night OPM present); the solid top-right **New Playlist** button is the
+  only creation entry (no in-grid create card); the **Filter playlists** button
+  is present.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYLIST-002
@@ -735,6 +737,30 @@ set detail.
   disabled); the picker lists existing sets with already-added sets disabled;
   Acoustic Reset accepts The Reason (button becomes disabled / Already added),
   and its tracklist grows from 6 to 7 rows.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-006
+
+- **Title:** A saved set can be deleted
+- **Priority:** P1
+- **Steps:** 1. On `/studio/playlists`, open **More options for New Set Ideas**.
+  2. Click **Delete playlist**. 3. Confirm **Delete playlist** in the dialog.
+- **Expected:** The confirmation dialog names the set and warns that the songs
+  stay in the media hub; confirming fades the card out, removes it from Your
+  Playlists (5 → 4 cards) and updates the stats to **4 playlists · 35 tracks ·
+  2h 18m**. Deleting is in-memory and resets on reload; curated/system sets
+  have no delete action.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-007
+
+- **Title:** A song can be removed from a playlist
+- **Priority:** P1
+- **Steps:** 1. Open `/studio/playlists/late-night-opm`. 2. In the **Die With A
+  Smile** row, click **Remove Die With A Smile from playlist**.
+- **Expected:** The row fades out, the tracklist drops from 9 to 8 rows and the
+  set's counts/duration update. Liked Songs and curated sets keep their remove
+  actions disabled.
 - **Automation:** Playwright — **Status: Automated**
 
 ---

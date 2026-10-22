@@ -6,10 +6,21 @@ test.describe('playlists', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Playlists' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Liked Songs' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Trending', exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 3, name: 'Trending Audio' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 3, name: 'Trending Video' }),
+    ).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Your Playlists' })).toBeVisible()
     await expect(page.getByText('5 playlists · 35 tracks · 2h 18m')).toBeVisible()
 
-    const cards = page.locator('main article')
+    const cards = page.locator(
+      'section[aria-labelledby="your-playlists-heading"] article',
+    )
     await expect(cards).toHaveCount(5)
     await expect(cards.filter({ hasText: 'Late Night OPM' })).toHaveCount(1)
     await expect(cards.filter({ hasText: 'New Playlist' })).toHaveCount(0)
@@ -36,7 +47,9 @@ test.describe('playlists', () => {
     await expect(menu).toBeHidden()
 
     await expect(page.getByText('3 of 5 playlists')).toBeVisible()
-    const cards = page.locator('main article')
+    const cards = page.locator(
+      'section[aria-labelledby="your-playlists-heading"] article',
+    )
     await expect(cards).toHaveCount(3)
     await expect(cards.filter({ hasText: 'Late Night OPM' })).toHaveCount(1)
     await expect(cards.filter({ hasText: 'Acoustic Reset' })).toHaveCount(1)
@@ -114,5 +127,40 @@ test.describe('playlists', () => {
     const tracklist = page.getByRole('list', { name: 'Acoustic Reset tracks' })
     await expect(tracklist.getByText('The Reason')).toBeVisible()
     await expect(tracklist.getByRole('listitem')).toHaveCount(7)
+  })
+
+  test('PLAYLIST-006: a saved set can be deleted', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio/playlists')
+
+    const library = page.locator(
+      'section[aria-labelledby="your-playlists-heading"]',
+    )
+    const card = library.locator('article').filter({ hasText: 'New Set Ideas' })
+    await expect(card).toHaveCount(1)
+
+    await card.getByRole('button', { name: 'More options for New Set Ideas' }).click()
+    await page.getByRole('button', { name: 'Delete playlist' }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'Delete playlist' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('New Set Ideas')
+    await dialog.getByRole('button', { name: 'Delete playlist' }).click()
+
+    await expect(card).toHaveCount(0)
+    await expect(library.locator('article')).toHaveCount(4)
+    await expect(page.getByText(/4 playlists · 35 tracks/)).toBeVisible()
+  })
+
+  test('PLAYLIST-007: a song can be removed from a playlist', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio/playlists/late-night-opm')
+
+    const tracklist = page.getByRole('list', { name: 'Late Night OPM tracks' })
+    const row = tracklist.getByRole('listitem').filter({ hasText: 'Die With A Smile' })
+    await expect(row).toHaveCount(1)
+
+    await row.getByRole('button', { name: 'Remove Die With A Smile from playlist' }).click()
+
+    await expect(row).toHaveCount(0)
+    await expect(tracklist.getByRole('listitem')).toHaveCount(8)
   })
 })

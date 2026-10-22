@@ -1,8 +1,10 @@
-import { Link, useOutletContext, useParams } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  Delete02Icon,
   PlayIcon,
   Playlist01Icon,
   ShuffleIcon,
@@ -11,6 +13,7 @@ import { useLoungeQueue } from '../../lib/lounge-queue'
 import { usePageTitle } from '../../lib/page-title'
 import { usePlaylistLibrary } from '../../lib/playlist-library'
 import type { KaraokeVideoApi } from '../../lib/karaoke-player'
+import DeletePlaylistDialog from './components/playlists/DeletePlaylistDialog'
 import PlaylistMosaic from './components/playlists/PlaylistMosaic'
 import PlaylistTrackRow from './components/playlists/PlaylistTrackRow'
 import {
@@ -29,7 +32,8 @@ function titleKey(value: string): string {
 
 export default function PlaylistDetailPage() {
   const { playlistId = '' } = useParams<{ playlistId: string }>()
-  const { findPlaylist, removeTrack } = usePlaylistLibrary()
+  const navigate = useNavigate()
+  const { findPlaylist, deletePlaylist, removeTrack } = usePlaylistLibrary()
   const playlist = findPlaylist(playlistId)
   usePageTitle(playlist?.name ?? 'Playlist')
 
@@ -37,6 +41,17 @@ export default function PlaylistDetailPage() {
   const { playPlaylist, playTracks } = usePlaylistPlayback()
   const { add } = useLoungeQueue()
   const player = useOutletContext<KaraokeVideoApi>()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [removingTrackId, setRemovingTrackId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!removingTrackId || !playlist) return
+    const timer = window.setTimeout(() => {
+      removeTrack(playlist.id, removingTrackId)
+      setRemovingTrackId(null)
+    }, 200)
+    return () => window.clearTimeout(timer)
+  }, [playlist, removeTrack, removingTrackId])
 
   if (!playlist) {
     return (
@@ -63,6 +78,7 @@ export default function PlaylistDetailPage() {
 
   const count = playlist.tracks.length
   const duration = playlistDuration(playlist.tracks)
+  const curated = playlist.system && playlist.id !== 'liked-songs'
   const onAirKey = player.onAir ? titleKey(player.onAir.title) : null
 
   function resolve(track: PlaylistTrack) {
@@ -114,7 +130,8 @@ export default function PlaylistDetailPage() {
 
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold tracking-[0.14em] text-primary uppercase">
-            {playlist.system ? 'System playlist' : 'Playlist'} · {playlist.createdBy}
+            {curated ? 'Curated playlist' : playlist.system ? 'System playlist' : 'Playlist'} ·{' '}
+            {playlist.createdBy}
           </p>
           <h1 className="mt-1 font-heading text-4xl font-bold tracking-wide uppercase sm:text-5xl">
             {playlist.name}
@@ -160,9 +177,20 @@ export default function PlaylistDetailPage() {
             >
               <HugeiconsIcon icon={ShuffleIcon} size={17} />
             </button>
+            {!playlist.system ? (
+              <button
+                type="button"
+                aria-label={`Delete ${playlist.name}`}
+                title="Delete playlist"
+                onClick={() => setDeleteOpen(true)}
+                className="grid size-10 place-items-center rounded-lg border border-border bg-surface-elevated text-text-muted transition hover:border-error/50 hover:text-error"
+              >
+                <HugeiconsIcon icon={Delete02Icon} size={16} />
+              </button>
+            ) : null}
             {playlist.system ? (
               <span className="ml-1 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
-                Auto-managed
+                {curated ? 'Curated' : 'Auto-managed'}
               </span>
             ) : null}
           </div>
@@ -200,7 +228,7 @@ export default function PlaylistDetailPage() {
           <>
             <div
               aria-hidden="true"
-              className="hidden grid-cols-[2rem_minmax(0,1.45fr)_minmax(0,1fr)_4.5rem_3.5rem_2rem] gap-3 border-b border-border px-3 py-2 text-[9px] font-bold tracking-[0.14em] text-text-muted uppercase sm:grid"
+              className="hidden grid-cols-[2rem_minmax(0,1.45fr)_minmax(0,1fr)_4.5rem_3.5rem_4.5rem] gap-3 border-b border-border px-3 py-2 text-[9px] font-bold tracking-[0.14em] text-text-muted uppercase sm:grid"
             >
               <span>#</span>
               <span>Title</span>
@@ -222,9 +250,13 @@ export default function PlaylistDetailPage() {
                   canPlay={resolve(track).playable}
                   canQueue={resolve(track).playable}
                   canRemove={!playlist.system}
+                  removing={removingTrackId === track.id}
+                  removeNote={
+                    curated ? 'This curated set is managed by the studio.' : undefined
+                  }
                   onPlay={() => void playTracks([track])}
                   onQueue={() => queueTrack(track)}
-                  onRemove={() => removeTrack(playlist.id, track.id)}
+                  onRemove={() => setRemovingTrackId(track.id)}
                 />
               ))}
             </ol>
@@ -233,9 +265,28 @@ export default function PlaylistDetailPage() {
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-[9px] font-semibold tracking-[0.12em] text-text-muted uppercase">
-        <p>{playlist.system ? 'Managed by the heart button.' : 'Playlist saved to this studio session.'}</p>
+        <p>
+          {curated
+            ? 'Curated by the studio.'
+            : playlist.system
+              ? 'Managed by the heart button.'
+              : 'Playlist saved to this studio session.'}
+        </p>
         <p>Studio session · local</p>
       </div>
+
+      {!playlist.system ? (
+        <DeletePlaylistDialog
+          playlist={playlist}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          onConfirm={() => {
+            setDeleteOpen(false)
+            deletePlaylist(playlist.id)
+            navigate('/studio/playlists')
+          }}
+        />
+      ) : null}
     </div>
   )
 }

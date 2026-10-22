@@ -59,6 +59,8 @@ export default function PlaylistTrackRow({
   canPlay,
   canQueue,
   canRemove,
+  removing = false,
+  removeNote,
   onPlay,
   onQueue,
   onRemove,
@@ -70,6 +72,8 @@ export default function PlaylistTrackRow({
   canPlay: boolean
   canQueue: boolean
   canRemove: boolean
+  removing?: boolean
+  removeNote?: string
   onPlay: () => void
   onQueue: () => void
   onRemove: () => void
@@ -77,8 +81,9 @@ export default function PlaylistTrackRow({
   return (
     <li
       className={cn(
-        'group grid grid-cols-[2rem_minmax(0,1fr)_auto_2rem] items-center gap-3 border-b border-border/70 px-3 py-2.5 last:border-b-0 sm:grid-cols-[2rem_minmax(0,1.45fr)_minmax(0,1fr)_4.5rem_3.5rem_2rem]',
+        'group grid grid-cols-[2rem_minmax(0,1fr)_auto_4.5rem] items-center gap-3 border-b border-border/70 px-3 py-2.5 last:border-b-0 motion-safe:transition-[opacity,transform] motion-safe:duration-200 sm:grid-cols-[2rem_minmax(0,1.45fr)_minmax(0,1fr)_4.5rem_3.5rem_4.5rem]',
         playing ? 'bg-primary-soft/35' : 'hover:bg-surface-elevated/60',
+        removing && 'pointer-events-none opacity-0 motion-safe:translate-x-2',
       )}
     >
       <button
@@ -126,48 +131,62 @@ export default function PlaylistTrackRow({
         {track.duration || '—'}
       </p>
 
-      <Popover>
-        <PopoverTrigger asChild>
+      <div className="flex items-center justify-end gap-0.5">
+        {canRemove ? (
           <button
             type="button"
-            aria-label={`More options for ${track.title}`}
-            className="grid size-8 place-items-center rounded text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
-          >
-            <HugeiconsIcon icon={MoreHorizontalIcon} size={15} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="end"
-          side="bottom"
-          sideOffset={6}
-          collisionPadding={12}
-          className="w-56 border border-border bg-surface p-1.5 text-text-primary shadow-2xl"
-        >
-          <button
-            type="button"
-            onClick={onQueue}
-            disabled={!canQueue}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-elevated hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            <HugeiconsIcon icon={Queue01Icon} size={15} />
-            Add to queue
-          </button>
-          <button
-            type="button"
+            aria-label={`Remove ${track.title} from playlist`}
+            title="Remove from playlist"
             onClick={onRemove}
-            disabled={!canRemove}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-elevated hover:text-error disabled:cursor-not-allowed disabled:opacity-45"
+            className="grid size-8 place-items-center rounded text-text-muted transition hover:bg-surface-elevated hover:text-error"
           >
-            <HugeiconsIcon icon={Delete02Icon} size={15} />
-            Remove from playlist
+            <HugeiconsIcon icon={Delete02Icon} size={14} />
           </button>
-          <p className="mt-1 border-t border-border px-2.5 pt-2 pb-1 text-[10px] leading-relaxed text-text-muted">
-            {canRemove
-              ? 'Removing a song changes this set immediately.'
-              : 'Liked Songs is managed by the heart button.'}
-          </p>
-        </PopoverContent>
-      </Popover>
+        ) : null}
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`More options for ${track.title}`}
+              className="grid size-8 place-items-center rounded text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
+            >
+              <HugeiconsIcon icon={MoreHorizontalIcon} size={15} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            side="bottom"
+            sideOffset={6}
+            collisionPadding={12}
+            className="w-56 border border-border bg-surface p-1.5 text-text-primary shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={onQueue}
+              disabled={!canQueue}
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-elevated hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <HugeiconsIcon icon={Queue01Icon} size={15} />
+              Add to queue
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={!canRemove}
+              className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-elevated hover:text-error disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={15} />
+              Remove from playlist
+            </button>
+            <p className="mt-1 border-t border-border px-2.5 pt-2 pb-1 text-[10px] leading-relaxed text-text-muted">
+              {canRemove
+                ? 'Removing a song changes this set immediately.'
+                : (removeNote ?? 'Liked Songs is managed by the heart button.')}
+            </p>
+          </PopoverContent>
+        </Popover>
+      </div>
     </li>
   )
 }
