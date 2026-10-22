@@ -8,6 +8,7 @@ import {
   Mic01Icon,
   BellIcon,
   CalendarCheck01Icon,
+  Playlist01Icon,
   Queue01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
@@ -19,6 +20,7 @@ export default function StudioTopBar() {
   const { pathname } = useLocation()
   const showBack = pathname !== '/studio'
   const onQueue = pathname.startsWith('/studio/player-queue')
+  const onPlaylists = pathname.startsWith('/studio/playlists')
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
@@ -73,6 +75,19 @@ export default function StudioTopBar() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Link
+          to="/studio/playlists"
+          aria-label="Playlists"
+          title="Playlists"
+          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
+            onPlaylists
+              ? 'border-primary/50 bg-primary-soft text-primary'
+              : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <HugeiconsIcon icon={Playlist01Icon} size={15} />
+          <span className="hidden lg:inline">Playlists</span>
+        </Link>
         <Link
           to={onQueue ? '/studio' : '/studio/player-queue'}
           aria-label={onQueue ? 'Minimize player queue' : 'Player Queue'}
