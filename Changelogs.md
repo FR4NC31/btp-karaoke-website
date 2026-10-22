@@ -35,6 +35,7 @@ Last updated: October 22, 2026
 
 ### Bug Fixes
 
+- fix: changing skeleton loading in profile page (4b5387a)
 - fix(profile): cover sign-up and tighten location guard (2e5289d)
 - fix(player): retry catalogs after effect cleanup (c940315)
 - fix(profile): guard location saves and PSGC loads (83e386f)
@@ -88,6 +89,7 @@ Last updated: October 22, 2026
 
 ### Other Changes
 
+- Merge pull request #33 from FR4NC31/feat/profile-location (9d03d1a)
 - docs(testing): label signup location coverage (cb6d8d9)
 - test(auth): tighten sign-up guard assertion (fe70938)
 - test(profile): cover sign-up location guard (e514df3)
