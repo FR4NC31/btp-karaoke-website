@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  InformationCircleIcon,
   MusicNote02Icon,
   PlusSignIcon,
   Tick02Icon,
@@ -25,9 +24,16 @@ type AddToPlaylistSong = Pick<
   album?: string
 }
 
+export type PlaylistAddedNotice = {
+  tone: 'success' | 'warning'
+  title: string
+  description?: string
+}
+
 type AddToPlaylistDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAdded?: (notice: PlaylistAddedNotice) => void
   song: AddToPlaylistSong
 }
 
@@ -60,21 +66,40 @@ function SongThumb({ song }: { song: AddToPlaylistSong }) {
 export default function AddToPlaylistDialog({
   open,
   onOpenChange,
+  onAdded,
   song,
 }: AddToPlaylistDialogProps) {
   const { userPlaylists, addTrack, createPlaylist } = usePlaylistLibrary()
   const [newName, setNewName] = useState('')
-  const alreadyIn = userPlaylists.filter((playlist) =>
-    playlist.tracks.some((track) => sameTrack(track, song)),
-  )
 
   function handleOpenChange(next: boolean) {
     if (!next) setNewName('')
     onOpenChange(next)
   }
 
+  function notifyAdded(playlistId: string, playlistName: string) {
+    const otherPlaylists = userPlaylists.filter(
+      (playlist) =>
+        playlist.id !== playlistId && playlist.tracks.some((track) => sameTrack(track, song)),
+    )
+    onAdded?.({
+      tone: otherPlaylists.length > 0 ? 'warning' : 'success',
+      title: `Added to ${playlistName}`,
+      description:
+        otherPlaylists.length > 0
+          ? `Also already in ${otherPlaylists.length} other ${
+              otherPlaylists.length === 1 ? 'playlist' : 'playlists'
+            }: ${summarizeNames(otherPlaylists.map((playlist) => playlist.name))}.`
+          : undefined,
+    })
+    handleOpenChange(false)
+  }
+
   function add(playlistId: string) {
+    const playlist = userPlaylists.find((row) => row.id === playlistId)
+    if (!playlist) return
     addTrack(playlistId, song)
+    notifyAdded(playlistId, playlist.name)
   }
 
   function createAndAdd(event: FormEvent<HTMLFormElement>) {
@@ -83,7 +108,7 @@ export default function AddToPlaylistDialog({
     if (!name) return
     const created = createPlaylist({ name, description: '', genre: 'OPM' })
     addTrack(created.id, song)
-    setNewName('')
+    notifyAdded(created.id, created.name)
   }
 
   return (
@@ -100,27 +125,6 @@ export default function AddToPlaylistDialog({
             </DialogDescription>
           </div>
         </div>
-
-        {alreadyIn.length > 0 ? (
-          <div
-            role="status"
-            className="mx-3 mt-3 flex gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5"
-          >
-            <HugeiconsIcon
-              icon={InformationCircleIcon}
-              size={15}
-              className="mt-0.5 shrink-0 text-warning"
-            />
-            <p className="text-[11px] leading-relaxed text-text-secondary">
-              <span className="font-semibold text-warning">
-                Already added to {alreadyIn.length}{' '}
-                {alreadyIn.length === 1 ? 'playlist' : 'playlists'}:
-              </span>{' '}
-              {summarizeNames(alreadyIn.map((playlist) => playlist.name))}. You can still add it
-              to another set.
-            </p>
-          </div>
-        ) : null}
 
         <div className="min-h-0 overflow-y-auto px-3 py-3">
           <ul className="space-y-1">

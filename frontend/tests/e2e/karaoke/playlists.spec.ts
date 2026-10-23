@@ -115,16 +115,16 @@ test.describe('playlists', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Add to playlist' })
     await expect(dialog).toBeVisible()
-    await expect(dialog.getByText(/Already added to 3 playlists/i)).toBeVisible()
+    await expect(dialog.getByText(/Already added to 3 playlists/i)).toHaveCount(0)
     await expect(dialog.getByRole('button', { name: /Late Night OPM/ })).toBeDisabled()
-    await expect(dialog.getByRole('button', { name: /Late Night OPM/ })).toContainText(
-      'Already in this playlist',
-    )
     const acoustic = dialog.getByRole('button', { name: /Acoustic Reset/ })
     await acoustic.click()
-    await expect(acoustic).toBeDisabled()
-    await dialog.getByRole('button', { name: 'Done' }).click()
     await expect(dialog).toBeHidden()
+
+    const notice = page.getByRole('status').filter({ hasText: 'Added to Acoustic Reset' })
+    await expect(notice).toBeVisible()
+    await expect(notice).toContainText('Also already in 3 other playlists')
+    await expect(notice).toBeHidden({ timeout: 4000 })
 
     await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
     await expect(page).toHaveURL('/studio/playlists')
