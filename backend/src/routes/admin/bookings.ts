@@ -42,10 +42,14 @@ adminBookings.post('/', async (c) => {
     return c.json({ error: 'Expected a JSON body.' }, 400)
   }
 
-  const { userId, guestName, serviceId, bookingDate, notes } = (body ?? {}) as Record<
-    string,
-    unknown
-  >
+  const {
+    userId,
+    guestName,
+    serviceId,
+    bookingDate,
+    bookingTime,
+    notes,
+  } = (body ?? {}) as Record<string, unknown>
   if (typeof serviceId !== 'string' || typeof bookingDate !== 'string') {
     return c.json({ error: 'serviceId and bookingDate are required.' }, 400)
   }
@@ -55,8 +59,9 @@ adminBookings.post('/', async (c) => {
   if (guestName !== undefined && typeof guestName !== 'string') {
     return c.json({ error: 'guestName must be a string when provided.' }, 400)
   }
-  // Same rule as the customer path: reject a shape we cannot store rather than
-  // answering 201 and dropping it.
+  if (bookingTime !== undefined && bookingTime !== null && typeof bookingTime !== 'string') {
+    return c.json({ error: 'bookingTime must be a string when provided.' }, 400)
+  }
   if (notes !== undefined && notes !== null && typeof notes !== 'string') {
     return c.json({ error: 'notes must be a string when provided.' }, 400)
   }
@@ -67,6 +72,7 @@ adminBookings.post('/', async (c) => {
       guestName: typeof guestName === 'string' ? guestName : undefined,
       serviceId,
       bookingDate,
+      bookingTime: typeof bookingTime === 'string' ? bookingTime : undefined,
       notes: typeof notes === 'string' ? notes : undefined,
     })
     return c.json({ booking }, 201)

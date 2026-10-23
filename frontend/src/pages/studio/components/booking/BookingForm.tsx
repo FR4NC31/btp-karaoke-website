@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon } from '@hugeicons/core-free-icons'
 import type { Service } from '../../../../lib/booking-api'
+import { isTimeBasedService } from '../../../../lib/booking-api'
 import { peso } from '../../../../lib/booking-format'
 import { NOTES_MAX } from '../../../../lib/booking-constants'
 
@@ -10,6 +11,8 @@ type BookingFormProps = {
   studioToday: string
   bookingDate: string
   onDateChange: (value: string) => void
+  bookingTime: string
+  onTimeChange: (value: string) => void
   notes: string
   onNotesChange: (value: string) => void
   formError: string
@@ -23,6 +26,8 @@ export default function BookingForm({
   studioToday,
   bookingDate,
   onDateChange,
+  bookingTime,
+  onTimeChange,
   notes,
   onNotesChange,
   formError,
@@ -70,9 +75,32 @@ export default function BookingForm({
             className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
           <p className="mt-1.5 text-[11px] text-text-muted">
-            Whole day. One live booking per customer, per service, per day.
+            {isTimeBasedService(service)
+              ? 'Pick the day for your session.'
+              : 'Whole day. One live booking per customer, per service, per day.'}
           </p>
         </div>
+        {isTimeBasedService(service) && (
+          <div>
+            <label
+              htmlFor="booking-time"
+              className="block text-[11px] font-bold tracking-widest text-text-secondary uppercase"
+            >
+              Session time
+            </label>
+            <input
+              id="booking-time"
+              type="time"
+              required
+              value={bookingTime}
+              onChange={(e) => onTimeChange(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            />
+            <p className="mt-1.5 text-[11px] text-text-muted">
+              24-hour clock — time is in studio (PH) timezone
+            </p>
+          </div>
+        )}
 
         <div>
           <label

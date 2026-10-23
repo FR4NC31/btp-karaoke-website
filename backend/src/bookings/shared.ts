@@ -13,6 +13,7 @@ import { BookingError, type Booking } from './types.ts'
 const STUDIO_TIMEZONE = process.env.STUDIO_TIMEZONE ?? 'Asia/Manila'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const ISO_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 
 /** Max horizon for a booking — a typo guard, not a business rule. */
 const MAX_DAYS_AHEAD = 730
@@ -64,6 +65,7 @@ export const bookingColumns = {
   referenceCode: booking.referenceCode,
   serviceId: booking.serviceId,
   bookingDate: booking.bookingDate,
+  bookingTime: booking.bookingTime,
   status: booking.status,
   notes: booking.notes,
   createdAt: booking.createdAt,
@@ -78,6 +80,7 @@ export type BookingRow = {
   referenceCode: string
   serviceId: string
   bookingDate: string
+  bookingTime: string | null
   status: BookingStatus
   notes: string | null
   createdAt: Date
@@ -186,6 +189,27 @@ export function validateBookingDay(raw: unknown): string {
   }
 
   return bookingDate
+}
+
+/** Validates an optional `HH:MM` time slot. 24-hour clock — no open/closing
+ *  restriction so overseas clients in any timezone can book. Returns null when
+ *  not provided (per-day booking). Also rejects past same-day slots in
+ *  STUDIO_TIMEZONE so a slot that has already passed today is rejected. */
+export function validateBookingTime(raw: unknown, date: string): string | null {
+  const bookingTime = typeof raw === 'string' ? raw.trim() : null
+  if (!bookingTime) return null
+  if (!ISO_TIME.test(bookingTime)) {
+    throw new BookingError('Pick a time in HH:MM format (24-hour clock).', 400)
+  }
+  // Reject past same-day slots in studio timezone
+  const now = new Date()
+  const today = new Date(now.toLocaleString('en-US', { timeZone: STUDIO_TIMEZONE }))
+  const combined = new Date(`${date}T${bookingTime}:00`.replace('T', ' ')).toLocaleString('en-US', { timeZone: STUDIO_TIMEZONE })
+  const bookingDateTimeObj = new Date(combined)
+  if (bookingDateTimeObj < today) {
+    throw new BookingError('Cannot book a time slot that has already passed.', 400)
+  }
+  return bookingTime
 }
 
 /** Shared notes validation. Returns the trimmed text, or null when empty. */

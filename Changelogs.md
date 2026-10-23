@@ -6,6 +6,8 @@ Last updated: October 23, 2026
 
 ### Features
 
+- feat: 24-hour booking system with date + time slot inputs (b1e0f8e)
+- feat: add 24-hour booking with date + time slots - Add bookingTime column to schema (time type, nullable) - Split unique constraint into day-only (per-song) and day+time (per-hour) - Add validateBookingTime shared helper - Wire time input in BookingForm for per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering) - Conditional time display in BookingsPanel - isTimeBasedService utility in booking-api - Frontend form shows time picker only for hour-based services (5a99bcf)
 - feat(studio): add playlist skeletons and animated equalizer (d060a96)
 - feat(studio): add trending sets and playlist deletion (4e4d9fe)
 - feat(studio): polish playlist artwork and navigation (beca975)
@@ -95,6 +97,14 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into feat/persistent-player-surface (4dbb85f)
+- Rename 0007_time_slots_for_services.sql to 0008_time_slots_for_services.sql (d1f1f09)
+- Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (3962b46)
+- Fix: Restore booking-api.ts with request export and isTimeBasedService (650492b)
+- Merge remote changes into feat/persistent-player-surface (aa40aea)
+- Fix 15 persistent codebase violations (0f63bea)
+- Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (d811ebd)
+- Merge pull request #35 from FR4NC31/feat/playlist-UI (a4a7ad5)
 - Merge pull request #34 from FR4NC31/fix/profile-skeleton-ui (ba3fd58)
 - Merge pull request #33 from FR4NC31/feat/profile-location (9d03d1a)
 - docs(testing): label signup location coverage (cb6d8d9)

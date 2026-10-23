@@ -10,9 +10,12 @@ import {
 import { requireSession } from '../session-middleware.ts'
 
 /**
- * The signed-in customer's own reservations. Day-only for now: POST takes a
- * service and a whole day. Time slots and time blocks are a later migration;
- * the status column already carries `pending -> confirmed | rejected` for the
+ * The signed-in customer's own reservations.
+ * POST takes a service, a whole day, and an optional time slot `HH:MM:SS`.
+ * Per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering)
+ * require a time slot; per-day services (Guitar Lessons, etc.) accept date-only.
+ * Time slots and time blocks are now supported via migration 0007.
+ * The status column carries `pending -> confirmed | rejected` for the
  * admin acceptance flow.
  */
 const bookingApi = new Hono()
@@ -40,12 +43,16 @@ bookingApi.post('/', requireSession, async (c) => {
     return c.json({ error: 'Expected a JSON body.' }, 400)
   }
 
-  const { serviceId, bookingDate, notes } = (body ?? {}) as Record<string, unknown>
+  const { serviceId, bookingDate, bookingTime, notes } = (body ?? {}) as Record<
+    string,
+    unknown
+  >
   if (typeof serviceId !== 'string' || typeof bookingDate !== 'string') {
     return c.json({ error: 'serviceId and bookingDate are required.' }, 400)
   }
-  // Silently dropping a non-string `notes` would answer 201 while discarding
-  // what the caller sent, so an unusable shape is rejected instead.
+  if (bookingTime !== undefined && bookingTime !== null && typeof bookingTime !== 'string') {
+    return c.json({ error: 'bookingTime must be a string when provided.' }, 400)
+  }
   if (notes !== undefined && notes !== null && typeof notes !== 'string') {
     return c.json({ error: 'notes must be a string when provided.' }, 400)
   }
@@ -55,6 +62,7 @@ bookingApi.post('/', requireSession, async (c) => {
       userId: session.user.id,
       serviceId,
       bookingDate,
+      bookingTime: typeof bookingTime === 'string' ? bookingTime : undefined,
       notes: typeof notes === 'string' ? notes : undefined,
     })
     return c.json({ booking }, 201)

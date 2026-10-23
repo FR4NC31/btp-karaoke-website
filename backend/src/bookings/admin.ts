@@ -9,6 +9,7 @@ import {
   toBooking,
   uniqueViolationConstraint,
   validateBookingDay,
+  validateBookingTime,
   validateNotes,
   type BookingRow,
 } from './shared.ts'
@@ -160,6 +161,7 @@ export async function createBookingForOthers(
   input: CreateBookingForOthersInput,
 ): Promise<AdminBooking> {
   const bookingDate = validateBookingDay(input.bookingDate)
+  const bookingTime = validateBookingTime(input.bookingTime)
   const notes = validateNotes(input.notes)
 
   const userId = input.userId?.trim() || null
@@ -198,6 +200,7 @@ export async function createBookingForOthers(
       guestName: userId ? null : guestName,
       serviceId: input.serviceId,
       bookingDate,
+      bookingTime,
       status: 'confirmed',
       notes,
     })
@@ -208,11 +211,19 @@ export async function createBookingForOthers(
     }
     return created
   } catch (err) {
-    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
-      // Only booking_active_unique_idx applies to a tagged user; guest rows
-      // never enter it, so this fires only for the registered-customer path.
+    const constraint = uniqueViolationConstraint(err)
+    if (constraint === 'booking_active_day_unique_idx') {
+      // Applies to a tagged user; guest rows never enter these indexes, so
+      // this fires only for the registered-customer path.
       throw new BookingError(
         'That customer already has a live booking for this service on that day.',
+        409,
+      )
+    }
+    if (constraint === 'booking_active_time_unique_idx') {
+      // Slot-specific: another booking already exists at this exact time
+      throw new BookingError(
+        'That customer already has a booking for this service at this time slot.',
         409,
       )
     }

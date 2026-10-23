@@ -8,6 +8,7 @@ import {
   toBooking,
   uniqueViolationConstraint,
   validateBookingDay,
+  validateBookingTime,
   validateNotes,
   type BookingRow,
 } from './shared.ts'
@@ -56,6 +57,7 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const bookingDate = validateBookingDay(input.bookingDate)
+  const bookingTime = validateBookingTime(input.bookingTime, input.bookingDate)
   const notes = validateNotes(input.notes)
 
   await assertServiceAvailable(input.serviceId)
@@ -65,6 +67,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       userId: input.userId,
       serviceId: input.serviceId,
       bookingDate,
+      bookingTime,
       status: 'pending',
       notes,
     })
@@ -77,11 +80,15 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     }
     return created
   } catch (err) {
-    // Only booking_active_unique_idx means "duplicate booking"; a reference
-    // code collision was already retried by insertBookingRow.
-    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
+    // Handle both day-wide and time-slot unique constraint violations
+    const constraint = uniqueViolationConstraint(err)
+    if (constraint === 'booking_active_day_unique_idx') {
       throw new BookingError('You already have a booking for that service on that day.', 409)
     }
+    if (constraint === 'booking_active_time_unique_idx') {
+      throw new BookingError('That customer already has a booking for this service at this time slot.', 409)
+    }
+    // booking_active_unique_idx is dead since migration 0007 dropped that index
     throw err
   }
 }
