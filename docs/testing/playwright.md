@@ -106,14 +106,14 @@ frontend/tests/e2e/
 │   └── env.ts                   BACKEND_URL (no hard-coded hosts)
 ├── smoke/smoke.spec.ts          SMOKE-001…006   P0 "can a user use the site?"
 ├── auth/signin.spec.ts          AUTH-001…021    login, logout, validation, Google
-├── auth/signup.spec.ts          AUTH-010…014    registration + contact rules
+├── auth/signup.spec.ts          AUTH-010…014, 022 registration + contact + location rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…021 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
 ├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
-├── profile/profile.spec.ts      PROFILE-001…002 profile menu → account page, tabs
+├── profile/profile.spec.ts      PROFILE-001…003 profile menu → account page, tabs, location cascade + save
 └── errors/errors.spec.ts        ERROR-001…004   404, console/network health
 ```
 

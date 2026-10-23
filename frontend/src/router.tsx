@@ -15,6 +15,8 @@ import SignUp from "./pages/auth/SignUp"
 import AuthError from "./pages/auth/AuthError"
 import StudioShell from "./pages/studio/StudioShell"
 import StudioHome from "./pages/studio/StudioHome"
+import PlaylistsPage from "./pages/studio/PlaylistsPage"
+import PlaylistDetailPage from "./pages/studio/PlaylistDetailPage"
 import BookingPage from "./pages/studio/BookingPage"
 import ProfilePage from "./pages/studio/ProfilePage"
 import AdminShell from "./pages/admin/AdminShell"
@@ -62,6 +64,8 @@ export const router = createBrowserRouter([
                         element: <StudioShell />,
                         children: [
                             { index: true, element: <StudioHome /> },
+                            { path: "playlists", handle: { title: 'Playlists' }, element: <PlaylistsPage /> },
+                            { path: "playlists/:playlistId", handle: { title: 'Playlist' }, element: <PlaylistDetailPage /> },
                             { path: "profile", handle: { title: 'My Account' }, element: <ProfilePage /> },
                             // The queue is a persistent shell surface, not a page. Keep the route
                             // so direct links and the browser back button still have a URL.

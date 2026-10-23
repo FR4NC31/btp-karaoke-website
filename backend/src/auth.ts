@@ -1,15 +1,44 @@
 import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
+import type { User } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import { resolveAuthNetworkSettings } from './auth-settings.ts'
 import { pool } from './db.ts'
+import { validateLocationUpdate } from './location.ts'
 
 const { frontendOrigin, ipAddressHeaders, trustedProxies, errorURL } =
   resolveAuthNetworkSettings()
+
+type UserInput = Partial<User> & Record<string, unknown>
+
+/**
+ * The location editor sends all three PSGC names together. Keep that contract
+ * at the API boundary too: both sign-up and update-user accept additional
+ * fields from the client, so neither may write a partial, blank, or unbounded
+ * location row.
+ */
+async function guardLocation(user: UserInput) {
+  const location = validateLocationUpdate(user)
+
+  if (location.kind === 'invalid') {
+    throw new APIError('BAD_REQUEST', { message: location.message })
+  }
+
+  if (location.kind === 'valid') {
+    return { data: { ...user, ...location.data } }
+  }
+}
 
 export const auth = betterAuth({
   // Shared pool (see db.ts) so auth and the booking queries ride the same
   // connections and TLS setup.
   database: pool,
+  databaseHooks: {
+    user: {
+      create: { before: guardLocation },
+      update: { before: guardLocation },
+    },
+  },
   // Rate-limit buckets are keyed by client IP. Behind a proxy/CDN the socket
   // address is the edge, so read the address header the edge overwrites.
   // AUTH_IP_ADDRESS_HEADERS / AUTH_TRUSTED_PROXIES are validated in
@@ -103,6 +132,22 @@ export const auth = betterAuth({
       contact_num: {
         type: 'string',
         required: true,
+      },
+      // Philippines-only location. Barangay + city/municipality + province is
+      // as specific as the profile goes — no street address is stored.
+      // Optional so existing accounts and Google sign-ups stay valid; the
+      // location editor only saves when all three are chosen.
+      province: {
+        type: 'string',
+        required: false,
+      },
+      city_municipality: {
+        type: 'string',
+        required: false,
+      },
+      barangay: {
+        type: 'string',
+        required: false,
       },
       // Authorization flag. `input: false` + `defaultValue` is the whole
       // security story here: Better Auth overwrites any role a client sends

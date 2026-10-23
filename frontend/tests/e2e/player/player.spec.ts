@@ -52,6 +52,24 @@ test.describe('player', () => {
     await expect(playerBar.getByText(/^\d+:\d{2}$/).first()).toBeVisible()
   })
 
+  test('PLAYER-010: direct console load retries the catalog after StrictMode cleanup', { tag: '@p2' }, async ({ page }) => {
+    let catalogRequests = 0
+
+    await page.route('**/api/media', async (route) => {
+      catalogRequests += 1
+      // Keep the first request in flight while StrictMode tears the first
+      // effect down. Its response is ignored; the replacement effect must
+      // still be allowed to ask again.
+      if (catalogRequests === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 300))
+      }
+      await route.continue()
+    })
+
+    await page.goto('/studio/player-queue')
+    await expect.poll(() => catalogRequests).toBeGreaterThanOrEqual(2)
+  })
+
   test('PLAYER-008: like toggles player state', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio/player-queue')
     const playerBar = page.getByRole('contentinfo')

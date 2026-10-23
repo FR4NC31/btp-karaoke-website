@@ -5,6 +5,7 @@ import type { IconSvgElement } from '@hugeicons/react'
 import { MoreHorizontalIcon } from '@hugeicons/core-free-icons'
 import { Popover, PopoverTrigger } from '../../../components/ui/popover'
 import MediaCardMenu from './MediaCardMenu'
+import AddToPlaylistDialog from './playlists/AddToPlaylistDialog'
 import { useLoungeQueue } from '../../../lib/lounge-queue'
 
 interface MediaCardMeta {
@@ -42,7 +43,9 @@ export default function MediaCard({
   const TitleTag = titleAs === 'h1' ? 'h1' : 'p'
   const { add, items } = useLoungeQueue()
   const queueable = Boolean(queue && (queue.kind === 'video' || queue.src))
+  const playlistable = queueable
   const [optionsOpen, setOptionsOpen] = useState(false)
+  const [playlistOpen, setPlaylistOpen] = useState(false)
   const [added, setAdded] = useState(false)
   const addedTimer = useRef<number | null>(null)
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
@@ -72,6 +75,11 @@ export default function MediaCard({
     setAdded(true)
     if (addedTimer.current !== null) window.clearTimeout(addedTimer.current)
     addedTimer.current = window.setTimeout(() => setAdded(false), 2000)
+  }
+
+  const openPlaylistDialog = () => {
+    openOptions(false)
+    setPlaylistOpen(true)
   }
 
   return (
@@ -143,12 +151,30 @@ export default function MediaCard({
             fallbackIcon={icon}
             queueable={queueable}
             queueKind={queue?.kind}
+            playlistable={playlistable}
             added={added}
             queueCount={items.length}
             onAdd={addToQueue}
+            onAddToPlaylist={openPlaylistDialog}
           />
         </Popover>
       </div>
+
+      {playlistOpen ? (
+        <AddToPlaylistDialog
+          open
+          onOpenChange={setPlaylistOpen}
+          song={{
+            title,
+            artist: subtitle,
+            duration: queue?.len ?? '',
+            coverUrl: coverUrl ?? null,
+            sourceUrl: queue?.src ?? null,
+            mediaId: queue?.mediaId ?? null,
+            kind: queue?.kind ?? 'video',
+          }}
+        />
+      ) : null}
     </article>
   )
 }

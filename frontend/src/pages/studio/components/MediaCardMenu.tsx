@@ -21,9 +21,11 @@ type MediaCardMenuProps = {
   fallbackIcon: IconSvgElement
   queueable: boolean
   queueKind?: 'video' | 'music'
+  playlistable: boolean
   added: boolean
   queueCount: number
   onAdd: () => void
+  onAddToPlaylist: () => void
 }
 
 type MenuRowProps = {
@@ -109,9 +111,11 @@ export default function MediaCardMenu({
   fallbackIcon,
   queueable,
   queueKind,
+  playlistable,
   added,
   queueCount,
   onAdd,
+  onAddToPlaylist,
 }: MediaCardMenuProps) {
   const titleId = useId()
   const descriptionId = useId()
@@ -170,7 +174,13 @@ export default function MediaCardMenu({
         )}
         <MenuRow icon={Radio01Icon} label="Go to artist radio" disabled soon />
         <div className="my-1.5 h-px bg-border" />
-        <MenuRow icon={PlusSignIcon} label="Add to playlist" disabled soon />
+        <MenuRow
+          icon={PlusSignIcon}
+          label="Add to playlist"
+          onClick={playlistable ? onAddToPlaylist : undefined}
+          disabled={!playlistable}
+          soon={!playlistable}
+        />
         <MenuRow icon={Share01Icon} label="Share" disabled soon />
       </div>
 

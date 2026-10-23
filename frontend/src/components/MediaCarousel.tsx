@@ -11,6 +11,7 @@ type MediaCarouselProps = {
   count?: number
   as?: 'div' | 'ul'
   itemClassName?: string
+  railClassName?: string
 }
 
 export default function MediaCarousel({
@@ -21,6 +22,7 @@ export default function MediaCarousel({
   count,
   as = 'div',
   itemClassName = '[&>*]:w-[min(100%,20rem)]',
+  railClassName = '',
 }: MediaCarouselProps) {
   const railRef = useRef<HTMLDivElement | HTMLUListElement | null>(null)
   const [edges, setEdges] = useState({ left: false, right: false })
@@ -53,7 +55,7 @@ export default function MediaCarousel({
     el.scrollBy({ left: direction * el.clientWidth * 0.9, behavior: 'smooth' })
   }
 
-  const railClass = `flex snap-x snap-mandatory gap-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 [&>*]:snap-start ${itemClassName}`
+  const railClass = `flex snap-x snap-mandatory gap-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 [&>*]:snap-start ${itemClassName} ${railClassName}`
 
   return (
     <>
@@ -61,7 +63,7 @@ export default function MediaCarousel({
         {header}
         <div className="ml-auto flex items-center gap-3">
           {aside}
-          {hasItems && (
+          {hasItems && (edges.left || edges.right) && (
             <div className="flex items-center gap-2">
               <button
                 type="button"

@@ -5,15 +5,20 @@ import {
   UserIcon,
   Mail01Icon,
   PhoneIcon,
-  MapPinIcon,
   MusicNote01Icon,
 } from '@hugeicons/core-free-icons'
 import UserAvatar from '../../../../components/UserAvatar'
 import DetailField from './DetailField'
+import LocationSection from './LocationSection'
 import type { ProfileIdentity } from './types'
 
-export default function AccountTab({ identity }: { identity: ProfileIdentity }) {
-  const { image, fullName, email, emailVerified, phone, handle, memberSince } = identity
+type AccountTabProps = {
+  identity: ProfileIdentity
+  onLocationSaved: () => void | Promise<void>
+}
+
+export default function AccountTab({ identity, onLocationSaved }: AccountTabProps) {
+  const { image, fullName, email, emailVerified, phone, handle, memberSince, location } = identity
 
   return (
     <>
@@ -94,14 +99,10 @@ export default function AccountTab({ identity }: { identity: ProfileIdentity }) 
             value={phone}
             hint="Used for room reservation/reminders"
           />
-          <DetailField
-            icon={MapPinIcon}
-            label="Location / City"
-            value="Quezon City, Metro Manila"
-            hint="Philippines"
-          />
         </div>
       </section>
+
+      <LocationSection location={location} onSaved={onLocationSaved} />
 
       <section className="rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center justify-between">

@@ -67,13 +67,16 @@ uses that command, then `npm run migrate`, `npm run seed`, and
 `DATABASE_URL`; `migrate` and `seed` remain normal commands that follow
 `DATABASE_URL` wherever it points.
 
-`user.role` (the admin flag) is the one deliberate exception to the ownership
-table above: the column is declared in `src/schema.ts` and added by
-`drizzle/0001_*.sql`, while Better Auth reads it through
-`user.additionalFields.role` in `src/auth.ts` — that is what makes it
-unsettable from the client. The ALTER is `IF NOT EXISTS` so the fresh-database
-order above still works (Better Auth creates the column first). Promote and
-revoke admins with:
+`user.role` (the admin flag) and the profile location columns (`province`,
+`city_municipality`, `barangay`) are the deliberate exceptions to the ownership
+table above. All four are declared in `src/schema.ts`; `role` is added by
+`drizzle/0001_*.sql` and location by `drizzle/0007_*.sql`, while Better Auth
+reads them through `user.additionalFields` in `src/auth.ts`. That is what makes
+`role` unsettable from the client (`input: false`), and what lets the
+`databaseHooks.user.create.before` / `update.before` guard reject partial or
+malformed location writes (`src/location.ts`). The ALTERs are `IF NOT EXISTS`
+so the fresh-database order above still works (Better Auth creates the columns
+first). Promote and revoke admins with:
 
 ```bash
 npm run promote-admin -- someone@example.com          # grant

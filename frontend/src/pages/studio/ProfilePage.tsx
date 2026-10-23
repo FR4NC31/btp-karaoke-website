@@ -7,7 +7,7 @@ import type { ProfileIdentity } from './components/profile/types'
 
 export default function ProfilePage() {
   const [tab, setTab] = useState<'account' | 'profile'>('account')
-  const { data } = useSession()
+  const { data, refetch } = useSession()
 
   const user = data?.user
   const identity: ProfileIdentity = {
@@ -20,12 +20,21 @@ export default function ProfilePage() {
     memberSince: user?.createdAt
       ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       : '',
+    location: {
+      province: user?.province ?? '',
+      cityMunicipality: user?.city_municipality ?? '',
+      barangay: user?.barangay ?? '',
+    },
   }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <ProfileTabs tab={tab} onTabChange={setTab} />
-      {tab === 'account' ? <AccountTab identity={identity} /> : <PublicProfileTab />}
+      {tab === 'account' ? (
+        <AccountTab identity={identity} onLocationSaved={() => refetch()} />
+      ) : (
+        <PublicProfileTab />
+      )}
     </div>
   )
 }

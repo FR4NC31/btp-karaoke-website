@@ -8,6 +8,7 @@ import {
   Mic01Icon,
   BellIcon,
   CalendarCheck01Icon,
+  Playlist01Icon,
   Queue01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
@@ -19,16 +20,20 @@ export default function StudioTopBar() {
   const { pathname } = useLocation()
   const showBack = pathname !== '/studio'
   const onQueue = pathname.startsWith('/studio/player-queue')
+  const onPlaylists = pathname.startsWith('/studio/playlists')
+  const onPlaylistDetail = pathname.startsWith('/studio/playlists/')
+  const backTo = onPlaylistDetail ? '/studio/playlists' : '/studio'
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
-      <div className="flex shrink-0 items-center gap-3">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {showBack && (
           <Link
-            to="/studio"
+            to={backTo}
             aria-label="Back"
+            title={onPlaylistDetail ? 'Back to playlists' : 'Back to studio'}
             className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
@@ -56,7 +61,7 @@ export default function StudioTopBar() {
         <HugeiconsIcon icon={ChevronDownIcon} size={14} />
       </button>
 
-      <div className="relative mx-auto w-full min-w-0 max-w-md">
+      <div className="relative mx-auto hidden w-full min-w-0 max-w-md sm:block">
         <HugeiconsIcon
           icon={Search01Icon}
           size={16}
@@ -72,7 +77,20 @@ export default function StudioTopBar() {
         </kbd>
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <Link
+          to="/studio/playlists"
+          aria-label="Playlists"
+          title="Playlists"
+          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
+            onPlaylists
+              ? 'border-primary/50 bg-primary-soft text-primary'
+              : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <HugeiconsIcon icon={Playlist01Icon} size={15} />
+          <span className="hidden lg:inline">Playlists</span>
+        </Link>
         <Link
           to={onQueue ? '/studio' : '/studio/player-queue'}
           aria-label={onQueue ? 'Minimize player queue' : 'Player Queue'}
