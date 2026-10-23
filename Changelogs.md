@@ -6,6 +6,7 @@ Last updated: October 23, 2026
 
 ### Features
 
+- feat(playlists): wire liked songs and rename (e921a06)
 - feat: 24-hour booking system with date + time slot inputs (b1e0f8e)
 - feat: add 24-hour booking with date + time slots - Add bookingTime column to schema (time type, nullable) - Split unique constraint into day-only (per-song) and day+time (per-hour) - Add validateBookingTime shared helper - Wire time input in BookingForm for per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering) - Conditional time display in BookingsPanel - isTimeBasedService utility in booking-api - Frontend form shows time picker only for hour-based services (5a99bcf)
 - feat(studio): add playlist skeletons and animated equalizer (d060a96)
@@ -103,6 +104,7 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Merge pull request #39 from FR4NC31/fix/restore-booking-api (596ba18)
 - docs(booking): note minute-based time slots (61628ce)
 - Merge pull request #38 from FR4NC31/feat/persistent-player-surface (47e60df)
 - Merge branch 'develop' into feat/persistent-player-surface (4dbb85f)
