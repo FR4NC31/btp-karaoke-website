@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 21, 2026
+Last updated: October 23, 2026
 
 ### Features
 
+- feat: add 24-hour booking with date + time slots - Add bookingTime column to schema (time type, nullable) - Split unique constraint into day-only (per-song) and day+time (per-hour) - Add validateBookingTime shared helper - Wire time input in BookingForm for per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering) - Conditional time display in BookingsPanel - isTimeBasedService utility in booking-api - Frontend form shows time picker only for hour-based services (5a99bcf)
 - feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
 - feat(studio): queue playback and shuffle draws (4a286f0)
