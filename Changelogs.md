@@ -86,6 +86,7 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Rename 0007_time_slots_for_services.sql to 0008_time_slots_for_services.sql (d1f1f09)
 - Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (3962b46)
 - Fix: Restore booking-api.ts with request export and isTimeBasedService (650492b)
 - Merge remote changes into feat/persistent-player-surface (aa40aea)
