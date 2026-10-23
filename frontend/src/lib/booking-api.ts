@@ -71,15 +71,17 @@ export function describeBookingError(err: unknown, fallback: string): string {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers)
+  if (init?.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
   let response: Response
   try {
     response = await fetch(path, {
       credentials: 'same-origin',
       ...init,
-      headers: {
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...init?.headers,
-      },
+      headers,
     })
   } catch {
     // fetch only rejects when the request never completed — server down,
@@ -146,5 +148,5 @@ export function cancelBooking(id: string): Promise<{ booking: Booking }> {
  *  it is billed per day / per song / per plan (date-only booking). */
 export function isTimeBasedService(service: Service): boolean {
   const unit = (service.unit ?? '').toLowerCase()
-  return unit.includes('hour') || unit.includes('hr')
+  return /\b(hour|hr|minute|min)(?:ly|s)?\b/.test(unit)
 }
