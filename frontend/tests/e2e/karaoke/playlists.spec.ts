@@ -26,6 +26,10 @@ test.describe('playlists', () => {
     await expect(cards.filter({ hasText: 'New Playlist' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'New Playlist' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Filter playlists' })).toBeVisible()
+
+    const coverBox = await cards.first().locator('div.aspect-square').first().boundingBox()
+    expect(coverBox).not.toBeNull()
+    expect(coverBox!.width).toBeCloseTo(coverBox!.height, 0)
   })
 
   test('PLAYLIST-002: the genre filter narrows the saved sets', { tag: '@p1' }, async ({ page }) => {
@@ -111,6 +115,11 @@ test.describe('playlists', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Add to playlist' })
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByText(/Already added to 3 playlists/i)).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /Late Night OPM/ })).toBeDisabled()
+    await expect(dialog.getByRole('button', { name: /Late Night OPM/ })).toContainText(
+      'Already in this playlist',
+    )
     const acoustic = dialog.getByRole('button', { name: /Acoustic Reset/ })
     await acoustic.click()
     await expect(acoustic).toBeDisabled()

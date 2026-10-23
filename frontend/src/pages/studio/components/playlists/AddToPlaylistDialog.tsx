@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  InformationCircleIcon,
   MusicNote02Icon,
   PlusSignIcon,
   Tick02Icon,
@@ -28,6 +29,11 @@ type AddToPlaylistDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   song: AddToPlaylistSong
+}
+
+function summarizeNames(names: string[]): string {
+  if (names.length <= 2) return names.join(' and ')
+  return `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
 }
 
 function SongThumb({ song }: { song: AddToPlaylistSong }) {
@@ -58,6 +64,9 @@ export default function AddToPlaylistDialog({
 }: AddToPlaylistDialogProps) {
   const { userPlaylists, addTrack, createPlaylist } = usePlaylistLibrary()
   const [newName, setNewName] = useState('')
+  const alreadyIn = userPlaylists.filter((playlist) =>
+    playlist.tracks.some((track) => sameTrack(track, song)),
+  )
 
   function handleOpenChange(next: boolean) {
     if (!next) setNewName('')
@@ -92,6 +101,27 @@ export default function AddToPlaylistDialog({
           </div>
         </div>
 
+        {alreadyIn.length > 0 ? (
+          <div
+            role="status"
+            className="mx-3 mt-3 flex gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5"
+          >
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              size={15}
+              className="mt-0.5 shrink-0 text-warning"
+            />
+            <p className="text-[11px] leading-relaxed text-text-secondary">
+              <span className="font-semibold text-warning">
+                Already added to {alreadyIn.length}{' '}
+                {alreadyIn.length === 1 ? 'playlist' : 'playlists'}:
+              </span>{' '}
+              {summarizeNames(alreadyIn.map((playlist) => playlist.name))}. You can still add it
+              to another set.
+            </p>
+          </div>
+        ) : null}
+
         <div className="min-h-0 overflow-y-auto px-3 py-3">
           <ul className="space-y-1">
             {userPlaylists.map((playlist) => {
@@ -114,8 +144,15 @@ export default function AddToPlaylistDialog({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">{playlist.name}</span>
-                      <span className="mt-0.5 block text-[10px] text-text-muted">
-                        {playlist.tracks.length} {playlist.tracks.length === 1 ? 'song' : 'songs'}
+                      <span
+                        className={cn(
+                          'mt-0.5 block text-[10px]',
+                          added ? 'text-primary/80' : 'text-text-muted',
+                        )}
+                      >
+                        {added
+                          ? 'Already in this playlist'
+                          : `${playlist.tracks.length} ${playlist.tracks.length === 1 ? 'song' : 'songs'}`}
                       </span>
                     </span>
                     <span

@@ -39,7 +39,15 @@ export default function StudioTopBar() {
             <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
           </Link>
         )}
-        <BrandLogo className="size-9 shrink-0 rounded-md" />
+        <Link
+          to="/studio"
+          aria-label="Studio home"
+          title="Studio home"
+          aria-current={pathname === '/studio' ? 'page' : undefined}
+          className="shrink-0 rounded-md outline-primary/60 transition hover:opacity-90 focus-visible:outline-2 focus-visible:-outline-offset-2"
+        >
+          <BrandLogo className="size-9 shrink-0 rounded-md" />
+        </Link>
         <div className="hidden leading-tight sm:block">
           <div className="flex items-center gap-2">
             <p className="font-heading text-lg font-bold tracking-wide">BTP MUSIC PRODUCTION</p>

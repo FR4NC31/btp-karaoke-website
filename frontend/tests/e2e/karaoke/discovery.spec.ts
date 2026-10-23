@@ -884,4 +884,13 @@ test.describe('karaoke discovery', () => {
     await expect.poll(stageTime).toBeLessThan(1)
     await expect.poll(stagePaused).toBe(false)
   })
+
+  test('KARAOKE-022: the studio logo returns to the hub', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/studio/playlists')
+    const logo = page.getByRole('banner').getByRole('link', { name: 'Studio home' })
+    await expect(logo).toBeVisible()
+    await logo.click()
+    await expect(page).toHaveURL('/studio')
+    await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
+  })
 })

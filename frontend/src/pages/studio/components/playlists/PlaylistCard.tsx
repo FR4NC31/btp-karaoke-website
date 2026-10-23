@@ -87,8 +87,14 @@ export default function PlaylistCard({
           'pointer-events-none opacity-0 motion-safe:-translate-y-1 motion-safe:scale-[0.98]',
       )}
     >
-      <div className="relative aspect-square">
-        <PlaylistMosaic tracks={playlist.tracks} tone={playlist.tone} byTitle={byTitle} />
+      <div className="relative aspect-square w-full overflow-hidden bg-surface-elevated">
+        <div aria-hidden="true" className="pt-[100%]" />
+        <PlaylistMosaic
+          tracks={playlist.tracks}
+          tone={playlist.tone}
+          byTitle={byTitle}
+          className="absolute inset-0"
+        />
         <span className="pointer-events-none absolute top-3 left-3 z-10 rounded border border-white/10 bg-black/55 px-2 py-0.5 text-[9px] font-bold tracking-[0.14em] text-primary uppercase backdrop-blur">
           Playlist
         </span>
