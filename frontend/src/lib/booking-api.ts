@@ -35,7 +35,7 @@ export interface Booking {
   pricePhp: number
   /** Whole day, `YYYY-MM-DD`. */
   bookingDate: string
-  /** Optional time slot `HH:MM` for per-hour services. NULL = per-day booking. */
+  /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. */
   bookingTime: string | null
   status: BookingStatus
   notes: string | null

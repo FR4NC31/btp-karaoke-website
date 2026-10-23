@@ -57,7 +57,7 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const bookingTime = validateBookingTime(input.bookingTime)
+  const bookingTime = validateBookingTime(input.bookingTime, input.bookingDate)
   const notes = validateNotes(input.notes)
 
   await assertServiceAvailable(input.serviceId)
@@ -80,9 +80,13 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     }
     return created
   } catch (err) {
-    // Only booking_active_unique_idx means "duplicate booking"; a reference
-    // code collision was already retried by insertBookingRow.
-    if (uniqueViolationConstraint(err) === 'booking_active_unique_idx') {
+    // Handle both day-wide and time-slot unique constraint violations
+    const constraint = uniqueViolationConstraint(err)
+    if (
+      constraint === 'booking_active_day_unique_idx' ||
+      constraint === 'booking_active_time_unique_idx' ||
+      constraint === 'booking_active_unique_idx'
+    ) {
       throw new BookingError('You already have a booking for that service on that day.', 409)
     }
     throw err

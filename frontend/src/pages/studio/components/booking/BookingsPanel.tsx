@@ -51,10 +51,7 @@ export default function BookingsPanel({
                   </span>
                 </div>
                 <p className="mt-1.5 text-sm text-text-secondary">
-                  {formatDay(booking.bookingDate)}
-                  {booking.bookingTime ? ` · ${booking.bookingTime}` : ''}
-                  {booking.bookingTime ? '' : ' · all day'}
-                  · {peso.format(booking.pricePhp)}
+                  {booking.bookingTime ? `${formatDay(booking.bookingDate)} · ${booking.bookingTime} · ${peso.format(booking.pricePhp)}` : `${formatDay(booking.bookingDate)} · all day · ${peso.format(booking.pricePhp)}`}
                 </p>
                 <p className="mt-1 text-[11px] tracking-widest text-text-muted uppercase">
                   {booking.referenceCode}

@@ -97,7 +97,7 @@ export default function BookingForm({
               className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
             />
             <p className="mt-1.5 text-[11px] text-text-muted">
-              24-hour clock — book any slot that works for your timezone.
+              24-hour clock — time is in studio (PH) timezone
             </p>
           </div>
         )}

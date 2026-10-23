@@ -75,7 +75,7 @@ export default function Services() {
           <SectionEyebrow>Services</SectionEyebrow>
         </div>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-text-secondary">
-          BTP Music Production provides music production, recording, artist development, live entertainment,
+          BTP Music Production provides music production, recording, artist development,
           karaoke music video production, online studio services, and online music subscriptions. We support
           singers, songwriters, composers, musicians, and independent artists in producing, developing, and
           promoting their music — with a focus on the growth of Original Philippine Music (OPM).

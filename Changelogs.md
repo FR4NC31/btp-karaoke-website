@@ -2,9 +2,12 @@
 
 ## Unreleased
 
-Last updated: October 21, 2026
+Last updated: October 23, 2026
 
 ### Features
+- feat: add 24-hour booking with date + time slots
+
+### Bug Fixes
 
 - feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)

@@ -146,7 +146,7 @@ export default function BookingPage() {
       setSelected(null)
       setNotes('')
       setFlash(
-        `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} — reference ${booking.referenceCode}.`,
+        `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} ${booking.bookingTime ? `at ${booking.bookingTime}` : ''} — reference ${booking.referenceCode}.`,
       )
       void refreshBookingsQuietly()
     } catch (err) {

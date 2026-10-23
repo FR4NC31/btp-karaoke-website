@@ -212,14 +212,18 @@ export async function createBookingForOthers(
     return created
   } catch (err) {
     const constraint = uniqueViolationConstraint(err)
-    if (
-      constraint === 'booking_active_day_unique_idx' ||
-      constraint === 'booking_active_time_unique_idx'
-    ) {
+    if (constraint === 'booking_active_day_unique_idx') {
       // Applies to a tagged user; guest rows never enter these indexes, so
       // this fires only for the registered-customer path.
       throw new BookingError(
         'That customer already has a live booking for this service on that day.',
+        409,
+      )
+    }
+    if (constraint === 'booking_active_time_unique_idx') {
+      // Slot-specific: another booking already exists at this exact time
+      throw new BookingError(
+        'That customer already has a booking for this service at this time slot.',
         409,
       )
     }

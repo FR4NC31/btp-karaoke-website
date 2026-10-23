@@ -238,7 +238,7 @@ export const matrix = [
 ]
 
 export const filters = [
-  { id: 'all', label: 'All Services', hint: '(10)' },
+  { id: 'all', label: 'All Services', hint: `(${wings.reduce((n, w) => n + w.cards.length, 0)})` },
   { id: 'create', label: 'Create', hint: '(Production)' },
   { id: 'promote', label: 'Promote', hint: '(Studio + Streaming)' },
   { id: 'learn', label: 'Learn', hint: '(Lessons)' },

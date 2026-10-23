@@ -193,12 +193,21 @@ export function validateBookingDay(raw: unknown): string {
 
 /** Validates an optional `HH:MM` time slot. 24-hour clock — no open/closing
  *  restriction so overseas clients in any timezone can book. Returns null when
- *  not provided (per-day booking). */
-export function validateBookingTime(raw: unknown): string | null {
+ *  not provided (per-day booking). Also rejects past same-day slots in
+ *  STUDIO_TIMEZONE so a slot that has already passed today is rejected. */
+export function validateBookingTime(raw: unknown, date: string): string | null {
   const bookingTime = typeof raw === 'string' ? raw.trim() : null
   if (!bookingTime) return null
   if (!ISO_TIME.test(bookingTime)) {
     throw new BookingError('Pick a time in HH:MM format (24-hour clock).', 400)
+  }
+  // Reject past same-day slots in studio timezone
+  const now = new Date()
+  const today = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }))
+  const combined = new Date(`${date}T${bookingTime}:00`.replace('T', ' ')).toLocaleString('en-US', { timeZone: 'Asia/Manila' })
+  const bookingDateTimeObj = new Date(combined)
+  if (bookingDateTimeObj < today) {
+    throw new BookingError('Cannot book a time slot that has already passed.', 400)
   }
   return bookingTime
 }

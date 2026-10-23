@@ -193,10 +193,10 @@ export const booking = pgTable(
     serviceId: text('serviceId')
       .notNull()
       .references(() => service.id, { onDelete: 'restrict' }),
-    /** Whole day, ISO `YYYY-MM-DD`. No time component yet. */
+    /** Whole day, ISO `YYYY-MM-DD`. No time component. bookingTime holds the per-hour slot when set. */
     bookingDate: date('bookingDate', { mode: 'string' }).notNull(),
-    /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. */
-    bookingTime: time('bookingTime', { withTimezone: true }),
+    /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. Time is stored in studio local time (PH timezone). */
+    bookingTime: time('bookingTime'),
     /**
      * pending is what an admin later acts on: confirmed | rejected.
      * cancelled is the customer withdrawing; completed follows the session.
