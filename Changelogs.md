@@ -5,10 +5,8 @@
 Last updated: October 23, 2026
 
 ### Features
-feat: add 24-hour booking with date + time slots
 
-### Bug Fixes
-
+- feat: 24-hour booking system with date + time slot inputs (b1e0f8e)
 - feat: add 24-hour booking with date + time slots - Add bookingTime column to schema (time type, nullable) - Split unique constraint into day-only (per-song) and day+time (per-hour) - Add validateBookingTime shared helper - Wire time input in BookingForm for per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering) - Conditional time display in BookingsPanel - isTimeBasedService utility in booking-api - Frontend form shows time picker only for hour-based services (5a99bcf)
 - feat(studio): persist player across navigation (82d46e0)
 - feat(studio): add player queue navigation (e260555)
@@ -88,6 +86,9 @@ feat: add 24-hour booking with date + time slots
 
 ### Other Changes
 
+- Merge remote changes into feat/persistent-player-surface (aa40aea)
+- Fix 15 persistent codebase violations (0f63bea)
+- Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (d811ebd)
 - Merge pull request #27 from FR4NC31/feat/player-queue-navigation (fa8ccd0)
 - docs(test): align queue navigation case with coverage (598b8a4)
 - Merge pull request #26 from FR4NC31/perf/auth-joins-better-auth-1.7.12 (d86a5ab)
