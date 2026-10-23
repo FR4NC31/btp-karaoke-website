@@ -161,7 +161,7 @@ export async function createBookingForOthers(
   input: CreateBookingForOthersInput,
 ): Promise<AdminBooking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const bookingTime = validateBookingTime(input.bookingTime)
+  const bookingTime = validateBookingTime(input.bookingTime, bookingDate)
   const notes = validateNotes(input.notes)
 
   const userId = input.userId?.trim() || null
