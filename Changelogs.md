@@ -41,6 +41,8 @@ Last updated: October 23, 2026
 
 ### Bug Fixes
 
+- fix(db): make the time-slot migration apply (2e4950c)
+- fix(booking): restore full booking API client (cdf5bf0)
 - fix: got fixed(maybe) (20db0c3)
 - fix(studio): toggle playlist detail shuffle mode (dbacdc1)
 - fix: changing skeleton loading in profile page (4b5387a)
@@ -97,6 +99,7 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Merge pull request #38 from FR4NC31/feat/persistent-player-surface (47e60df)
 - Merge branch 'develop' into feat/persistent-player-surface (4dbb85f)
 - Rename 0007_time_slots_for_services.sql to 0008_time_slots_for_services.sql (d1f1f09)
 - Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (3962b46)
