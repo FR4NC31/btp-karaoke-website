@@ -97,12 +97,14 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into feat/persistent-player-surface (4dbb85f)
 - Rename 0007_time_slots_for_services.sql to 0008_time_slots_for_services.sql (d1f1f09)
 - Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (3962b46)
 - Fix: Restore booking-api.ts with request export and isTimeBasedService (650492b)
 - Merge remote changes into feat/persistent-player-surface (aa40aea)
 - Fix 15 persistent codebase violations (0f63bea)
 - Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (d811ebd)
+- Merge pull request #35 from FR4NC31/feat/playlist-UI (a4a7ad5)
 - Merge pull request #34 from FR4NC31/fix/profile-skeleton-ui (ba3fd58)
 - Merge pull request #33 from FR4NC31/feat/profile-location (9d03d1a)
 - docs(testing): label signup location coverage (cb6d8d9)
@@ -128,7 +130,7 @@ Last updated: October 23, 2026
 - Merge pull request #20 from FR4NC31/fix/pr-smoke-hardening (dec9eab)
 - Merge pull request #19 from FR4NC31/fix/pr-smoke-disposable-db (a0dd29d)
 - Merge pull request #18 from FR4NC31/fix/pr16-review-followups (1ab9066)
-- Merge pull request #17 from FR4NC31/refactor/full-app (e2492bb)
+- Merge pull request #17 from FR4NC31/refactor/full-app (99cf7dc)
 - refactor: split heavy pages and backend modules (e2492bb)
 - Merge pull request #16 from FR4NC31/fix/review-followups-security (85d29a4)
 - Merge pull request #15 from FR4NC31/fix/autoplay-fix (e600593)
