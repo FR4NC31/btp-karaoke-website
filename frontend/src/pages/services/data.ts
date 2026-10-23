@@ -103,7 +103,7 @@ export const wings: Wing[] = [
       },
     ],
     footers: [
-      { unit: 'Per Hour / Per Plan', action: 'Book Studio' },
+      { unit: 'Per Plan', action: 'Subscribe' },
     ],
   },
   {

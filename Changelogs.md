@@ -5,7 +5,7 @@
 Last updated: October 23, 2026
 
 ### Features
-- feat: add 24-hour booking with date + time slots
+feat: add 24-hour booking with date + time slots
 
 ### Bug Fixes
 

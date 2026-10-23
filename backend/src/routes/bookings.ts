@@ -10,9 +10,12 @@ import {
 import { requireSession } from '../session-middleware.ts'
 
 /**
- * The signed-in customer's own reservations. Day-only for now: POST takes a
- * service and a whole day. Time slots and time blocks are a later migration;
- * the status column already carries `pending -> confirmed | rejected` for the
+ * The signed-in customer's own reservations.
+ * POST takes a service, a whole day, and an optional time slot `HH:MM:SS`.
+ * Per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering)
+ * require a time slot; per-day services (Guitar Lessons, etc.) accept date-only.
+ * Time slots and time blocks are now supported via migration 0007.
+ * The status column carries `pending -> confirmed | rejected` for the
  * admin acceptance flow.
  */
 const bookingApi = new Hono()

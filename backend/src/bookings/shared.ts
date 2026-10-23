@@ -203,8 +203,8 @@ export function validateBookingTime(raw: unknown, date: string): string | null {
   }
   // Reject past same-day slots in studio timezone
   const now = new Date()
-  const today = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }))
-  const combined = new Date(`${date}T${bookingTime}:00`.replace('T', ' ')).toLocaleString('en-US', { timeZone: 'Asia/Manila' })
+  const today = new Date(now.toLocaleString('en-US', { timeZone: STUDIO_TIMEZONE }))
+  const combined = new Date(`${date}T${bookingTime}:00`.replace('T', ' ')).toLocaleString('en-US', { timeZone: STUDIO_TIMEZONE })
   const bookingDateTimeObj = new Date(combined)
   if (bookingDateTimeObj < today) {
     throw new BookingError('Cannot book a time slot that has already passed.', 400)

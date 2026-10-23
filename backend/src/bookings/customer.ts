@@ -82,13 +82,13 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   } catch (err) {
     // Handle both day-wide and time-slot unique constraint violations
     const constraint = uniqueViolationConstraint(err)
-    if (
-      constraint === 'booking_active_day_unique_idx' ||
-      constraint === 'booking_active_time_unique_idx' ||
-      constraint === 'booking_active_unique_idx'
-    ) {
+    if (constraint === 'booking_active_day_unique_idx') {
       throw new BookingError('You already have a booking for that service on that day.', 409)
     }
+    if (constraint === 'booking_active_time_unique_idx') {
+      throw new BookingError('That customer already has a booking for this service at this time slot.', 409)
+    }
+    // booking_active_unique_idx is dead since migration 0007 dropped that index
     throw err
   }
 }
