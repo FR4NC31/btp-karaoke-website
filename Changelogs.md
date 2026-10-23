@@ -41,6 +41,7 @@ Last updated: October 23, 2026
 
 ### Bug Fixes
 
+- fix(booking): pass the booking date to the time validator (cdfd89d)
 - fix(db): make the time-slot migration apply (2e4950c)
 - fix(booking): restore full booking API client (cdf5bf0)
 - fix: got fixed(maybe) (20db0c3)
