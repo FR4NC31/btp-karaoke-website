@@ -14,9 +14,12 @@ import {
   type NewTrackInput,
   type Playlist,
   type PlaylistTone,
+  type PlaylistTrack,
+  type TrackIdentity,
 } from '../pages/studio/components/playlists/mock-playlists'
 
 const CREATE_TONES: PlaylistTone[] = ['red', 'rose', 'amber', 'teal', 'charcoal']
+const LIKED_SONGS_ID = 'liked-songs'
 
 function slugify(name: string): string {
   const slug = name
@@ -28,15 +31,33 @@ function slugify(name: string): string {
   return slug || 'playlist'
 }
 
+function toPlaylistTrack(input: NewTrackInput): PlaylistTrack {
+  return {
+    id: crypto.randomUUID(),
+    title: input.title,
+    artist: input.artist,
+    album: input.album ?? '',
+    duration: input.duration ?? '',
+    added: 'Just now',
+    coverUrl: input.coverUrl ?? null,
+    sourceUrl: input.sourceUrl ?? null,
+    mediaId: input.mediaId ?? null,
+    kind: input.kind ?? 'video',
+  }
+}
+
 export interface PlaylistLibraryApi {
   playlists: Playlist[]
   userPlaylists: Playlist[]
   trendingPlaylists: Playlist[]
   likedSongs: Playlist
   createPlaylist: (input: NewPlaylistInput) => Playlist
+  renamePlaylist: (playlistId: string, name: string) => void
   deletePlaylist: (playlistId: string) => void
   addTrack: (playlistId: string, input: NewTrackInput) => void
   removeTrack: (playlistId: string, trackId: string) => void
+  isLiked: (track: TrackIdentity) => boolean
+  toggleLiked: (input: NewTrackInput) => void
   findPlaylist: (id: string) => Playlist | null
 }
 
@@ -59,6 +80,18 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
     return created
   }, [])
 
+  const renamePlaylist = useCallback((playlistId: string, name: string) => {
+    const nextName = name.trim()
+    if (!nextName) return
+    setPlaylists((rows) =>
+      rows.map((playlist) =>
+        playlist.id === playlistId && !playlist.system
+          ? { ...playlist, name: nextName, updated: 'Just now' }
+          : playlist,
+      ),
+    )
+  }, [])
+
   const deletePlaylist = useCallback((playlistId: string) => {
     setPlaylists((rows) =>
       rows.filter((playlist) => playlist.id !== playlistId || playlist.system),
@@ -66,7 +99,6 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
   }, [])
 
   const addTrack = useCallback((playlistId: string, input: NewTrackInput) => {
-    const trackId = crypto.randomUUID()
     setPlaylists((rows) =>
       rows.map((playlist) => {
         if (playlist.id !== playlistId || playlist.system) return playlist
@@ -74,21 +106,7 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
         return {
           ...playlist,
           updated: 'Just now',
-          tracks: [
-            ...playlist.tracks,
-            {
-              id: trackId,
-              title: input.title,
-              artist: input.artist,
-              album: input.album ?? '',
-              duration: input.duration ?? '',
-              added: 'Just now',
-              coverUrl: input.coverUrl ?? null,
-              sourceUrl: input.sourceUrl ?? null,
-              mediaId: input.mediaId ?? null,
-              kind: input.kind ?? 'video',
-            },
-          ],
+          tracks: [...playlist.tracks, toPlaylistTrack(input)],
         }
       }),
     )
@@ -107,17 +125,37 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
     )
   }, [])
 
+  const toggleLiked = useCallback((input: NewTrackInput) => {
+    setPlaylists((rows) =>
+      rows.map((playlist) => {
+        if (playlist.id !== LIKED_SONGS_ID) return playlist
+        const alreadyLiked = playlist.tracks.some((track) => sameTrack(track, input))
+        return {
+          ...playlist,
+          updated: 'Just now',
+          tracks: alreadyLiked
+            ? playlist.tracks.filter((track) => !sameTrack(track, input))
+            : [toPlaylistTrack(input), ...playlist.tracks],
+        }
+      }),
+    )
+  }, [])
+
   const userPlaylists = useMemo(
     () => playlists.filter((playlist) => !playlist.system),
     [playlists],
   )
   const trending = useMemo(
-    () => playlists.filter((playlist) => playlist.system && playlist.id !== 'liked-songs'),
+    () => playlists.filter((playlist) => playlist.system && playlist.id !== LIKED_SONGS_ID),
     [playlists],
   )
   const liked = useMemo(
-    () => playlists.find((playlist) => playlist.id === 'liked-songs') ?? allPlaylists[0]!,
+    () => playlists.find((playlist) => playlist.id === LIKED_SONGS_ID) ?? allPlaylists[0]!,
     [playlists],
+  )
+  const isLiked = useCallback(
+    (track: TrackIdentity) => liked.tracks.some((item) => sameTrack(item, track)),
+    [liked],
   )
   const findPlaylist = useCallback(
     (id: string) => playlists.find((playlist) => playlist.id === id) ?? null,
@@ -131,9 +169,12 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
       trendingPlaylists: trending,
       likedSongs: liked,
       createPlaylist,
+      renamePlaylist,
       deletePlaylist,
       addTrack,
       removeTrack,
+      isLiked,
+      toggleLiked,
       findPlaylist,
     }),
     [
@@ -142,9 +183,12 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
       trending,
       liked,
       createPlaylist,
+      renamePlaylist,
       deletePlaylist,
       addTrack,
       removeTrack,
+      isLiked,
+      toggleLiked,
       findPlaylist,
     ],
   )

@@ -6,19 +6,47 @@ import PlayerBar from './components/PlayerBar'
 import StudioPlayer from './components/StudioPlayer'
 import StudioSkeleton from './components/StudioSkeleton'
 import ProfileSkeleton from './components/profile/ProfileSkeleton'
-import { useKaraokeVideo } from '../../lib/karaoke-player'
+import { useKaraokeVideo, type OnAirTrack } from '../../lib/karaoke-player'
 import { LoungeQueueProvider, useLoungeQueueState } from '../../lib/lounge-queue'
 import { PlaylistLibraryProvider, usePlaylistLibraryState } from '../../lib/playlist-library'
 
 const SKELETON_MS = 3500
+const FALLBACK_ON_AIR: OnAirTrack = {
+  title: 'The Reason',
+  subtitle: 'Hoobastank',
+  src: '',
+  coverUrl: null,
+  kind: 'video',
+  mediaId: null,
+  album: 'KTV Master',
+  duration: '3:54',
+}
 
 export default function StudioShell() {
   const [loading, setLoading] = useState(true)
-  const [liked, setLiked] = useState(false)
   const player = useKaraokeVideo()
   const queue = useLoungeQueueState()
   const playlistLibrary = usePlaylistLibraryState()
   const { pathname } = useLocation()
+  const currentOnAir = player.onAir ?? FALLBACK_ON_AIR
+  const liked = playlistLibrary.isLiked({
+    title: currentOnAir.title,
+    artist: currentOnAir.subtitle,
+    mediaId: currentOnAir.mediaId ?? null,
+  })
+
+  function toggleLiked() {
+    playlistLibrary.toggleLiked({
+      title: currentOnAir.title,
+      artist: currentOnAir.subtitle,
+      album: currentOnAir.album ?? undefined,
+      duration: currentOnAir.duration ?? undefined,
+      coverUrl: currentOnAir.coverUrl,
+      sourceUrl: currentOnAir.src || null,
+      mediaId: currentOnAir.mediaId ?? null,
+      kind: currentOnAir.kind,
+    })
+  }
 
   const onConsole = pathname.startsWith('/studio/player-queue')
   const onProfile = pathname.startsWith('/studio/profile')
@@ -56,11 +84,7 @@ export default function StudioShell() {
       </div>
 
       {showPlayerBar && (
-        <PlayerBar
-          player={player}
-          liked={liked}
-          onToggleLiked={() => setLiked((value) => !value)}
-        />
+        <PlayerBar player={player} liked={liked} onToggleLiked={toggleLiked} />
       )}
     </div>
   )

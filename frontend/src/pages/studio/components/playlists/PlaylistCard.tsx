@@ -20,6 +20,7 @@ type PlaylistCardProps = {
   playlist: Playlist
   byTitle: Map<string, MediaItem>
   onPlay: (playlist: Playlist) => void
+  onRequestRename: (playlist: Playlist) => void
   onRequestDelete: (playlist: Playlist) => void
   removing?: boolean
 }
@@ -27,14 +28,12 @@ type PlaylistCardProps = {
 function MenuRow({
   children,
   disabled,
-  soon,
   destructive,
   onClick,
   to,
 }: {
   children: ReactNode
   disabled?: boolean
-  soon?: boolean
   destructive?: boolean
   onClick?: () => void
   to?: string
@@ -59,11 +58,6 @@ function MenuRow({
   return (
     <button type="button" onClick={onClick} disabled={disabled} className={className}>
       {children}
-      {soon ? (
-        <span className="ml-auto rounded border border-border px-1.5 py-0.5 text-[8px] font-bold tracking-widest uppercase">
-          Soon
-        </span>
-      ) : null}
     </button>
   )
 }
@@ -72,10 +66,13 @@ export default function PlaylistCard({
   playlist,
   byTitle,
   onPlay,
+  onRequestRename,
   onRequestDelete,
   removing = false,
 }: PlaylistCardProps) {
   const titleId = useId()
+  const menuTitleId = useId()
+  const menuDescriptionId = useId()
   const [menuOpen, setMenuOpen] = useState(false)
   const count = playlist.tracks.length
   const duration = playlistDuration(playlist.tracks)
@@ -117,13 +114,18 @@ export default function PlaylistCard({
             side="bottom"
             sideOffset={8}
             collisionPadding={12}
+            aria-labelledby={menuTitleId}
+            aria-describedby={menuDescriptionId}
             className="w-56 border border-border bg-surface p-1.5 text-text-primary shadow-2xl"
           >
             <div className="border-b border-border px-2.5 pt-1.5 pb-2.5">
-              <p className="truncate font-heading text-sm font-bold tracking-wide uppercase">
+              <p
+                id={menuTitleId}
+                className="truncate font-heading text-sm font-bold tracking-wide uppercase"
+              >
                 {playlist.name}
               </p>
-              <p className="mt-0.5 text-[10px] text-text-muted">
+              <p id={menuDescriptionId} className="mt-0.5 text-[10px] text-text-muted">
                 {count} {count === 1 ? 'song' : 'songs'}
                 {empty ? ' · empty playlist' : ` · ${duration}`}
               </p>
@@ -144,7 +146,12 @@ export default function PlaylistCard({
                 Open playlist
               </MenuRow>
               <div className="my-1.5 h-px bg-border" />
-              <MenuRow disabled soon>
+              <MenuRow
+                onClick={() => {
+                  setMenuOpen(false)
+                  onRequestRename(playlist)
+                }}
+              >
                 <HugeiconsIcon icon={PencilEdit01Icon} size={15} />
                 Rename playlist
               </MenuRow>

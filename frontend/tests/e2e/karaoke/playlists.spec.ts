@@ -225,4 +225,65 @@ test.describe('playlists', () => {
     await barShuffle.click()
     await expect(barShuffle).toHaveAttribute('aria-pressed', 'false')
   })
+
+  test('PLAYLIST-011: a saved set can be renamed from its card and detail', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio/playlists')
+
+    const library = page.locator('section[aria-labelledby="your-playlists-heading"]')
+    const card = library.locator('article').filter({ hasText: 'New Set Ideas' })
+    await card.getByRole('button', { name: 'More options for New Set Ideas' }).click()
+    await page.getByRole('button', { name: 'Rename playlist' }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'Rename playlist' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByLabel('Playlist name')).toHaveValue('New Set Ideas')
+    await dialog.getByLabel('Playlist name').fill('Sunday Sessions')
+    await dialog.getByRole('button', { name: 'Save changes' }).click()
+    await expect(dialog).toBeHidden()
+
+    await expect(card).toHaveCount(0)
+    const renamed = library.locator('article').filter({ hasText: 'Sunday Sessions' })
+    await expect(renamed).toHaveCount(1)
+    await renamed.getByRole('link', { name: 'Sunday Sessions', exact: true }).click()
+    await expect(page).toHaveURL('/studio/playlists/new-set-ideas')
+    await expect(page.getByRole('heading', { level: 1, name: 'Sunday Sessions' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Rename Sunday Sessions' }).click()
+    const detailDialog = page.getByRole('dialog', { name: 'Rename playlist' })
+    await detailDialog.getByLabel('Playlist name').fill('Sunday Unplugged')
+    await detailDialog.getByRole('button', { name: 'Save changes' }).click()
+    await expect(detailDialog).toBeHidden()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Sunday Unplugged' }),
+    ).toBeVisible()
+  })
+
+  test('PLAYLIST-012: the player heart fills and clears Liked Songs', { tag: '@p1' }, async ({ page }) => {
+    await page.goto('/studio')
+    await page.getByRole('link', { name: 'Play The Reason' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+
+    const playerBar = page.getByRole('contentinfo')
+    const like = playerBar.getByRole('button', { name: 'Like' })
+    await expect(like).toHaveAttribute('aria-pressed', 'true')
+    await like.click()
+    await expect(like).toHaveAttribute('aria-pressed', 'false')
+
+    await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
+    await expect(page).toHaveURL('/studio/playlists')
+    const liked = page.locator('section[aria-labelledby="liked-songs-heading"]')
+    await expect(liked).toContainText(/0 songs/i)
+    await expect(liked.getByRole('button', { name: 'Play Liked Songs' })).toBeDisabled()
+
+    await page.locator('header').getByRole('link', { name: 'Player Queue' }).click()
+    await expect(page).toHaveURL('/studio/player-queue')
+    const likeAgain = page.getByRole('contentinfo').getByRole('button', { name: 'Like' })
+    await expect(likeAgain).toHaveAttribute('aria-pressed', 'false')
+    await likeAgain.click()
+    await expect(likeAgain).toHaveAttribute('aria-pressed', 'true')
+
+    await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
+    await expect(liked).toContainText(/1 song/i)
+    await expect(liked.getByRole('button', { name: 'Play Liked Songs' })).toBeEnabled()
+  })
 })
