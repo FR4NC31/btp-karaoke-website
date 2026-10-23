@@ -75,8 +75,10 @@ export default function Services() {
           <SectionEyebrow>Services</SectionEyebrow>
         </div>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-text-secondary">
-          Comprehensive audio production, broadcast promotion, musicianship training, and official FILSCAP rights
-          management for Filipino songwriters and artists.
+          BTP Music Production provides music production, recording, artist development, live entertainment,
+          karaoke music video production, online studio services, and online music subscriptions. We support
+          singers, songwriters, composers, musicians, and independent artists in producing, developing, and
+          promoting their music — with a focus on the growth of Original Philippine Music (OPM).
         </p>
       </section>
 

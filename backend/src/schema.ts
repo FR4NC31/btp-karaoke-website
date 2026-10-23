@@ -8,6 +8,7 @@ import {
   numeric,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
@@ -194,6 +195,8 @@ export const booking = pgTable(
       .references(() => service.id, { onDelete: 'restrict' }),
     /** Whole day, ISO `YYYY-MM-DD`. No time component yet. */
     bookingDate: date('bookingDate', { mode: 'string' }).notNull(),
+    /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. */
+    bookingTime: time('bookingTime', { withTimezone: true }),
     /**
      * pending is what an admin later acts on: confirmed | rejected.
      * cancelled is the customer withdrawing; completed follows the session.
@@ -213,13 +216,14 @@ export const booking = pgTable(
     ),
     // Every booking needs an owner: a registered user or a guest name.
     check('booking_owner_check', sql`"userId" is not null or "guestName" is not null`),
-    // One live booking per user, per service, per day. Partial, so a cancelled
-    // or rejected row drops out and the customer can withdraw and rebook.
-    // This is what the API turns into a 409. Guest rows (userId NULL) do not
-    // participate — Postgres unique indexes ignore NULLs — so the admin's own
-    // judgement is the duplicate guard for walk-ins.
-    uniqueIndex('booking_active_unique_idx')
+    // One live booking per user, per service, per day (time = NULL).
+    // Partial: cancelled/rejected rows drop out so the customer can rebook.
+    uniqueIndex('booking_active_day_unique_idx')
       .on(t.userId, t.serviceId, t.bookingDate)
-      .where(sql`"status" in ('pending', 'confirmed')`),
+      .where(sql`"bookingTime" IS NULL AND "status" in ('pending', 'confirmed')`),
+    // One live booking per user, per service, per day AND time slot (time IS NOT NULL).
+    uniqueIndex('booking_active_time_unique_idx')
+      .on(t.userId, t.serviceId, t.bookingDate, t.bookingTime)
+      .where(sql`"bookingTime" IS NOT NULL AND "status" in ('pending', 'confirmed')`),
   ],
 )

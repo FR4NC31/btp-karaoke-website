@@ -8,6 +8,7 @@ import {
   toBooking,
   uniqueViolationConstraint,
   validateBookingDay,
+  validateBookingTime,
   validateNotes,
   type BookingRow,
 } from './shared.ts'
@@ -56,6 +57,7 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const bookingDate = validateBookingDay(input.bookingDate)
+  const bookingTime = validateBookingTime(input.bookingTime)
   const notes = validateNotes(input.notes)
 
   await assertServiceAvailable(input.serviceId)
@@ -65,6 +67,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       userId: input.userId,
       serviceId: input.serviceId,
       bookingDate,
+      bookingTime,
       status: 'pending',
       notes,
     })

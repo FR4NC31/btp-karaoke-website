@@ -22,8 +22,10 @@ export interface Booking {
   serviceName: string
   serviceUnit: string
   pricePhp: number
-  /** Whole day, `YYYY-MM-DD`. No time component yet. */
+  /** Whole day, `YYYY-MM-DD`. */
   bookingDate: string
+  /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. */
+  bookingTime: string | null
   status: BookingStatus
   notes: string | null
   createdAt: string
@@ -73,6 +75,8 @@ export interface CreateBookingInput {
   userId: string
   serviceId: string
   bookingDate: string
+  /** Optional time slot `HH:MM` for per-hour services. Omit for per-day bookings. */
+  bookingTime?: string | null
   notes?: string
 }
 
@@ -83,6 +87,8 @@ export interface CreateBookingForOthersInput {
   guestName?: string
   serviceId: string
   bookingDate: string
+  /** Optional time slot `HH:MM` for per-hour services. Omit for per-day bookings. */
+  bookingTime?: string | null
   notes?: string
 }
 

@@ -8,6 +8,7 @@ import {
   describeBookingError,
   fetchBookings,
   fetchServices,
+  isTimeBasedService,
   type Booking,
   type Service,
 } from '../../lib/booking-api'
@@ -51,6 +52,7 @@ export default function BookingPage() {
   // Booking form — `selected` doubles as "the form is open".
   const [selected, setSelected] = useState<Service | null>(null)
   const [bookingDate, setBookingDate] = useState('')
+  const [bookingTime, setBookingTime] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
@@ -109,6 +111,7 @@ export default function BookingPage() {
     setSelected(service)
     // Pre-fill with the studio's today so the field is never empty on open.
     setBookingDate(studioToday)
+    setBookingTime('')
     setNotes('')
     setFormError('')
     setFlash('')
@@ -123,6 +126,9 @@ export default function BookingPage() {
       return
     }
 
+    // Time-based services require a time slot; per-day services omit it.
+    const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
+
     bookingGeneration.current += 1
     setSubmitting(true)
     setFormError('')
@@ -131,6 +137,7 @@ export default function BookingPage() {
       const { booking } = await createBooking({
         serviceId: selected.id,
         bookingDate,
+        bookingTime: timePayload,
         notes: notes.trim() || undefined,
       })
       // Show the new row immediately, in the server's order, rather than
@@ -194,8 +201,8 @@ export default function BookingPage() {
           </p>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-text-muted">
-          Pick a service and claim a day. Time slots and time blocks are coming — for now a booking
-          covers the whole day.
+          Per-hour services (recording, coaching, studio) book a date + time slot — open 24 hours.
+          Per-song services (arranging, karaoke MV, FILSCAP) book per day.
         </p>
       </header>
 
@@ -245,6 +252,8 @@ export default function BookingPage() {
             studioToday={studioToday}
             bookingDate={bookingDate}
             onDateChange={setBookingDate}
+            bookingTime={bookingTime}
+            onTimeChange={setBookingTime}
             notes={notes}
             onNotesChange={setNotes}
             formError={formError}

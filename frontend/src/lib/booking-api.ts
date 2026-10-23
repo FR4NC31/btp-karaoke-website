@@ -33,8 +33,10 @@ export interface Booking {
   serviceName: string
   serviceUnit: string
   pricePhp: number
-  /** Whole day, `YYYY-MM-DD` — no time component yet. */
+  /** Whole day, `YYYY-MM-DD`. */
   bookingDate: string
+  /** Optional time slot `HH:MM` for per-hour services. NULL = per-day booking. */
+  bookingTime: string | null
   status: BookingStatus
   notes: string | null
   createdAt: string
@@ -127,6 +129,7 @@ export function fetchBookings(): Promise<{ bookings: Booking[]; studioToday: str
 export function createBooking(input: {
   serviceId: string
   bookingDate: string
+  bookingTime?: string | null
   notes?: string
 }): Promise<{ booking: Booking }> {
   return request('/api/bookings', {
@@ -137,4 +140,11 @@ export function createBooking(input: {
 
 export function cancelBooking(id: string): Promise<{ booking: Booking }> {
   return request(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
+}
+
+/** True when the service is billed per hour (needs a time slot), false when
+ *  it is billed per day / per song / per plan (date-only booking). */
+export function isTimeBasedService(service: Service): boolean {
+  const unit = (service.unit ?? '').toLowerCase()
+  return unit.includes('hour') || unit.includes('hr')
 }

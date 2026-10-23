@@ -13,17 +13,16 @@ export default function ServicesCta() {
             Ready to bring your music to life?
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-text-secondary">
-            Whether you need audio recording, complete arrangement, or guidance protecting your copyright with
-            FILSCAP, our team at BTP Music Production is ready to help.
+            Booking is simple: contact us, tell us your project, confirm the rate and schedule, then lock in
+            your session. All bookings are subject to availability and confirmation.
           </p>
         </div>
         <div>
-          <p className="font-heading text-xl font-bold tracking-wide uppercase">Contact our production desk</p>
           <Link
             to="/contact"
             className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-6 py-3 font-medium text-text-secondary transition hover:text-text-primary"
           >
-            Contact the production desk
+            Contact BTP Music Production
             <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
           </Link>
         </div>
