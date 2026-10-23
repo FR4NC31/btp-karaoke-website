@@ -6,6 +6,7 @@ Last updated: October 23, 2026
 
 ### Features
 
+- feat(playlists): move add notice to a 2s toast (31b9d3a)
 - feat(studio): polish playlist covers and logo home (8e08787)
 - feat(playlists): wire liked songs and rename (e921a06)
 - feat: 24-hour booking system with date + time slot inputs (b1e0f8e)
