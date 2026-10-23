@@ -41,6 +41,7 @@ Last updated: October 23, 2026
 
 ### Bug Fixes
 
+- fix(booking): preserve request headers and classify minute slots (c750291)
 - fix(booking): pass the booking date to the time validator (cdfd89d)
 - fix(db): make the time-slot migration apply (2e4950c)
 - fix(booking): restore full booking API client (cdf5bf0)
@@ -93,6 +94,7 @@ Last updated: October 23, 2026
 
 ### Chores
 
+- chore(db): add the 0008 migration snapshot (5e57cda)
 - chore: update Aiven CA cert after service rotation (63d0527)
 - chore: exclude protected branches from changelog bot pushes (6fe9e6a)
 - chore: show date only in changelog (fa81fde)
