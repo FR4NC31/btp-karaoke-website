@@ -144,8 +144,8 @@ export function cancelBooking(id: string): Promise<{ booking: Booking }> {
   return request(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
 }
 
-/** True when the service is billed per hour (needs a time slot), false when
- *  it is billed per day / per song / per plan (date-only booking). */
+/** True when the service is billed per hour or minute (needs a time slot),
+ *  false when it is billed per day / per song / per plan (date-only booking). */
 export function isTimeBasedService(service: Service): boolean {
   const unit = (service.unit ?? '').toLowerCase()
   return /\b(hour|hr|minute|min)(?:ly|s)?\b/.test(unit)
