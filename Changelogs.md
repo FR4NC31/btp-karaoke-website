@@ -86,6 +86,8 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (3962b46)
+- Fix: Restore booking-api.ts with request export and isTimeBasedService (650492b)
 - Merge remote changes into feat/persistent-player-surface (aa40aea)
 - Fix 15 persistent codebase violations (0f63bea)
 - Merge branch 'feat/persistent-player-surface' of https://github.com/FR4NC31/btp-karaoke-website into feat/persistent-player-surface (d811ebd)
