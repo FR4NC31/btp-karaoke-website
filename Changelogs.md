@@ -41,6 +41,7 @@ Last updated: October 23, 2026
 
 ### Bug Fixes
 
+- fix(db): recreate booking indexes in migration 0008 (3603758)
 - fix(booking): preserve request headers and classify minute slots (c750291)
 - fix(booking): pass the booking date to the time validator (cdfd89d)
 - fix(db): make the time-slot migration apply (2e4950c)
