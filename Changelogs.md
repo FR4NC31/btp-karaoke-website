@@ -103,6 +103,7 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- docs(booking): note minute-based time slots (61628ce)
 - Merge pull request #38 from FR4NC31/feat/persistent-player-surface (47e60df)
 - Merge branch 'develop' into feat/persistent-player-surface (4dbb85f)
 - Rename 0007_time_slots_for_services.sql to 0008_time_slots_for_services.sql (d1f1f09)
