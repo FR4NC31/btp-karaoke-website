@@ -109,8 +109,9 @@ frontend/tests/e2e/
 ├── auth/signup.spec.ts          AUTH-010…014, 022 registration + contact + location rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── karaoke/discovery.spec.ts    KARAOKE-001…021 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle
+├── karaoke/playlists.spec.ts    PLAYLIST-001…010 playlists library, detail, create/add/remove/delete, skeletons, shuffle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
-├── booking/booking.spec.ts      BOOKING-001…007  booking desk (day-only), nav, filters
+├── booking/booking.spec.ts      BOOKING-001…009  booking desk: nav, filters, day + time-slot bookings, uniqueness
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
 ├── profile/profile.spec.ts      PROFILE-001…003 profile menu → account page, tabs, location cascade + save
@@ -219,21 +220,27 @@ What the product actually implements today (test coverage is limited to this):
 | Song detail / lyrics page        | Does not exist        | —                         |
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
 | Previous/Next/Shuffle/Repeat     | Working through the persistent transport on every studio route: repeat cycles off → all → one (all wraps the queue; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. The handlers stay attached while the player is mini/hidden, so skips work from the bar too; they are inert when no playable queue rows exist. | KARAOKE-014/015 |
+| Playlists library                | Working — playlist state is in-memory (`mock-playlists.ts`, reload reseeds); `/api/media` supplies catalog matching and playback metadata; Liked Songs strip, mosaic of 5 saved sets, genre filter, component-shaped skeleton | PLAYLIST-001/002/008 |
+| Playlist detail & management     | Working — tracklist hands over to the console; create, add-song-from-card, remove-song, delete and detail shuffle toggle all act on the in-memory catalog (reload reseeds) | PLAYLIST-003/004/005/006/007/009/010 |
 
 ## Booking desk testing
 
 `/studio/bookings` is built on **application-owned tables** (`service` +
 `booking`), like the media hub catalog behind `/studio` (`media_item`).
-Day-only by design: a booking claims one whole calendar day of one service —
-there is no time slot or time block yet, and no payment.
+Per-day services claim one whole calendar day; per-hour / per-minute services
+(Music Studio Recording, Studio Radio Online) also require a time slot in
+`HH:MM` (24-hour, PH timezone) — migration 0008 added `bookingTime` plus the
+day-wide and time-slot partial unique indexes. There is still no payment.
 
 | Feature                                 | Status                                    | Tests               |
 | --------------------------------------- | ----------------------------------------- | ------------------- |
 | Service catalog (8 seeded services)     | Working — real rows from `/api/services`  | BOOKING-001/003     |
 | Wing filter                             | Working (client-side filter)              | BOOKING-003         |
 | Create a day booking                    | Working (writes a row, `pending`)         | BOOKING-004         |
-| Cancel a pending booking                | Working (row kept as `cancelled` for audit) | BOOKING-004       |
-| One live booking per service per day    | Working (partial unique index → 409)      | BOOKING-005         |
+| Create a time-slot booking              | Working — hourly services show a required **Session time** field; the row shows the slot instead of "all day" | BOOKING-008 |
+| Cancel a pending booking                | Working (row kept as `cancelled` for audit) | BOOKING-004/008/009 |
+| One live booking per customer per service per day (date-only) | Working (partial unique index → 409) | BOOKING-005      |
+| One live booking per customer per slot (timed) | Working — the same customer's slot 409s, a different slot on the same day succeeds (`booking_active_time_unique_idx`) | BOOKING-009 |
 | Entry points (top bar + sidebar)        | Working — both are load-bearing, one is the mobile route | BOOKING-001/002/006 |
 | Signed-out access                       | Blocked by `RequireAuth`                  | BOOKING-007         |
 | Admin confirm / reject                  | Working — the `/admin` queue answers pending reservations | ADMIN-002/003 |

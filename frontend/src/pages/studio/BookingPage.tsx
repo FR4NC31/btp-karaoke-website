@@ -21,9 +21,10 @@ import { WING_LABELS } from './components/booking/constants'
 /**
  * /studio/bookings — the booking desk.
  *
- * Day-only prototype: pick a service from the catalog and claim a whole day.
- * There is no time slot or time block yet — that arrives as its own migration,
- * and `service.durationDays` is turnaround metadata, not a claim on extra days.
+ * Per-day services claim a whole day; per-hour/minute services also take a
+ * time slot (`HH:MM`, PH timezone) — migration 0008 added `bookingTime` plus
+ * the day-wide and time-slot uniqueness indexes it sits under.
+ * `service.durationDays` is turnaround metadata, not a claim on extra days.
  *
  * Every booking is created `pending`, which is the state an admin will later
  * confirm or reject (no online payment). The status column already carries
