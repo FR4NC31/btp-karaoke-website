@@ -919,11 +919,13 @@ set detail.
 
 ## Booking desk — `frontend/tests/e2e/booking/booking.spec.ts`
 
-Day-only prototype: a booking claims one whole calendar day of one service.
-There are no time slots or time blocks yet, so no case here may assert on a
-time of day. Every booking created is cancelled again by the same test — the
-database allows only one *live* booking per service per day, and all suites
-share one account, so a leaked `pending` row would break the next run. Days are
+Per-day services claim one whole calendar day of one service, while per-hour /
+per-minute services (Music Studio Recording, Studio Radio Online) also require a
+time slot in `HH:MM` (24-hour clock, PH timezone). Migration 0008 replaced the
+old day-wide unique index with two partial indexes — day-without-time and
+day-with-time — so the same service can be held at different slots on the same
+day, but not twice at the same slot. Every booking created is cancelled again by
+the same test — a leaked `pending` row would break the next run. Days are
 randomised 400–699 days out so parallel workers cannot collide either.
 
 ### BOOKING-001
@@ -1002,6 +1004,31 @@ randomised 400–699 days out so parallel workers cannot collide either.
 - **Priority:** P2
 - **Steps:** 1. Without a session, open `/studio/bookings` directly.
 - **Expected:** Redirect to `/signin`; no "Booking Desk" content is ever shown.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-008
+
+- **Title:** A time-based service books a date with a time slot
+- **Priority:** P1
+- **Steps:** 1. Open the desk. 2. On the Music Studio Recording card (billed
+  per hour) click **Book this service**. 3. Confirm a **Session time** field is
+  shown. 4. Choose a day ~1–2 years out, fill `14:30`, add notes, confirm.
+  5. Cancel the new row.
+- **Expected:** The confirmation flash carries a reference; the row lists as
+  **pending** with the `14:30` slot (not "all day") and the notes; cancelling
+  flips it to **cancelled**.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-009
+
+- **Title:** The same time slot cannot be booked twice, but another slot can
+- **Priority:** P2
+- **Steps:** 1. On the Studio Radio Online card, book a day ~1–2 years out at
+  09:00. 2. Submit the same day and slot again. 3. Then book the same service
+  and day at 10:45. 4. Cancel both rows.
+- **Expected:** The duplicate slot shows an alert containing "time slot";
+  the second, different slot succeeds — proving the day-wide index no longer
+  blocks a time-based service at another time.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
