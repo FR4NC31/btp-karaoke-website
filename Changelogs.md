@@ -106,6 +106,8 @@ Last updated: October 24, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into qa/align-suite-time-slots-and-location (8d910e4)
+- Merge pull request #40 from FR4NC31/feat/playlist-polish (6067276)
 - test(booking): tighten slot docs and required-assert per review (3259576)
 - test(booking): cover time-slot bookings in E2E suite (be7a819)
 - Merge pull request #39 from FR4NC31/fix/restore-booking-api (596ba18)
