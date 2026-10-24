@@ -107,7 +107,8 @@ Last updated: October 24, 2026
 
 ### Other Changes
 
-- Merge pull request #40 from FR4NC31/feat/playlist-polish (6067276)
+- Merge branch 'develop' into fix/new-services-info (58e715d)
+- Merge pull request #41 from FR4NC31/qa/align-suite-time-slots-and-location (a65221c)
 - Merge branch 'develop' into qa/align-suite-time-slots-and-location (8d910e4)
 - Merge pull request #40 from FR4NC31/feat/playlist-polish (6067276)
 - test(booking): tighten slot docs and required-assert per review (3259576)
