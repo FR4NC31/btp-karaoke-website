@@ -220,7 +220,7 @@ What the product actually implements today (test coverage is limited to this):
 | Song detail / lyrics page        | Does not exist        | —                         |
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
 | Previous/Next/Shuffle/Repeat     | Working through the persistent transport on every studio route: repeat cycles off → all → one (all wraps the queue; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. The handlers stay attached while the player is mini/hidden, so skips work from the bar too; they are inert when no playable queue rows exist. | KARAOKE-014/015 |
-| Playlists library                | Working — in-memory catalog (`mock-playlists.ts`, no API); Liked Songs strip, mosaic of 5 saved sets, genre filter, component-shaped skeleton | PLAYLIST-001/002/008 |
+| Playlists library                | Working — playlist state is in-memory (`mock-playlists.ts`, reload reseeds); `/api/media` supplies catalog matching and playback metadata; Liked Songs strip, mosaic of 5 saved sets, genre filter, component-shaped skeleton | PLAYLIST-001/002/008 |
 | Playlist detail & management     | Working — tracklist hands over to the console; create, add-song-from-card, remove-song, delete and detail shuffle toggle all act on the in-memory catalog (reload reseeds) | PLAYLIST-003/004/005/006/007/009/010 |
 
 ## Booking desk testing
@@ -239,8 +239,8 @@ day-wide and time-slot partial unique indexes. There is still no payment.
 | Create a day booking                    | Working (writes a row, `pending`)         | BOOKING-004         |
 | Create a time-slot booking              | Working — hourly services show a required **Session time** field; the row shows the slot instead of "all day" | BOOKING-008 |
 | Cancel a pending booking                | Working (row kept as `cancelled` for audit) | BOOKING-004/008/009 |
-| One live booking per service per day (date-only) | Working (partial unique index → 409) | BOOKING-005      |
-| One live booking per slot (timed)       | Working — same slot 409s, a different slot on the same day succeeds (`booking_active_time_unique_idx`) | BOOKING-009 |
+| One live booking per customer per service per day (date-only) | Working (partial unique index → 409) | BOOKING-005      |
+| One live booking per customer per slot (timed) | Working — the same customer's slot 409s, a different slot on the same day succeeds (`booking_active_time_unique_idx`) | BOOKING-009 |
 | Entry points (top bar + sidebar)        | Working — both are load-bearing, one is the mobile route | BOOKING-001/002/006 |
 | Signed-out access                       | Blocked by `RequireAuth`                  | BOOKING-007         |
 | Admin confirm / reject                  | Working — the `/admin` queue answers pending reservations | ADMIN-002/003 |

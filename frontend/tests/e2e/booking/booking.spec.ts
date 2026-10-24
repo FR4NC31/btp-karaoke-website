@@ -150,6 +150,9 @@ test.describe('booking desk', () => {
 
     const timeField = page.getByLabel('Session time')
     await expect(timeField).toBeVisible()
+    // Regression guard: a backslide that renders the time field but lets an
+    // hourly booking submit without a slot must fail here.
+    await expect(timeField).toHaveAttribute('required', '')
 
     await page.getByLabel('Session date').fill(day)
     await timeField.fill('14:30')

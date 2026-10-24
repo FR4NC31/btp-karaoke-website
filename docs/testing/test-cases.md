@@ -923,10 +923,11 @@ Per-day services claim one whole calendar day of one service, while per-hour /
 per-minute services (Music Studio Recording, Studio Radio Online) also require a
 time slot in `HH:MM` (24-hour clock, PH timezone). Migration 0008 replaced the
 old day-wide unique index with two partial indexes — day-without-time and
-day-with-time — so the same service can be held at different slots on the same
-day, but not twice at the same slot. Every booking created is cancelled again by
-the same test — a leaked `pending` row would break the next run. Days are
-randomised 400–699 days out so parallel workers cannot collide either.
+day-with-time, both keyed on the customer — so one customer cannot hold the
+same service at two slots on one day, but two different customers can book the
+same service, day, or slot independently. Every booking created is cancelled
+again by the same test — a leaked `pending` row would break the next run. Days
+are randomised 400–699 days out so parallel workers cannot collide either.
 
 ### BOOKING-001
 
@@ -1259,6 +1260,6 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
 | Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 - reaches `/studio`, multi-line lyrics stored on music rows and kept staff-only: the public `/api/media` payload omits them), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 - stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 - tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 - **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |
-| Time-slot / time-block booking         | N/A                   | Day-only by design for now: a booking claims a whole calendar day. |
-| Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…007; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
+| Time-slot / time-block booking         | Partial               | Time **slots** shipped (migration 0008) and are covered: per-hour services require a `HH:MM` slot, and the customer-scoped uniqueness is pinned by BOOKING-008/009. Time **blocks** (claiming a half-day/multi-hour range as a unit) remain unimplemented. |
+| Backend booking API (`/api/services`, `/api/bookings`) | Partial | Exercised end-to-end through the UI by BOOKING-001…009; the 401 / 400 / 404 / 409 branches are covered by a direct API probe rather than by Playwright. |
 | Backend auth API tests                 | Partial               | SEC-003 calls sign-up / update-user / get-session directly to prove the role cannot be escalated. Broader direct API coverage (wrong-password 401, `/api/me` branches) is still the recommended next suite.        |
