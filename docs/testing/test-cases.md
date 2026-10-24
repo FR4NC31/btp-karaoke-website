@@ -934,8 +934,8 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Title:** The top bar opens the desk and the catalog renders
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Bookings** in the top bar.
-- **Expected:** `/studio/bookings` loads with h1 "Booking Desk"; eight service
-  cards render from `/api/services`; the Karaoke MV card prices at 55,000.00;
+- **Expected:** `/studio/bookings` loads with h1 "Booking Desk"; ten service
+  cards render from `/api/services`; the Karaoke MV card prices at 1,000.00;
   the "My bookings" panel is present.
 - **Automation:** Playwright — **Status: Automated**
 
@@ -954,9 +954,9 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 - **Title:** The wing filter narrows the catalog
 - **Priority:** P2
-- **Steps:** 1. Open `/studio/bookings`. 2. Click **Protect**. 3. Click
-  **All services**.
-- **Expected:** 8 cards → 2 cards (the FILSCAP pair) → 8 cards, with
+- **Steps:** 1. Open `/studio/bookings`. 2. Click **FILSCAP & Membership**.
+  3. Click **All services**.
+- **Expected:** 10 cards → 1 card (FILSCAP assistance) → 10 cards, with
   `aria-pressed="true"` on the selected wing.
 - **Automation:** Playwright — **Status: Automated**
 
@@ -993,7 +993,7 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Priority:** P2 (mobile viewport 390×844)
 - **Steps:** 1. Open `/studio/bookings` at 390×844.
 - **Expected:** The catalog sidebar is not rendered, the top-bar **Bookings**
-  link is still visible and named, and all 8 cards render.
+  link is still visible and named, and all 10 cards render.
 - **Regression guard:** the desk is reachable from two places precisely so
   that hiding the sidebar below `md` cannot strand it; removing either entry
   point fails this case.

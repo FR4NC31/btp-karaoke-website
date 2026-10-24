@@ -113,7 +113,7 @@ test.describe('reservation queue', () => {
   })
 
   test('ADMIN-003: a pending reservation is rejected from the queue', { tag: '@p1' }, async ({ page, baseURL }) => {
-    const { referenceCode } = await createPendingAsCustomer(baseURL, 'RADIO-ONLINE')
+    const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM')
 
     await page.goto('/admin')
     const row = pendingQueue(page).locator('li').filter({ hasText: referenceCode })

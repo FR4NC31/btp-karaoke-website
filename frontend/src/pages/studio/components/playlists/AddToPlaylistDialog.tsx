@@ -2,9 +2,9 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  InformationCircleIcon,
   MusicNote02Icon,
   PlusSignIcon,
-  Tick02Icon,
   Video01Icon,
 } from '@hugeicons/core-free-icons'
 import {
@@ -139,11 +139,16 @@ export default function AddToPlaylistDialog({
                     className={cn(
                       'flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition',
                       added
-                        ? 'cursor-default bg-primary-soft/60 text-primary'
+                        ? 'cursor-default bg-warning/10'
                         : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
                     )}
                   >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-md bg-surface-elevated text-text-muted">
+                    <span
+                      className={cn(
+                        'grid size-8 shrink-0 place-items-center rounded-md bg-surface-elevated',
+                        added ? 'text-warning' : 'text-text-muted',
+                      )}
+                    >
                       <HugeiconsIcon icon={MusicNote02Icon} size={15} />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -151,7 +156,7 @@ export default function AddToPlaylistDialog({
                       <span
                         className={cn(
                           'mt-0.5 block text-[10px]',
-                          added ? 'text-primary/80' : 'text-text-muted',
+                          added ? 'text-warning' : 'text-text-muted',
                         )}
                       >
                         {added
@@ -163,11 +168,14 @@ export default function AddToPlaylistDialog({
                       className={cn(
                         'grid size-6 shrink-0 place-items-center rounded-full border',
                         added
-                          ? 'border-primary/40 bg-primary text-white'
+                          ? 'border-warning/40 bg-warning/15 text-warning'
                           : 'border-border text-text-muted',
                       )}
                     >
-                      <HugeiconsIcon icon={added ? Tick02Icon : PlusSignIcon} size={13} />
+                      <HugeiconsIcon
+                        icon={added ? InformationCircleIcon : PlusSignIcon}
+                        size={13}
+                      />
                     </span>
                     {added ? <span className="sr-only">Already added</span> : null}
                   </button>

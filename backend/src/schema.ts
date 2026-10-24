@@ -77,7 +77,7 @@ export const user = pgTable('user', {
 })
 
 /**
- * Bookable catalog. Eight rows mirror the service wings on /services.
+ * Bookable catalog. Rows mirror the priced services on /services.
  * A service never references a user — the booking row is that join.
  */
 export const service = pgTable('service', {

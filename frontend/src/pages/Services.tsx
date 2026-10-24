@@ -1,21 +1,21 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import SectionEyebrow from '../components/SectionEyebrow'
-import OperationalMatrix from './services/components/OperationalMatrix'
-import RateStrip from './services/components/RateStrip'
-import ServiceWing from './services/components/ServiceWing'
+import FilscapPanel from './services/components/FilscapPanel'
+import ServiceGroup from './services/components/ServiceGroup'
 import ServicesCta from './services/components/ServicesCta'
-import { filters, wings, type FilterId } from './services/data'
+import SubscriptionPanel from './services/components/SubscriptionPanel'
+import VipPanel from './services/components/VipPanel'
+import { serviceGroups } from './services/data'
 
 gsap.registerPlugin(ScrollTrigger)
 
 export default function Services() {
   const pageRef = useRef<HTMLDivElement>(null)
-  const [filter, setFilter] = useState<FilterId>('all')
 
   useLayoutEffect(() => {
     const page = pageRef.current
@@ -51,8 +51,6 @@ export default function Services() {
     return () => animation.revert()
   }, [])
 
-  const visibleWings = wings.filter((wing) => filter === 'all' || wing.id === filter)
-
   return (
     <div ref={pageRef} className="py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -67,58 +65,36 @@ export default function Services() {
         </p>
       </div>
 
-      <section data-services-hero className="mt-8">
-        <h1 className="font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
+      <section data-services-hero className="mt-8 max-w-4xl">
+        <SectionEyebrow>Music Production · Recording · Artist Services · Online Music</SectionEyebrow>
+        <h1 className="mt-3 font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
           BTP Music Production
         </h1>
-        <div className="mt-5">
-          <SectionEyebrow>Services</SectionEyebrow>
-        </div>
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-text-secondary">
-          BTP Music Production provides music production, recording, artist development,
-          karaoke music video production, online studio services, and online music subscriptions. We support
-          singers, songwriters, composers, musicians, and independent artists in producing, developing, and
-          promoting their music — with a focus on the growth of Original Philippine Music (OPM).
+        <p className="mt-4 font-heading text-2xl leading-tight font-bold tracking-wide text-primary uppercase sm:text-3xl">
+          Your Music, Our Passion, Your Success!
         </p>
+        <p className="mt-5 max-w-3xl text-sm leading-relaxed text-text-secondary">
+          BTP Music Production provides music production, recording, artist development, live
+          entertainment, karaoke music video production, and online music services. We support
+          singers, songwriters, composers, musicians, and independent artists in developing and
+          promoting their music.
+        </p>
+        <Link
+          to="/contact"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-xs font-bold tracking-widest text-text-primary uppercase transition hover:bg-primary-hover"
+        >
+          Inquire &amp; Book
+          <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
+        </Link>
       </section>
 
-      <RateStrip />
-
-      <div role="tablist" aria-label="Service categories" className="mt-12 flex flex-wrap gap-3">
-        {filters.map((f) => (
-          <button
-            key={f.id}
-            role="tab"
-            type="button"
-            aria-selected={filter === f.id}
-            onClick={() => setFilter(f.id)}
-            className={`rounded-lg px-5 py-3 text-left transition ${
-              filter === f.id
-                ? 'bg-primary-soft text-text-primary'
-                : 'bg-surface text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            <span className="block text-xs font-bold tracking-widest uppercase">{f.label}</span>
-            <span className="mt-1 block text-[10px] tracking-widest text-text-muted uppercase">{f.hint}</span>
-          </button>
-        ))}
-        <div className="flex items-center gap-2 rounded-lg bg-surface px-5 py-3 text-text-secondary">
-          <span aria-hidden="true">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-primary" />
-          </span>
-          <span className="text-xs font-bold tracking-widest uppercase">
-            Modular studio
-            <br />
-            capabilities
-          </span>
-        </div>
-      </div>
-
-      {visibleWings.map((wing) => (
-        <ServiceWing key={wing.id} wing={wing} />
+      {serviceGroups.map((group) => (
+        <ServiceGroup key={group.id} group={group} />
       ))}
 
-      <OperationalMatrix />
+      <FilscapPanel />
+      <SubscriptionPanel />
+      <VipPanel />
       <ServicesCta />
     </div>
   )

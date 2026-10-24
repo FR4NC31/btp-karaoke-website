@@ -44,6 +44,7 @@ Last updated: October 24, 2026
 
 ### Bug Fixes
 
+- fix: Change info in services page (8a8157f)
 - fix(db): recreate booking indexes in migration 0008 (3603758)
 - fix(booking): preserve request headers and classify minute slots (c750291)
 - fix(booking): pass the booking date to the time validator (cdfd89d)
@@ -106,6 +107,8 @@ Last updated: October 24, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into fix/new-services-info (58e715d)
+- Merge pull request #41 from FR4NC31/qa/align-suite-time-slots-and-location (a65221c)
 - Merge branch 'develop' into qa/align-suite-time-slots-and-location (8d910e4)
 - Merge pull request #40 from FR4NC31/feat/playlist-polish (6067276)
 - test(booking): tighten slot docs and required-assert per review (3259576)

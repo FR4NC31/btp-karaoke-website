@@ -67,8 +67,8 @@ test.describe('booking desk', () => {
     await expect(page).toHaveURL('/studio/bookings')
     await expect(page.getByRole('heading', { name: 'Booking Desk', level: 1 })).toBeVisible()
 
-    await expect(page.getByRole('article')).toHaveCount(8)
-    await expect(serviceCard(page, /karaoke music video/i)).toContainText('55,000.00')
+    await expect(page.getByRole('article')).toHaveCount(10)
+    await expect(serviceCard(page, /karaoke music video/i)).toContainText('1,000.00')
     await expect(page.getByRole('heading', { name: 'My bookings' })).toBeVisible()
   })
 
@@ -84,14 +84,17 @@ test.describe('booking desk', () => {
 
   test('BOOKING-003: the wing filter narrows the catalog', { tag: '@p2' }, async ({ page }) => {
     await openDesk(page)
-    await expect(page.getByRole('article')).toHaveCount(8)
+    await expect(page.getByRole('article')).toHaveCount(10)
 
-    await page.getByRole('button', { name: 'Protect' }).click()
-    await expect(page.getByRole('button', { name: 'Protect' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('article')).toHaveCount(2)
+    await page.getByRole('button', { name: 'FILSCAP & Membership' }).click()
+    await expect(page.getByRole('button', { name: 'FILSCAP & Membership' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await expect(page.getByRole('article')).toHaveCount(1)
 
     await page.getByRole('button', { name: 'All services' }).click()
-    await expect(page.getByRole('article')).toHaveCount(8)
+    await expect(page.getByRole('article')).toHaveCount(10)
   })
 
   test('BOOKING-004: a day booking is created, listed as pending, then cancelled', { tag: '@p1' }, async ({ page }) => {
@@ -209,7 +212,7 @@ test.describe('booking desk', () => {
 
       await expect(sidebar(page)).toBeHidden()
       await expect(topBar(page).getByRole('link', { name: 'Bookings' })).toBeVisible()
-      await expect(page.getByRole('article')).toHaveCount(8)
+      await expect(page.getByRole('article')).toHaveCount(10)
     })
   })
 })
