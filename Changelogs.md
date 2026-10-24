@@ -103,6 +103,7 @@ Last updated: October 24, 2026
 
 ### Other Changes
 
+- test(booking): tighten slot docs and required-assert per review (3259576)
 - test(booking): cover time-slot bookings in E2E suite (be7a819)
 - Merge pull request #39 from FR4NC31/fix/restore-booking-api (596ba18)
 - docs(booking): note minute-based time slots (61628ce)
