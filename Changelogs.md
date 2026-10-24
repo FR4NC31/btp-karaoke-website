@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 23, 2026
+Last updated: October 24, 2026
 
 ### Features
 
@@ -103,6 +103,8 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- test(booking): cover time-slot bookings in E2E suite (be7a819)
+- Merge pull request #39 from FR4NC31/fix/restore-booking-api (596ba18)
 - docs(booking): note minute-based time slots (61628ce)
 - Merge pull request #38 from FR4NC31/feat/persistent-player-surface (47e60df)
 - Merge branch 'develop' into feat/persistent-player-surface (4dbb85f)
