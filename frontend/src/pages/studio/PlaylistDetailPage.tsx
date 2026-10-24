@@ -5,6 +5,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Delete02Icon,
+  PencilEdit01Icon,
   PlayIcon,
   Playlist01Icon,
   ShuffleIcon,
@@ -17,6 +18,7 @@ import DeletePlaylistDialog from './components/playlists/DeletePlaylistDialog'
 import PlaylistDetailSkeleton from './components/playlists/PlaylistDetailSkeleton'
 import PlaylistMosaic from './components/playlists/PlaylistMosaic'
 import PlaylistTrackRow from './components/playlists/PlaylistTrackRow'
+import RenamePlaylistDialog from './components/playlists/RenamePlaylistDialog'
 import {
   playlistDuration,
   type PlaylistTrack,
@@ -49,6 +51,7 @@ export default function PlaylistDetailPage() {
   const { playPlaylist, playTracks } = usePlaylistPlayback()
   const { add } = useLoungeQueue()
   const player = useOutletContext<KaraokeVideoApi>()
+  const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [removingTrackIds, setRemovingTrackIds] = useState<string[]>([])
   const [playError, setPlayError] = useState('')
@@ -229,15 +232,26 @@ export default function PlaylistDetailPage() {
               <HugeiconsIcon icon={ShuffleIcon} size={17} />
             </button>
             {!playlist.system ? (
-              <button
-                type="button"
-                aria-label={`Delete ${playlist.name}`}
-                title="Delete playlist"
-                onClick={() => setDeleteOpen(true)}
-                className="grid size-10 place-items-center rounded-lg border border-border bg-surface-elevated text-text-muted transition hover:border-error/50 hover:text-error"
-              >
-                <HugeiconsIcon icon={Delete02Icon} size={16} />
-              </button>
+              <>
+                <button
+                  type="button"
+                  aria-label={`Rename ${playlist.name}`}
+                  title="Rename playlist"
+                  onClick={() => setRenameOpen(true)}
+                  className="grid size-10 place-items-center rounded-lg border border-border bg-surface-elevated text-text-muted transition hover:border-primary/50 hover:text-primary"
+                >
+                  <HugeiconsIcon icon={PencilEdit01Icon} size={16} />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${playlist.name}`}
+                  title="Delete playlist"
+                  onClick={() => setDeleteOpen(true)}
+                  className="grid size-10 place-items-center rounded-lg border border-border bg-surface-elevated text-text-muted transition hover:border-error/50 hover:text-error"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} size={16} />
+                </button>
+              </>
             ) : null}
             {playlist.system ? (
               <span className="ml-1 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
@@ -327,6 +341,16 @@ export default function PlaylistDetailPage() {
         </p>
         <p>Studio session · local</p>
       </div>
+
+      {renameOpen ? (
+        <RenamePlaylistDialog
+          playlist={playlist}
+          open
+          onOpenChange={(open) => {
+            if (!open) setRenameOpen(false)
+          }}
+        />
+      ) : null}
 
       {!playlist.system ? (
         <DeletePlaylistDialog

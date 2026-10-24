@@ -130,6 +130,8 @@ export default function PlayerBar({
           type="button"
           onClick={onToggleLiked}
           aria-label="Like"
+          aria-pressed={liked}
+          title={liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'}
           className={`ml-1 shrink-0 transition ${liked ? 'text-primary' : 'text-text-muted hover:text-text-secondary'}`}
         >
           <HugeiconsIcon icon={HeartIcon} size={16} />

@@ -70,6 +70,7 @@ export default function LikedSongsStrip({
             side="bottom"
             sideOffset={8}
             collisionPadding={12}
+            aria-label={playlist.name}
             className="w-60 border border-border bg-surface p-1.5 text-text-primary shadow-2xl"
           >
             <Link

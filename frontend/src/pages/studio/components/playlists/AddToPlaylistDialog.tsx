@@ -24,10 +24,22 @@ type AddToPlaylistSong = Pick<
   album?: string
 }
 
+export type PlaylistAddedNotice = {
+  tone: 'success' | 'warning'
+  title: string
+  description?: string
+}
+
 type AddToPlaylistDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAdded?: (notice: PlaylistAddedNotice) => void
   song: AddToPlaylistSong
+}
+
+function summarizeNames(names: string[]): string {
+  if (names.length <= 2) return names.join(' and ')
+  return `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
 }
 
 function SongThumb({ song }: { song: AddToPlaylistSong }) {
@@ -54,6 +66,7 @@ function SongThumb({ song }: { song: AddToPlaylistSong }) {
 export default function AddToPlaylistDialog({
   open,
   onOpenChange,
+  onAdded,
   song,
 }: AddToPlaylistDialogProps) {
   const { userPlaylists, addTrack, createPlaylist } = usePlaylistLibrary()
@@ -64,8 +77,29 @@ export default function AddToPlaylistDialog({
     onOpenChange(next)
   }
 
+  function notifyAdded(playlistId: string, playlistName: string) {
+    const otherPlaylists = userPlaylists.filter(
+      (playlist) =>
+        playlist.id !== playlistId && playlist.tracks.some((track) => sameTrack(track, song)),
+    )
+    onAdded?.({
+      tone: otherPlaylists.length > 0 ? 'warning' : 'success',
+      title: `Added to ${playlistName}`,
+      description:
+        otherPlaylists.length > 0
+          ? `Also already in ${otherPlaylists.length} other ${
+              otherPlaylists.length === 1 ? 'playlist' : 'playlists'
+            }: ${summarizeNames(otherPlaylists.map((playlist) => playlist.name))}.`
+          : undefined,
+    })
+    handleOpenChange(false)
+  }
+
   function add(playlistId: string) {
+    const playlist = userPlaylists.find((row) => row.id === playlistId)
+    if (!playlist) return
     addTrack(playlistId, song)
+    notifyAdded(playlistId, playlist.name)
   }
 
   function createAndAdd(event: FormEvent<HTMLFormElement>) {
@@ -74,7 +108,7 @@ export default function AddToPlaylistDialog({
     if (!name) return
     const created = createPlaylist({ name, description: '', genre: 'OPM' })
     addTrack(created.id, song)
-    setNewName('')
+    notifyAdded(created.id, created.name)
   }
 
   return (
@@ -114,8 +148,15 @@ export default function AddToPlaylistDialog({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">{playlist.name}</span>
-                      <span className="mt-0.5 block text-[10px] text-text-muted">
-                        {playlist.tracks.length} {playlist.tracks.length === 1 ? 'song' : 'songs'}
+                      <span
+                        className={cn(
+                          'mt-0.5 block text-[10px]',
+                          added ? 'text-primary/80' : 'text-text-muted',
+                        )}
+                      >
+                        {added
+                          ? 'Already in this playlist'
+                          : `${playlist.tracks.length} ${playlist.tracks.length === 1 ? 'song' : 'songs'}`}
                       </span>
                     </span>
                     <span

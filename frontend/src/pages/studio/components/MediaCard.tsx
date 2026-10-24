@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
-import { MoreHorizontalIcon } from '@hugeicons/core-free-icons'
+import {
+  InformationCircleIcon,
+  MoreHorizontalIcon,
+  Tick02Icon,
+} from '@hugeicons/core-free-icons'
 import { Popover, PopoverTrigger } from '../../../components/ui/popover'
+import { cn } from '../../../lib/utils'
 import MediaCardMenu from './MediaCardMenu'
-import AddToPlaylistDialog from './playlists/AddToPlaylistDialog'
+import AddToPlaylistDialog, {
+  type PlaylistAddedNotice,
+} from './playlists/AddToPlaylistDialog'
 import { useLoungeQueue } from '../../../lib/lounge-queue'
 
 interface MediaCardMeta {
@@ -48,11 +56,17 @@ export default function MediaCard({
   const [playlistOpen, setPlaylistOpen] = useState(false)
   const [added, setAdded] = useState(false)
   const addedTimer = useRef<number | null>(null)
+  const [playlistNotice, setPlaylistNotice] = useState<PlaylistAddedNotice | null>(null)
+  const [noticeVisible, setNoticeVisible] = useState(false)
+  const noticeHideTimer = useRef<number | null>(null)
+  const noticeRemoveTimer = useRef<number | null>(null)
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
 
   useEffect(
     () => () => {
       if (addedTimer.current !== null) window.clearTimeout(addedTimer.current)
+      if (noticeHideTimer.current !== null) window.clearTimeout(noticeHideTimer.current)
+      if (noticeRemoveTimer.current !== null) window.clearTimeout(noticeRemoveTimer.current)
     },
     [],
   )
@@ -80,6 +94,15 @@ export default function MediaCard({
   const openPlaylistDialog = () => {
     openOptions(false)
     setPlaylistOpen(true)
+  }
+
+  const showPlaylistNotice = (notice: PlaylistAddedNotice) => {
+    if (noticeHideTimer.current !== null) window.clearTimeout(noticeHideTimer.current)
+    if (noticeRemoveTimer.current !== null) window.clearTimeout(noticeRemoveTimer.current)
+    setPlaylistNotice(notice)
+    setNoticeVisible(true)
+    noticeHideTimer.current = window.setTimeout(() => setNoticeVisible(false), 2000)
+    noticeRemoveTimer.current = window.setTimeout(() => setPlaylistNotice(null), 2200)
   }
 
   return (
@@ -160,21 +183,63 @@ export default function MediaCard({
         </Popover>
       </div>
 
-      {playlistOpen ? (
-        <AddToPlaylistDialog
-          open
-          onOpenChange={setPlaylistOpen}
-          song={{
-            title,
-            artist: subtitle,
-            duration: queue?.len ?? '',
-            coverUrl: coverUrl ?? null,
-            sourceUrl: queue?.src ?? null,
-            mediaId: queue?.mediaId ?? null,
-            kind: queue?.kind ?? 'video',
-          }}
-        />
-      ) : null}
+      <AddToPlaylistDialog
+        open={playlistOpen}
+        onOpenChange={setPlaylistOpen}
+        onAdded={showPlaylistNotice}
+        song={{
+          title,
+          artist: subtitle,
+          duration: queue?.len ?? '',
+          coverUrl: coverUrl ?? null,
+          sourceUrl: queue?.src ?? null,
+          mediaId: queue?.mediaId ?? null,
+          kind: queue?.kind ?? 'video',
+        }}
+      />
+
+      {playlistNotice
+        ? createPortal(
+            <div
+              role="status"
+              aria-live="polite"
+              className={cn(
+                'fixed right-4 bottom-24 left-4 z-[80] mx-auto flex max-w-sm items-start gap-3 rounded-xl border bg-surface/95 px-3.5 py-3 shadow-2xl backdrop-blur transition-all duration-200 ease-out sm:right-6 sm:left-auto sm:mx-0',
+                noticeVisible
+                  ? 'translate-y-0 opacity-100'
+                  : 'pointer-events-none translate-y-2 opacity-0',
+                playlistNotice.tone === 'warning' ? 'border-warning/40' : 'border-success/40',
+              )}
+            >
+              <span
+                className={cn(
+                  'grid size-8 shrink-0 place-items-center rounded-full',
+                  playlistNotice.tone === 'warning'
+                    ? 'bg-warning/15 text-warning'
+                    : 'bg-success/15 text-success',
+                )}
+              >
+                <HugeiconsIcon
+                  icon={
+                    playlistNotice.tone === 'warning' ? InformationCircleIcon : Tick02Icon
+                  }
+                  size={16}
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="font-heading text-sm font-bold tracking-wide uppercase">
+                  {playlistNotice.title}
+                </p>
+                {playlistNotice.description ? (
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-text-secondary">
+                    {playlistNotice.description}
+                  </p>
+                ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </article>
   )
 }

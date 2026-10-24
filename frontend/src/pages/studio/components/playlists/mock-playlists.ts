@@ -55,7 +55,7 @@ export interface NewTrackInput {
   kind?: 'video' | 'music'
 }
 
-type TrackIdentity = {
+export type TrackIdentity = {
   title: string
   artist: string
   mediaId?: string | null

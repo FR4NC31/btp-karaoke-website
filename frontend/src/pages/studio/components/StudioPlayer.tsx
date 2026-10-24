@@ -325,12 +325,18 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
 
   useEffect(() => {
     if (queuedPlay) {
+      const queuedItem = queuedPlay.row.mediaId
+        ? catalog.find((candidate) => candidate.id === queuedPlay.row.mediaId)
+        : undefined
       setOnAir({
         title: queuedPlay.row.title,
         subtitle: queuedPlay.row.artist,
         src: queuedPlay.source.src ?? localVideo,
         coverUrl: queuedPlay.row.coverUrl,
         kind: queuedPlay.source.kind,
+        mediaId: queuedPlay.row.mediaId,
+        album: queuedItem?.album ?? null,
+        duration: queuedPlay.row.len || null,
       })
       return
     }
@@ -341,8 +347,11 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
       src: item.sourceUrl ?? localVideo,
       coverUrl: item.coverUrl,
       kind: item.section === 'music' ? 'music' : 'video',
+      mediaId: item.id,
+      album: item.album,
+      duration: item.duration,
     })
-  }, [item, queuedPlay, setOnAir])
+  }, [catalog, item, queuedPlay, setOnAir])
 
   useEffect(() => {
     const el = videoRef.current
