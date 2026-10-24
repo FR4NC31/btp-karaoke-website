@@ -201,8 +201,9 @@ export default function BookingPage() {
           </p>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-text-muted">
-          Per-hour services (recording, coaching, studio) book a date + time slot — open 24 hours.
-          Per-song services (arranging, karaoke MV, FILSCAP) book per day.
+          Per-hour services (recording, editing, coaching) book a date + time slot — open 24 hours.
+          Per-song, per-video, per-day and per-event services book a date; rates marked “starting”
+          are confirmed after consultation.
         </p>
       </header>
 

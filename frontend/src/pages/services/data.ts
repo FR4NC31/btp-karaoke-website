@@ -1,248 +1,129 @@
-import type { IconSvgElement } from '@hugeicons/react'
-import {
-  BookOpen01Icon,
-  Mic01Icon,
-  Radio01Icon,
-  Shield01Icon,
-} from '@hugeicons/core-free-icons'
+/**
+ * /services content — the single source for the public service sheet.
+ *
+ * Contact details deliberately live on /contact only; every service inquiry
+ * cross-link points there instead of repeating the email or phone number.
+ */
 
-export const rateCards = [
-  { label: 'Music & Vocal Recording', value: '₱500 / hr', desc: 'In-studio tracking session' },
-  { label: 'Audio Editing & Mastering', value: '₱1,200 / hr', desc: 'Mix, tune, and final master' },
-  { label: 'Musical Arranging', value: 'From ₱2,500 / song', desc: 'Custom arrangement' },
-  { label: 'Karaoke Music Video', value: 'From ₱1,200 / song', desc: 'Lyric sync + HD video' },
-]
-
-type ServiceCard = {
-  tag: string
-  badge: string
+export type PricedService = {
   title: string
-  desc: string
-  bullets: string[]
+  price: string
+  unit: string
 }
 
-export type Wing = {
+export type ServiceGroupData = {
   id: string
-  icon: IconSvgElement
-  name: string
   eyebrow: string
-  desc: string
-  cols: string
-  cards: ServiceCard[]
-  aside?: { badge: string; title: string; intro: string; groups: { label: string; text: string }[]; cta: string }
-  footers: { unit: string; action: string }[]
+  title: string
+  intro?: string
+  cards: PricedService[]
+  columns: string
+  note?: string
 }
 
-export const wings: Wing[] = [
+export const serviceGroups: ServiceGroupData[] = [
   {
-    id: 'create',
-    icon: Mic01Icon,
-    name: 'Create',
-    eyebrow: 'Music Production & Recording',
-    desc: 'Music production and recording services for singers, composers, musicians, and independent artists.',
-    cols: 'lg:grid-cols-2',
+    id: 'production',
+    eyebrow: 'Studio Services',
+    title: 'Music Production & Recording',
     cards: [
-      {
-        tag: '01 / Recording',
-        badge: 'In-Studio',
-        title: 'Music and Vocal Recording',
-        desc: 'Professional vocal and instrument tracking in a treated studio environment.',
-        bullets: ['₱500 per hour', 'Engineer assistance included', 'Raw stems (24-bit/96kHz WAV)'],
-      },
-      {
-        tag: '02 / Editing & Mastering',
-        badge: 'Post-Production',
-        title: 'Audio Editing & Mastering',
-        desc: 'Vocal tuning, timing correction, noise reduction, mixing, and final mastering for distribution.',
-        bullets: ['₱1,200 per hour', 'Masters for Spotify, Apple Music, YouTube', 'Downloadable stems & session files'],
-      },
-      {
-        tag: '03 / Arranging',
-        badge: 'Creative Desk',
-        title: 'Musical Arranging',
-        desc: 'Custom instrumentation, chord voicing, melodic counterpoint, and rhythm section mapping for original compositions.',
-        bullets: ['From ₱2,500 per song', 'Lead sheets & chord charts', 'Direct collaboration with BTP arrangers'],
-      },
-      {
-        tag: '04 / Karaoke MV',
-        badge: 'Synchronization',
-        title: 'Karaoke Music Video Production',
-        desc: 'Karaoke music videos using music materials provided by the client.',
-        bullets: [
-          'From ₱1,200 per song',
-          'Client provides: vocal, minus-one, lyrics, credits',
-          'Recording & arranging billed separately',
-        ],
-      },
+      { title: 'Music and Vocal Recording', price: '₱500', unit: 'per hour' },
+      { title: 'Music, Vocal Audio Editing and Mastering', price: '₱1,200', unit: 'per hour' },
+      { title: 'Musical Arranging', price: 'Starting at ₱2,500', unit: 'per song' },
+      { title: 'Karaoke Music Video Production', price: 'Starting at ₱1,000', unit: 'per video' },
     ],
-    footers: [
-      { unit: 'Per Hour / Per Song', action: 'Inquire Booking' },
-    ],
+    columns: 'sm:grid-cols-2',
   },
   {
-    id: 'promote',
-    icon: Radio01Icon,
-    name: 'Promote',
-    eyebrow: 'Online Studio & Subscription',
-    desc: 'Online studio broadcasting and music subscription services for BTP artists and partners.',
-    cols: 'lg:grid-cols-2',
+    id: 'lessons',
+    eyebrow: 'Artist Development',
+    title: 'Music Lessons & Artist Development',
+    intro:
+      'Improve your vocal performance and musical skills with our coaching and tutorial services.',
     cards: [
-      {
-        tag: '05 / Online Studio',
-        badge: 'Live Broadcast',
-        title: 'BTP Online Studio Services',
-        desc: 'Online broadcasting, music programs, artist interviews, and music presentations.',
-        bullets: ['₱1,200 per hour', 'Online radio-style programs', 'Artist interviews & discussions'],
-      },
-      {
-        tag: '06 / Subscription',
-        badge: 'Streaming',
-        title: 'BTP Music Online Subscription',
-        desc: 'Online playback of BTP music, karaoke videos, and song lyrics with MP3 downloads.',
-        bullets: ['₱30 / month', '₱230 / year', 'Up to 5 MP3 downloads/mo (monthly)'],
-      },
+      { title: 'Vocal Coaching', price: '₱500', unit: 'per hour' },
+      { title: 'Keyboard Tutorials', price: '₱500', unit: 'per hour' },
     ],
-    footers: [
-      { unit: 'Per Plan', action: 'Subscribe' },
-    ],
+    columns: 'sm:grid-cols-2',
   },
   {
-    id: 'learn',
-    icon: BookOpen01Icon,
-    name: 'Learn',
-    eyebrow: 'Music Lessons & Artist Development',
-    desc: 'Vocal coaching and keyboard tutorials to improve technique, musicianship, and performance confidence.',
-    cols: 'lg:grid-cols-2',
+    id: 'entertainment',
+    eyebrow: 'Live & Session Talent',
+    title: 'Vocalists, Artists & Entertainment',
     cards: [
       {
-        tag: '07 / Vocal Coaching',
-        badge: 'One-on-One',
-        title: 'Vocal Coaching',
-        desc: 'Private vocal technique, breath control, pitch accuracy, and performance coaching.',
-        bullets: ['₱500 per hour', 'Subject to availability', 'Gig-ready & studio-ready focus'],
+        title: 'Vocalist for Hire (Recording Sessions)',
+        price: 'Starting at ₱3,000',
+        unit: 'per song',
       },
       {
-        tag: '08 / Keyboard Tutorials',
-        badge: 'One-on-One',
-        title: 'Keyboard Tutorials',
-        desc: 'Keyboard lessons covering OPM chord theory, rhythmic arpeggios, and voicing.',
-        bullets: ['₱500 per hour', 'Beginner to intermediate', 'Practical song application'],
+        title: 'Artist Booking, Guest Appearances & Concerts',
+        price: 'Starting at ₱5,000',
+        unit: 'per day',
       },
+      { title: 'Sound System Rental', price: 'Starting at ₱2,500', unit: 'per event' },
     ],
-    footers: [{ unit: 'Per Hour', action: 'Enroll Now' }],
-  },
-  {
-    id: 'protect',
-    icon: Shield01Icon,
-    name: 'Protect',
-    eyebrow: 'FILSCAP & VIP Membership',
-    desc: 'FILSCAP membership and musical works assistance, plus VIP membership savings.',
-    cols: 'lg:grid-cols-2',
-    cards: [
-      {
-        tag: '09 / FILSCAP',
-        badge: 'Rights & Registration',
-        title: 'FILSCAP Membership & Works Assistance',
-        desc: 'Guidance on FILSCAP membership applications and musical work declaration preparation.',
-        bullets: [
-          'From ₱2,500',
-          'Document & portal submission support',
-          'FILSCAP approval is independent',
-        ],
-      },
-      {
-        tag: '10 / VIP Card',
-        badge: 'Membership',
-        title: 'BTP VIP Membership Card',
-        desc: '₱500 per year — 20% OFF all eligible BTP Music Production services.',
-        bullets: ['Valid 1 year from activation', 'Non-transferable', '20% discount on service fees'],
-      },
-    ],
-    footers: [
-      { unit: 'Per Application / Per Year', action: 'Apply Now' },
-    ],
+    columns: 'sm:grid-cols-2 lg:grid-cols-3',
+    note: 'Artist booking fees and sound system rental rates may vary depending on the event, location, duration, and technical requirements.',
   },
 ]
 
-export const matrix = [
-  {
-    tier: 'Create: Music & Vocal Recording',
-    scope: 'Vocal & instrument tracking, ₱500/hr',
-    deliverable: 'Raw 24-bit/96kHz WAV Stems',
-    turnaround: 'Per session booking',
-    desk: 'Inquire Booking',
-  },
-  {
-    tier: 'Create: Audio Editing & Mastering',
-    scope: 'Mix, tune, master, ₱1,200/hr',
-    deliverable: 'Streaming Masters (WAV/FLAC)',
-    turnaround: '3 - 5 Business Days',
-    desk: 'Request Mastering',
-  },
-  {
-    tier: 'Create: Musical Arranging',
-    scope: 'Custom arrangement, from ₱2,500/song',
-    deliverable: 'Full Arrangement + Lead Sheets',
-    turnaround: '5 - 10 Business Days',
-    desk: 'Submit Song Draft',
-  },
-  {
-    tier: 'Create: Karaoke Music Video',
-    scope: 'Lyric sync + HD video, from ₱1,200/song',
-    deliverable: '4K MP4 + Videoke Files',
-    turnaround: '3 - 5 Business Days',
-    desk: 'Create Karaoke MV',
-  },
-  {
-    tier: 'Promote: BTP Online Studio',
-    scope: 'Online broadcast, ₱1,200/hr',
-    deliverable: 'Live Broadcast + Archive',
-    turnaround: 'Scheduled Slot (60 min)',
-    desk: 'Book Studio',
-  },
-  {
-    tier: 'Promote: Online Subscription',
-    scope: 'Music & karaoke playback, ₱30/mo or ₱230/yr',
-    deliverable: 'Streaming Access + MP3 Downloads',
-    turnaround: 'Instant on subscription',
-    desk: 'Subscribe',
-  },
-  {
-    tier: 'Learn: Vocal Coaching',
-    scope: 'One-on-one vocal technique, ₱500/hr',
-    deliverable: 'Performance Readiness',
-    turnaround: 'Per session',
-    desk: 'Enroll Now',
-  },
-  {
-    tier: 'Learn: Keyboard Tutorials',
-    scope: 'Keyboard lessons, ₱500/hr',
-    deliverable: 'Musicianship Skills',
-    turnaround: 'Per session',
-    desk: 'Enroll Now',
-  },
-  {
-    tier: 'Protect: FILSCAP Works Assistance',
-    scope: 'Song registration & portal entry, from ₱2,500',
-    deliverable: 'FILSCAP Work Clearance',
-    turnaround: '2 - 4 Business Days',
-    desk: 'Register Works',
-  },
-  {
-    tier: 'Protect: VIP Membership Card',
-    scope: '₱500/year, 20% off eligible services',
-    deliverable: 'VIP Card & Discount Benefits',
-    turnaround: 'Valid 1 year',
-    desk: 'Apply Now',
-  },
-]
+export const filscap = {
+  eyebrow: 'Rights & Registration',
+  title: 'FILSCAP Membership & Musical Works Assistance',
+  intro:
+    'BTP Music Production assists artists and composers who wish to apply for FILSCAP membership and register or submit their musical works through the appropriate FILSCAP procedures.',
+  assistanceLabel: 'Our assistance may include',
+  assistance: [
+    'Guidance on FILSCAP membership applications',
+    'Assistance with the preparation and submission of musical work declarations',
+    'Assistance with the preparation of required documents',
+    'Administrative support for musical work declarations and related paperwork',
+    'Assistance with submitting music information for the FILSCAP Portal and database, subject to FILSCAP requirements and approval',
+  ],
+  feeLabel: 'Administrative Assistance Fee',
+  fee: 'Starting at ₱2,500',
+  disclaimer:
+    'The artist or composer must provide or cover applicable transportation, printing, notarization, and other required out-of-pocket expenses, as agreed in advance. FILSCAP membership approval, work registration, and royalty payments are subject to FILSCAP’s rules and procedures. Our assistance does not guarantee approval or royalty earnings.',
+} as const
 
-export const filters = [
-  { id: 'all', label: 'All Services', hint: `(${wings.reduce((n, w) => n + w.cards.length, 0)})` },
-  { id: 'create', label: 'Create', hint: '(Production)' },
-  { id: 'promote', label: 'Promote', hint: '(Studio + Streaming)' },
-  { id: 'learn', label: 'Learn', hint: '(Lessons)' },
-  { id: 'protect', label: 'Protect', hint: '(FILSCAP + VIP)' },
-] as const
+export const subscription = {
+  eyebrow: 'Streaming & Downloads',
+  title: 'BTP Music Online Subscription',
+  intro: 'Enjoy BTP Music through our online music subscription options.',
+  plans: [
+    { label: 'Monthly Subscription', price: '₱20', unit: 'per month' },
+    { label: 'Annual Subscription', price: '₱180', unit: 'per year' },
+  ],
+  benefitsLabel: 'Subscription benefits may include',
+  benefits: [
+    'Online playback of BTP Music',
+    'Access to available BTP music videos and karaoke videos',
+    'Access to available MP3 music files and song lyrics',
+    'Enjoying music from BTP Music Production artists and partners',
+  ],
+  disclaimer:
+    'Playback, downloads, and file access are subject to the applicable subscription terms, platform availability, and permissions for each musical work.',
+} as const
 
-export type FilterId = (typeof filters)[number]['id']
+export const vip = {
+  eyebrow: 'Membership',
+  title: 'BTP Music Production VIP Membership Card',
+  headline: '20% OFF',
+  headlineSuffix: 'eligible BTP Music Production services',
+  intro:
+    'Become a BTP Music Production VIP Member and enjoy a special discount on eligible services, including:',
+  eligible: [
+    'Music and vocal recording',
+    'Music and audio editing',
+    'Audio mastering',
+    'Musical arranging',
+    'Vocal coaching and keyboard tutorials',
+    'Karaoke music video production',
+    'Other eligible BTP Music Production services',
+  ],
+  benefitLabel: 'VIP Member Benefit',
+  benefit: '20% discount on eligible services.',
+  terms:
+    'VIP membership terms and conditions apply. Discounts cannot be combined with other promotions unless authorized by BTP Music Production. Third-party fees, transportation, notarization, printing, and other reimbursable expenses are excluded unless otherwise stated.',
+} as const

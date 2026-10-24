@@ -1,6 +1,6 @@
 export const WING_LABELS: Record<string, string> = {
-  create: 'Create',
-  promote: 'Promote',
-  learn: 'Learn',
-  protect: 'Protect',
+  create: 'Production & Recording',
+  learn: 'Lessons & Development',
+  promote: 'Vocalists & Entertainment',
+  protect: 'FILSCAP & Membership',
 }
