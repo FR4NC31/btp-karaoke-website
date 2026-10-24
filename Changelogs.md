@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 23, 2026
+Last updated: October 24, 2026
 
 ### Features
 
@@ -44,6 +44,7 @@ Last updated: October 23, 2026
 
 ### Bug Fixes
 
+- fix: Change info in services page (8a8157f)
 - fix(db): recreate booking indexes in migration 0008 (3603758)
 - fix(booking): preserve request headers and classify minute slots (c750291)
 - fix(booking): pass the booking date to the time validator (cdfd89d)
@@ -106,6 +107,7 @@ Last updated: October 23, 2026
 
 ### Other Changes
 
+- Merge pull request #40 from FR4NC31/feat/playlist-polish (6067276)
 - Merge pull request #39 from FR4NC31/fix/restore-booking-api (596ba18)
 - docs(booking): note minute-based time slots (61628ce)
 - Merge pull request #38 from FR4NC31/feat/persistent-player-surface (47e60df)
