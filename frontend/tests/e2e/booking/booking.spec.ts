@@ -43,9 +43,11 @@ async function bookService(
   card: Locator,
   day: string,
   notes?: string,
+  slot?: string,
 ): Promise<string> {
   await card.getByRole('button', { name: 'Book this service' }).click()
   await page.getByLabel('Session date').fill(day)
+  if (slot) await page.getByLabel('Session time').fill(slot)
   if (notes) await page.getByLabel('Notes (optional)').fill(notes)
   await page.getByRole('button', { name: 'Confirm booking' }).click()
 
@@ -136,6 +138,67 @@ test.describe('booking desk', () => {
     const row = bookingRow(page, reference)
     await row.getByRole('button', { name: 'Cancel booking' }).click()
     await expect(row).toContainText('cancelled')
+  })
+
+  test('BOOKING-008: a time-based service books a date with a time slot', { tag: '@p1' }, async ({ page }) => {
+    await openDesk(page)
+    const day = farFutureDay()
+    // Music Studio Recording bills per hour, so the form must expose a time field.
+    const card = serviceCard(page, /music studio recording/i)
+
+    await card.getByRole('button', { name: 'Book this service' }).click()
+
+    const timeField = page.getByLabel('Session time')
+    await expect(timeField).toBeVisible()
+    // Regression guard: a backslide that renders the time field but lets an
+    // hourly booking submit without a slot must fail here.
+    await expect(timeField).toHaveAttribute('required', '')
+
+    await page.getByLabel('Session date').fill(day)
+    await timeField.fill('14:30')
+    await page.getByLabel('Notes (optional)').fill('E2E time slot booking')
+    await page.getByRole('button', { name: 'Confirm booking' }).click()
+
+    const flash = confirmation(page)
+    await expect(flash).toBeVisible()
+    const reference = (await flash.innerText()).match(/BTP-[A-Z2-9]{6}/)?.[0]
+    expect(reference, 'the confirmation should carry a BTP reference code').toBeTruthy()
+
+    const row = bookingRow(page, reference!)
+    await expect(row).toBeVisible()
+    await expect(row).toContainText('pending')
+    await expect(row).toContainText('14:30', 'the slot should show with the day, not "all day"')
+    await expect(row).toContainText('E2E time slot booking')
+
+    await row.getByRole('button', { name: 'Cancel booking' }).click()
+    await expect(row).toContainText('cancelled')
+  })
+
+  test('BOOKING-009: the same time slot cannot be booked twice, but another slot can', { tag: '@p2' }, async ({ page }) => {
+    await openDesk(page)
+    const day = farFutureDay()
+    // Studio Radio Online bills per 60-minute broadcast — a different
+    // time-based family from BOOKING-008's hourly service.
+    const card = serviceCard(page, /studio radio online/i)
+
+    const reference = await bookService(page, card, day, 'E2E slot duplicate probe', '09:00')
+
+    // Same service, same day, same slot → the time-slot unique index wins.
+    await card.getByRole('button', { name: 'Book this service' }).click()
+    await page.getByLabel('Session date').fill(day)
+    await page.getByLabel('Session time').fill('09:00')
+    await page.getByRole('button', { name: 'Confirm booking' }).click()
+    await expect(page.getByRole('alert')).toContainText('booking for this service at this time slot')
+
+    // A different slot on the same service + day is allowed — this is what
+    // distinguishes the time-slot index from the old day-wide one.
+    const secondReference = await bookService(page, card, day, 'E2E second slot', '10:45')
+
+    for (const rowRef of [reference, secondReference]) {
+      const row = bookingRow(page, rowRef)
+      await row.getByRole('button', { name: 'Cancel booking' }).click()
+      await expect(row).toContainText('cancelled')
+    }
   })
 
   test.describe('mobile viewport', () => {
