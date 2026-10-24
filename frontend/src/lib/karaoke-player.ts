@@ -31,6 +31,9 @@ export interface OnAirTrack {
   src: string
   coverUrl: string | null
   kind: 'video' | 'music'
+  mediaId?: string | null
+  album?: string | null
+  duration?: string | null
 }
 
 export interface PlaylistHandlers {

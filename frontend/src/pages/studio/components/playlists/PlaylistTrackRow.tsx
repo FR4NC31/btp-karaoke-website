@@ -163,6 +163,7 @@ export default function PlaylistTrackRow({
             side="bottom"
             sideOffset={6}
             collisionPadding={12}
+            aria-label={track.title}
             className="w-56 border border-border bg-surface p-1.5 text-text-primary shadow-2xl"
           >
             <button

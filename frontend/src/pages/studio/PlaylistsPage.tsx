@@ -16,6 +16,7 @@ import GenreFilterMenu from './components/playlists/GenreFilterMenu'
 import LikedSongsStrip from './components/playlists/LikedSongsStrip'
 import PlaylistCard from './components/playlists/PlaylistCard'
 import PlaylistsSkeleton from './components/playlists/PlaylistsSkeleton'
+import RenamePlaylistDialog from './components/playlists/RenamePlaylistDialog'
 import TrendingPlaylistCard from './components/playlists/TrendingPlaylistCard'
 import {
   libraryDuration,
@@ -39,6 +40,7 @@ export default function PlaylistsPage() {
   const player = useOutletContext<KaraokeVideoApi>()
   const [createOpen, setCreateOpen] = useState(false)
   const [activeGenres, setActiveGenres] = useState<PlaylistGenre[]>([])
+  const [pendingRename, setPendingRename] = useState<Playlist | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Playlist | null>(null)
   const [deletingIds, setDeletingIds] = useState<string[]>([])
   const [playError, setPlayError] = useState('')
@@ -246,6 +248,7 @@ export default function PlaylistsPage() {
                 playlist={playlist}
                 byTitle={byTitle}
                 onPlay={play}
+                onRequestRename={setPendingRename}
                 onRequestDelete={setPendingDelete}
                 removing={deletingIds.includes(playlist.id)}
               />
@@ -304,6 +307,16 @@ export default function PlaylistsPage() {
       </div>
 
       <CreatePlaylistDialog open={createOpen} onOpenChange={setCreateOpen} onCreate={create} />
+
+      {pendingRename ? (
+        <RenamePlaylistDialog
+          playlist={pendingRename}
+          open
+          onOpenChange={(open) => {
+            if (!open) setPendingRename(null)
+          }}
+        />
+      ) : null}
 
       {pendingDelete ? (
         <DeletePlaylistDialog

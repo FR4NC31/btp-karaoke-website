@@ -37,7 +37,7 @@ function MosaicTile({
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}
-          className="size-full object-cover"
+          className="size-full object-cover object-center"
         />
       </div>
     )
