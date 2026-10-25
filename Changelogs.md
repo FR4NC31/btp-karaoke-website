@@ -47,6 +47,7 @@ Last updated: October 25, 2026
 
 ### Bug Fixes
 
+- fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
 - fix(lint): avoid ref access during render in StudioShell (e400a0e)
 - fix(test): pass slot assertion message to expect, not toContainText (c7892f9)
 - fix: Change info in services page (8a8157f)
@@ -112,6 +113,7 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge pull request #48 from FR4NC31/feat/player-queue-overlay (b5a1877)
 - Merge pull request #47 from FR4NC31/feat/player-queue-remember-origin (49af72e)
 - Merge pull request #46 from FR4NC31/feat/booking-blockouts-hour-slots (a827d6f)
 - Merge remote-tracking branch 'origin/develop' into feat/booking-blockouts-hour-slots (2cfcf3c)
