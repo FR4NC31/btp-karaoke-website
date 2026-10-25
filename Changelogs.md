@@ -107,6 +107,7 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- docs(testing): align playlists docs with the genre-filter removal (3c288b1)
 - refactor(playlists): drop the genre filter and genres (2c41651)
 - Merge pull request #42 from FR4NC31/fix/new-services-info (28cdb4d)
 - Merge branch 'develop' into fix/new-services-info (58e715d)
