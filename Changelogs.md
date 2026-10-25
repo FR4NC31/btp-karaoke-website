@@ -114,6 +114,8 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into fix/player-queue-origin (98bc557)
+- Merge pull request #49 from FR4NC31/fix/player-queue-minimize (1eb6c03)
 - Merge pull request #48 from FR4NC31/feat/player-queue-overlay (b5a1877)
 - Merge pull request #47 from FR4NC31/feat/player-queue-remember-origin (49af72e)
 - Merge pull request #46 from FR4NC31/feat/booking-blockouts-hour-slots (a827d6f)
