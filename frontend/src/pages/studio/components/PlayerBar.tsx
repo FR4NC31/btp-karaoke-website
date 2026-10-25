@@ -36,7 +36,9 @@ export default function PlayerBar({
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const onQueue = pathname.startsWith('/studio/player-queue')
-  const queueTarget = onQueue ? '/studio' : '/studio/player-queue'
+  const storedOrigin =
+    typeof window !== 'undefined' ? window.sessionStorage.getItem('playerQueueOrigin') : null
+  const queueTarget = onQueue ? storedOrigin || '/studio' : '/studio/player-queue'
   const queueAction = onQueue ? 'Minimize player queue' : 'Open player queue'
   const playing = player.playing
   const progress = player.duration > 0 ? (player.currentTime / player.duration) * 100 : 0
@@ -51,6 +53,13 @@ export default function PlayerBar({
       target.closest('button, a, input, select, textarea, [role="slider"]')
     ) {
       return
+    }
+    if (!onQueue) {
+      try {
+        window.sessionStorage.setItem('playerQueueOrigin', pathname)
+      } catch {
+        // Storage can be unavailable (private mode); fall back to /studio.
+      }
     }
     navigate(queueTarget)
   }
@@ -101,6 +110,15 @@ export default function PlayerBar({
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         <Link
           to={queueTarget}
+          onClick={() => {
+            if (!onQueue) {
+              try {
+                window.sessionStorage.setItem('playerQueueOrigin', pathname)
+              } catch {
+                // Ignore storage failures; /studio is the fallback.
+              }
+            }
+          }}
           aria-label={`${queueAction}: ${nowTitle}${nowSubtitle ? ` by ${nowSubtitle}` : ''}`}
           title={`${queueAction}: ${nowTitle}`}
           className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"

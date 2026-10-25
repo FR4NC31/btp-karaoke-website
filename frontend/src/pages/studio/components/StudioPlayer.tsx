@@ -396,9 +396,9 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
 
   const rootClass =
     mode === 'expanded'
-      ? 'absolute inset-0 z-30 overflow-y-auto overscroll-contain bg-background p-4 sm:p-6'
+      ? 'absolute inset-0 z-30 overflow-y-auto overscroll-contain bg-background p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-300'
       : mode === 'mini'
-        ? 'fixed right-3 bottom-24 z-40 w-56 sm:right-4 sm:w-72'
+        ? 'fixed right-3 bottom-24 z-40 w-56 sm:right-4 sm:w-72 animate-in fade-in slide-in-from-bottom-2 duration-200'
         : 'invisible pointer-events-none fixed top-0 left-0 h-px w-px overflow-hidden'
 
   return (
