@@ -48,6 +48,7 @@ Last updated: October 25, 2026
 
 ### Bug Fixes
 
+- fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
 - fix(player): allow minimizing overlay-opened queue; remove queue from sidebar (b0c8fd4)
 - fix(lint): avoid ref access during render in StudioShell (e400a0e)
 - fix(test): pass slot assertion message to expect, not toContainText (c7892f9)
@@ -114,6 +115,7 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into fix/player-queue-origin (98bc557)
 - Merge pull request #49 from FR4NC31/fix/player-queue-minimize (1eb6c03)
 - Merge pull request #48 from FR4NC31/feat/player-queue-overlay (b5a1877)
 - Merge pull request #47 from FR4NC31/feat/player-queue-remember-origin (49af72e)
