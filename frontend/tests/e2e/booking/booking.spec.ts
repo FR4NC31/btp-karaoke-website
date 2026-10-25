@@ -38,6 +38,14 @@ function confirmation(page: Page) {
   return page.getByRole('status').filter({ hasText: 'reference' })
 }
 
+async function serviceIdByCode(page: Page, code: string): Promise<string> {
+  const response = await page.request.get('/api/services')
+  const body = await response.json()
+  const match = body.services.find((service: { code: string }) => service.code === code)
+  expect(match, `service ${code} should be seeded`).toBeTruthy()
+  return match.id
+}
+
 async function bookService(
   page: Page,
   card: Locator,
@@ -47,7 +55,7 @@ async function bookService(
 ): Promise<string> {
   await card.getByRole('button', { name: 'Book this service' }).click()
   await page.getByLabel('Session date').fill(day)
-  if (slot) await page.getByLabel('Session time').fill(slot)
+  if (slot) await page.getByLabel('Session time').selectOption(slot)
   if (notes) await page.getByLabel('Notes (optional)').fill(notes)
   await page.getByRole('button', { name: 'Confirm booking' }).click()
 
@@ -143,11 +151,12 @@ test.describe('booking desk', () => {
     await expect(row).toContainText('cancelled')
   })
 
-  test('BOOKING-008: a time-based service books a date with a time slot', { tag: '@p1' }, async ({ page }) => {
+  test('BOOKING-008: a time-based service books a date with an on-the-hour slot', { tag: '@p1' }, async ({ page }) => {
     await openDesk(page)
     const day = farFutureDay()
-    // Music Studio Recording bills per hour, so the form must expose a time field.
-    const card = serviceCard(page, /music studio recording/i)
+    // Music and Vocal Recording bills per hour, so the form must expose a
+    // time picker limited to whole hours.
+    const card = serviceCard(page, /music and vocal recording/i)
 
     await card.getByRole('button', { name: 'Book this service' }).click()
 
@@ -157,8 +166,19 @@ test.describe('booking desk', () => {
     // hourly booking submit without a slot must fail here.
     await expect(timeField).toHaveAttribute('required', '')
 
+    // Only whole-hour values are offered — no 14:30.
+    const hourValues = await timeField
+      .locator('option')
+      .evaluateAll((options) =>
+        options
+          .map((option) => (option as HTMLOptionElement).value)
+          .filter((value) => value.length > 0),
+      )
+    expect(hourValues).toHaveLength(24)
+    expect(hourValues.every((value) => value.endsWith(':00'))).toBe(true)
+
     await page.getByLabel('Session date').fill(day)
-    await timeField.fill('14:30')
+    await timeField.selectOption('14:00')
     await page.getByLabel('Notes (optional)').fill('E2E time slot booking')
     await page.getByRole('button', { name: 'Confirm booking' }).click()
 
@@ -170,7 +190,7 @@ test.describe('booking desk', () => {
     const row = bookingRow(page, reference!)
     await expect(row).toBeVisible()
     await expect(row).toContainText('pending')
-    await expect(row, 'the slot should show with the day, not "all day"').toContainText('14:30')
+    await expect(row, 'the slot should show with the day, not "all day"').toContainText('14:00')
     await expect(row).toContainText('E2E time slot booking')
 
     await row.getByRole('button', { name: 'Cancel booking' }).click()
@@ -180,28 +200,46 @@ test.describe('booking desk', () => {
   test('BOOKING-009: the same time slot cannot be booked twice, but another slot can', { tag: '@p2' }, async ({ page }) => {
     await openDesk(page)
     const day = farFutureDay()
-    // Studio Radio Online bills per 60-minute broadcast — a different
-    // time-based family from BOOKING-008's hourly service.
-    const card = serviceCard(page, /studio radio online/i)
+    // A second hourly service keeps this independent of BOOKING-008's
+    // recording session while still exercising the time-slot index.
+    const card = serviceCard(page, /audio editing and mastering/i)
 
     const reference = await bookService(page, card, day, 'E2E slot duplicate probe', '09:00')
 
     // Same service, same day, same slot → the time-slot unique index wins.
     await card.getByRole('button', { name: 'Book this service' }).click()
     await page.getByLabel('Session date').fill(day)
-    await page.getByLabel('Session time').fill('09:00')
+    await page.getByLabel('Session time').selectOption('09:00')
     await page.getByRole('button', { name: 'Confirm booking' }).click()
     await expect(page.getByRole('alert')).toContainText('booking for this service at this time slot')
 
     // A different slot on the same service + day is allowed — this is what
     // distinguishes the time-slot index from the old day-wide one.
-    const secondReference = await bookService(page, card, day, 'E2E second slot', '10:45')
+    const secondReference = await bookService(page, card, day, 'E2E second slot', '11:00')
 
     for (const rowRef of [reference, secondReference]) {
       const row = bookingRow(page, rowRef)
       await row.getByRole('button', { name: 'Cancel booking' }).click()
       await expect(row).toContainText('cancelled')
     }
+  })
+
+  test('BOOKING-010: an off-hour slot is rejected by the API', { tag: '@p1' }, async ({ page }) => {
+    // The picker only offers whole hours; this proves the server enforces the
+    // same rule for callers that skip the UI.
+    const serviceId = await serviceIdByCode(page, 'STUDIO-TRACKING')
+    const response = await page.request.post('/api/bookings', {
+      data: {
+        serviceId,
+        bookingDate: farFutureDay(),
+        bookingTime: '14:30',
+        notes: 'E2E off-hour probe',
+      },
+    })
+
+    expect(response.status()).toBe(400)
+    const body = await response.json()
+    expect(body.error).toMatch(/on the hour/i)
   })
 
   test.describe('mobile viewport', () => {

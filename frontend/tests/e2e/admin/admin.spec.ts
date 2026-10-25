@@ -54,6 +54,7 @@ async function serviceIdByCode(api: APIRequestContext, code: string): Promise<st
 async function createPendingAsCustomer(
   baseURL: string | undefined,
   serviceCode: string,
+  slot?: string,
 ): Promise<{ id: string; referenceCode: string }> {
   const context = await rawRequest.newContext({ baseURL })
   try {
@@ -65,7 +66,12 @@ async function createPendingAsCustomer(
 
     const serviceId = await serviceIdByCode(context, serviceCode)
     const created = await context.post('/api/bookings', {
-      data: { serviceId, bookingDate: farFutureDay(), notes: 'E2E admin queue probe' },
+      data: {
+        serviceId,
+        bookingDate: farFutureDay(),
+        bookingTime: slot,
+        notes: 'E2E admin queue probe',
+      },
     })
     expect(created.ok()).toBeTruthy()
     const body = await created.json()
@@ -91,7 +97,7 @@ test.describe('admin sign-in', () => {
 
 test.describe('reservation queue', () => {
   test('ADMIN-002: a pending reservation is confirmed from the queue, then completed', { tag: '@p1' }, async ({ page, baseURL }) => {
-    const { referenceCode } = await createPendingAsCustomer(baseURL, 'STUDIO-TRACKING')
+    const { referenceCode } = await createPendingAsCustomer(baseURL, 'STUDIO-TRACKING', '09:00')
 
     await page.goto('/admin')
     const row = pendingQueue(page).locator('li').filter({ hasText: referenceCode })
@@ -144,6 +150,7 @@ test.describe('booking for others', () => {
     await dialog.getByLabel('Guest name').fill(guestName)
     await dialog.getByLabel('Service').selectOption(serviceId)
     await dialog.getByLabel('Session date').fill(farFutureDay())
+    await dialog.getByLabel('Session time').selectOption('10:00')
     await dialog.getByRole('button', { name: 'Save reservation' }).click()
 
     const flash = flashWith(page, 'reference')

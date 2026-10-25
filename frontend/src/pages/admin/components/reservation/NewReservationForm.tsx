@@ -9,8 +9,16 @@ import {
   type AdminBooking,
   type TagUser,
 } from '../../../../lib/admin-api'
-import { describeBookingError, fetchServices, type Service } from '../../../../lib/booking-api'
-import { formatDay } from '../../../../lib/booking-format'
+import {
+  BLOCKOUT_REASON_LABELS,
+  describeBookingError,
+  fetchBlockouts,
+  fetchServices,
+  isTimeBasedService,
+  type PublicBlockout,
+  type Service,
+} from '../../../../lib/booking-api'
+import { formatDay, nextOpenDay } from '../../../../lib/booking-format'
 import CustomerFieldset from './CustomerFieldset'
 import SessionFieldset from './SessionFieldset'
 import type { CustomerMode } from './types'
@@ -51,6 +59,8 @@ export default function NewReservationForm({
   const [services, setServices] = useState<Service[]>([])
   const [serviceId, setServiceId] = useState('')
   const [bookingDate, setBookingDate] = useState('')
+  const [bookingTime, setBookingTime] = useState('')
+  const [blockouts, setBlockouts] = useState<PublicBlockout[]>([])
   const [studioToday, setStudioToday] = useState('')
   const [notes, setNotes] = useState('')
 
@@ -65,12 +75,21 @@ export default function NewReservationForm({
 
     async function load() {
       try {
-        const result = await fetchServices()
+        const [serviceResult, blockoutResult] = await Promise.all([
+          fetchServices(),
+          fetchBlockouts(),
+        ])
         if (!alive) return
-        setServices(result.services)
-        setStudioToday(result.studioToday)
-        // Pre-fill with the studio's today so the field is never empty.
-        setBookingDate(result.studioToday)
+        setServices(serviceResult.services)
+        setStudioToday(serviceResult.studioToday)
+        setBlockouts(blockoutResult.blockouts)
+        // Pre-fill with the first open day so a closed "today" does not fail
+        // on submit for a reason the admin has not seen yet.
+        setBookingDate(
+          nextOpenDay(serviceResult.studioToday, (day) =>
+            blockoutResult.blockouts.some((blockout) => blockout.bookingDate === day),
+          ),
+        )
       } catch (err) {
         if (!alive) return
         setLoadError(describeBookingError(err, 'Could not load the service catalog.'))
@@ -84,6 +103,14 @@ export default function NewReservationForm({
       alive = false
     }
   }, [])
+
+  function isBlockedDay(day: string): boolean {
+    return blockouts.some((blockout) => blockout.bookingDate === day)
+  }
+
+  function firstOpenDay(): string {
+    return nextOpenDay(studioToday, isBlockedDay)
+  }
 
   // Debounced customer search. Runs only while someone is actually picking a
   // registered customer — the guest tab never hits the endpoint. The state
@@ -130,8 +157,9 @@ export default function NewReservationForm({
     setUserSearchError('')
     setGuestName('')
     setServiceId('')
+    setBookingTime('')
     setNotes('')
-    setBookingDate(studioToday)
+    setBookingDate(firstOpenDay())
     setFormError('')
     setCreated(null)
   }
@@ -198,6 +226,24 @@ export default function NewReservationForm({
       return
     }
 
+    const selectedService = services.find((service) => service.id === serviceId) ?? null
+    const timeBased = selectedService ? isTimeBasedService(selectedService) : false
+    const activeBlockout =
+      blockouts.find((blockout) => blockout.bookingDate === bookingDate) ?? null
+
+    if (activeBlockout) {
+      setFormError(
+        `The studio is unavailable on ${formatDay(bookingDate)}${
+          activeBlockout.reason ? ` (${BLOCKOUT_REASON_LABELS[activeBlockout.reason]})` : ''
+        }. Pick another day.`,
+      )
+      return
+    }
+    if (timeBased && !bookingTime) {
+      setFormError('Pick a start time for this service.')
+      return
+    }
+
     setSubmitting(true)
     onBusyChange(true)
     setFormError('')
@@ -207,6 +253,7 @@ export default function NewReservationForm({
         guestName: mode === 'guest' ? guestName.trim() : undefined,
         serviceId,
         bookingDate,
+        bookingTime: timeBased ? bookingTime : undefined,
         notes: notes.trim() || undefined,
       })
       setCreated(booking)
@@ -217,8 +264,9 @@ export default function NewReservationForm({
       setUserSearchError('')
       setGuestName('')
       setServiceId('')
+      setBookingTime('')
       setNotes('')
-      setBookingDate(studioToday)
+      setBookingDate(firstOpenDay())
       // The desk pages behind the modal show the new row right away.
       onCreated()
     } catch (err) {
@@ -236,6 +284,9 @@ export default function NewReservationForm({
       </p>
     )
   }
+
+  const activeBlockout =
+    blockouts.find((blockout) => blockout.bookingDate === bookingDate) ?? null
 
   return (
     <div className="space-y-6">
@@ -293,10 +344,18 @@ export default function NewReservationForm({
         <SessionFieldset
           services={services}
           serviceId={serviceId}
-          onServiceChange={setServiceId}
+          onServiceChange={(value) => {
+            setServiceId(value)
+            // A slot picked for the previous service must not leak into the
+            // next one (or into a day-based service's payload).
+            setBookingTime('')
+          }}
           bookingDate={bookingDate}
           studioToday={studioToday}
           onDateChange={setBookingDate}
+          bookingTime={bookingTime}
+          onTimeChange={setBookingTime}
+          blockout={activeBlockout}
           notes={notes}
           onNotesChange={setNotes}
         />

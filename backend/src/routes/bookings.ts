@@ -5,20 +5,29 @@ import {
   cancelBooking,
   createBooking,
   listBookingsForUser,
+  listPublicBlockouts,
   studioToday,
 } from '../bookings.ts'
 import { requireSession } from '../session-middleware.ts'
 
 /**
  * The signed-in customer's own reservations.
- * POST takes a service, a whole day, and an optional time slot `HH:MM:SS`.
- * Per-hour services (Vocal Coaching, Keyboard Tutorials, Recording, Editing & Mastering)
- * require a time slot; per-day services (Guitar Lessons, etc.) accept date-only.
- * Time slots and time blocks are now supported via migration 0007.
+ * POST takes a service, a whole day, and an optional time slot `HH:MM`.
+ * Per-hour services require a start time on the hour; per-minute services
+ * accept any `HH:MM`; per-day services take the date only.
  * The status column carries `pending -> confirmed | rejected` for the
  * admin acceptance flow.
  */
 const bookingApi = new Hono()
+
+/**
+ * Upcoming studio closures. Read-only for customers: they need the days and
+ * the optional reason so the desk can disable them; notes/creators stay admin.
+ */
+bookingApi.get('/blockouts', requireSession, async (c) => {
+  const blockouts = await listPublicBlockouts()
+  return c.json({ blockouts, studioToday: studioToday() })
+})
 
 // The caller's own bookings only — never another user's.
 bookingApi.get('/', requireSession, async (c) => {

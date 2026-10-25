@@ -150,3 +150,45 @@ export function isTimeBasedService(service: Service): boolean {
   const unit = (service.unit ?? '').toLowerCase()
   return /\b(hour|hr|minute|min)(?:ly|s)?\b/.test(unit)
 }
+
+/** True when the service is billed by the hour, so slots must start on the
+ *  hour (14:00, not 14:30). Minute-based services keep any `HH:MM`. */
+export function isHourlyService(service: Service): boolean {
+  const unit = (service.unit ?? '').toLowerCase()
+  return /\b(hour|hr)(?:ly|s)?\b/.test(unit)
+}
+
+export const BLOCKOUT_REASONS = ['unavailable', 'maintenance', 'other'] as const
+
+export type BlockoutReason = (typeof BLOCKOUT_REASONS)[number]
+
+export const BLOCKOUT_REASON_LABELS: Record<BlockoutReason, string> = {
+  unavailable: 'Unavailable',
+  maintenance: 'Maintenance',
+  other: 'Other',
+}
+
+/** A closed day as the booking desk sees it (no internal note/creator). */
+export interface PublicBlockout {
+  bookingDate: string
+  reason: BlockoutReason | null
+}
+
+/** A closed day as the admin console sees it. */
+export interface AdminBlockout extends PublicBlockout {
+  id: string
+  note: string | null
+  createdBy: string | null
+  createdAt: string
+}
+
+export function blockoutReasonLabel(reason: BlockoutReason | null): string | null {
+  return reason ? BLOCKOUT_REASON_LABELS[reason] : null
+}
+
+export function fetchBlockouts(): Promise<{
+  blockouts: PublicBlockout[]
+  studioToday: string
+}> {
+  return request('/api/bookings/blockouts')
+}

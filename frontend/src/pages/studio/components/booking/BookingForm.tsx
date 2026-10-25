@@ -1,10 +1,14 @@
 import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon } from '@hugeicons/core-free-icons'
-import type { Service } from '../../../../lib/booking-api'
-import { isTimeBasedService } from '../../../../lib/booking-api'
+import type { PublicBlockout, Service } from '../../../../lib/booking-api'
+import {
+  BLOCKOUT_REASON_LABELS,
+  isHourlyService,
+  isTimeBasedService,
+} from '../../../../lib/booking-api'
 import { peso } from '../../../../lib/booking-format'
-import { NOTES_MAX } from '../../../../lib/booking-constants'
+import { HOUR_OPTIONS, NOTES_MAX } from '../../../../lib/booking-constants'
 
 type BookingFormProps = {
   service: Service
@@ -15,6 +19,8 @@ type BookingFormProps = {
   onTimeChange: (value: string) => void
   notes: string
   onNotesChange: (value: string) => void
+  /** Set when the chosen day is closed; the form refuses to submit. */
+  blockout: PublicBlockout | null
   formError: string
   submitting: boolean
   onClose: () => void
@@ -30,11 +36,15 @@ export default function BookingForm({
   onTimeChange,
   notes,
   onNotesChange,
+  blockout,
   formError,
   submitting,
   onClose,
   onSubmit,
 }: BookingFormProps) {
+  const timeBased = isTimeBasedService(service)
+  const hourly = isHourlyService(service)
+
   return (
     <form onSubmit={onSubmit} className="mt-6 rounded-xl border border-primary/40 bg-primary-soft/30 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -72,15 +82,28 @@ export default function BookingForm({
             min={studioToday}
             value={bookingDate}
             onChange={(e) => onDateChange(e.target.value)}
+            aria-describedby={blockout ? 'booking-date-closed' : undefined}
             className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
           />
-          <p className="mt-1.5 text-[11px] text-text-muted">
-            {isTimeBasedService(service)
-              ? 'Pick the day for your session.'
-              : 'Whole day. One live booking per customer, per service, per day.'}
-          </p>
+          {blockout ? (
+            <p
+              id="booking-date-closed"
+              role="alert"
+              className="mt-2 rounded-lg border border-error/40 bg-error/10 px-3 py-2 text-xs text-error"
+            >
+              The studio is unavailable on this day
+              {blockout.reason ? ` (${BLOCKOUT_REASON_LABELS[blockout.reason]})` : ''}. Pick
+              another date.
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-text-muted">
+              {timeBased
+                ? 'Pick the day for your session.'
+                : 'Whole day. One live booking per customer, per service, per day.'}
+            </p>
+          )}
         </div>
-        {isTimeBasedService(service) && (
+        {timeBased && (
           <div>
             <label
               htmlFor="booking-time"
@@ -88,16 +111,35 @@ export default function BookingForm({
             >
               Session time
             </label>
-            <input
-              id="booking-time"
-              type="time"
-              required
-              value={bookingTime}
-              onChange={(e) => onTimeChange(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-            />
+            {hourly ? (
+              <select
+                id="booking-time"
+                required
+                value={bookingTime}
+                onChange={(e) => onTimeChange(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+              >
+                <option value="">Select a time</option>
+                {HOUR_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="booking-time"
+                type="time"
+                required
+                value={bookingTime}
+                onChange={(e) => onTimeChange(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+            )}
             <p className="mt-1.5 text-[11px] text-text-muted">
-              24-hour clock — time is in studio (PH) timezone
+              {hourly
+                ? 'Whole-hour blocks (e.g. 1:00 PM–2:00 PM) — studio (PH) timezone.'
+                : '24-hour clock — time is in studio (PH) timezone'}
             </p>
           </div>
         )}
@@ -130,7 +172,7 @@ export default function BookingForm({
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || Boolean(blockout)}
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? 'Booking…' : 'Confirm booking'}

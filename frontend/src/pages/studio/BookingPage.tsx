@@ -2,17 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import {
+  BLOCKOUT_REASON_LABELS,
   BookingApiError,
   cancelBooking,
   createBooking,
   describeBookingError,
+  fetchBlockouts,
   fetchBookings,
   fetchServices,
   isTimeBasedService,
   type Booking,
+  type PublicBlockout,
   type Service,
 } from '../../lib/booking-api'
-import { formatDay } from '../../lib/booking-format'
+import { formatDay, nextOpenDay } from '../../lib/booking-format'
 import BookingForm from './components/booking/BookingForm'
 import BookingServiceCard from './components/booking/BookingServiceCard'
 import BookingsPanel from './components/booking/BookingsPanel'
@@ -45,6 +48,7 @@ function byNewest(a: Booking, b: Booking): number {
 export default function BookingPage() {
   const [services, setServices] = useState<Service[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [blockouts, setBlockouts] = useState<PublicBlockout[]>([])
   const [studioToday, setStudioToday] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -68,11 +72,16 @@ export default function BookingPage() {
 
     async function load() {
       try {
-        const [serviceResult, bookingResult] = await Promise.all([fetchServices(), fetchBookings()])
+        const [serviceResult, bookingResult, blockoutResult] = await Promise.all([
+          fetchServices(),
+          fetchBookings(),
+          fetchBlockouts(),
+        ])
         if (!alive) return
         setServices(serviceResult.services)
         setStudioToday(serviceResult.studioToday)
         setBookings(bookingResult.bookings)
+        setBlockouts(blockoutResult.blockouts)
       } catch (err) {
         if (!alive) return
         setLoadError(describeBookingError(err, 'Could not load the booking desk.'))
@@ -110,8 +119,11 @@ export default function BookingPage() {
 
   function startBooking(service: Service) {
     setSelected(service)
-    // Pre-fill with the studio's today so the field is never empty on open.
-    setBookingDate(studioToday)
+    // Pre-fill with the first open day so a closed "today" does not greet the
+    // customer with an error the moment the form opens.
+    setBookingDate(
+      nextOpenDay(studioToday, (day) => blockouts.some((b) => b.bookingDate === day)),
+    )
     setBookingTime('')
     setNotes('')
     setFormError('')
@@ -124,6 +136,15 @@ export default function BookingPage() {
 
     if (!bookingDate) {
       setFormError('Pick a date for the session.')
+      return
+    }
+
+    if (activeBlockout) {
+      setFormError(
+        `The studio is unavailable on ${formatDay(bookingDate)}${
+          activeBlockout.reason ? ` (${BLOCKOUT_REASON_LABELS[activeBlockout.reason]})` : ''
+        }. Pick another day.`,
+      )
       return
     }
 
@@ -183,6 +204,9 @@ export default function BookingPage() {
 
   const wings = ['all', ...Array.from(new Set(services.map((s) => s.wing)))]
   const visibleServices = services.filter((s) => wing === 'all' || s.wing === wing)
+  const activeBlockout = selected
+    ? (blockouts.find((b) => b.bookingDate === bookingDate) ?? null)
+    : null
 
   if (loading) {
     return (
@@ -202,9 +226,9 @@ export default function BookingPage() {
           </p>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-text-muted">
-          Per-hour services (recording, editing, coaching) book a date + time slot — open 24 hours.
-          Per-song, per-video, per-day and per-event services book a date; rates marked “starting”
-          are confirmed after consultation.
+          Per-hour services (recording, editing, coaching) book a date + a start time on the hour
+          (e.g. 1:00 PM–2:00 PM) — open 24 hours. Per-song, per-video, per-day and per-event
+          services book a date; rates marked “starting” are confirmed after consultation.
         </p>
       </header>
 
@@ -222,6 +246,36 @@ export default function BookingPage() {
           <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="mt-0.5 shrink-0" />
           {flash}
         </p>
+      )}
+
+      {blockouts.length > 0 && (
+        <section
+          aria-labelledby="closures-heading"
+          className="rounded-xl border border-border bg-surface p-5"
+        >
+          <h2
+            id="closures-heading"
+            className="font-heading text-sm font-bold tracking-widest uppercase"
+          >
+            Studio closures
+          </h2>
+          <p className="mt-1 text-xs text-text-muted">
+            These days are unavailable for new bookings.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {blockouts.map((blockout) => (
+              <li
+                key={blockout.bookingDate}
+                className="rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs text-text-secondary"
+              >
+                <span className="font-semibold text-text-primary">
+                  {formatDay(blockout.bookingDate)}
+                </span>
+                {blockout.reason ? ` — ${BLOCKOUT_REASON_LABELS[blockout.reason]}` : ''}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {/* ------------------------------- catalog ------------------------------ */}
@@ -258,6 +312,7 @@ export default function BookingPage() {
             onTimeChange={setBookingTime}
             notes={notes}
             onNotesChange={setNotes}
+            blockout={activeBlockout}
             formError={formError}
             submitting={submitting}
             onClose={() => {

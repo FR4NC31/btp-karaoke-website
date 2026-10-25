@@ -11,6 +11,7 @@ import { describeBookingError, type BookingStatus } from '../../lib/booking-api'
 import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
 import { ReservationRowsSkeleton } from './AdminSkeletons'
 import AdminBookingRow from './components/bookings/AdminBookingRow'
+import BlockedDaysPanel from './components/bookings/BlockedDaysPanel'
 import BookingsFilters from './components/bookings/BookingsFilters'
 
 
@@ -138,6 +139,8 @@ export default function AdminBookings() {
           setQuery('')
         }}
       />
+
+      <BlockedDaysPanel studioToday={studioToday} />
 
       {loading ? (
         <ReservationRowsSkeleton />

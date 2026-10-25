@@ -1,6 +1,6 @@
-import type { BookingStatus } from '../schema.ts'
+import type { BookingBlockoutReason, BookingStatus } from '../schema.ts'
 
-export type { BookingStatus }
+export type { BookingBlockoutReason, BookingStatus }
 
 export interface Service {
   id: string
@@ -97,4 +97,33 @@ export interface TagUser {
   id: string
   name: string
   email: string
+}
+
+/**
+ * A blocked day as the booking desk sees it. Deliberately narrow: customers
+ * learn *that* the studio is closed and the reason label, never the internal
+ * note or which admin created it.
+ */
+export interface PublicBlockout {
+  /** Whole day, `YYYY-MM-DD`. */
+  bookingDate: string
+  /** NULL = no reason given. */
+  reason: BookingBlockoutReason | null
+}
+
+/** A blocked day as the admin console sees it. */
+export interface AdminBlockout extends PublicBlockout {
+  id: string
+  /** Admin-only context; never sent to the customer desk. */
+  note: string | null
+  createdBy: string | null
+  createdAt: string
+}
+
+export interface CreateBlockoutInput {
+  bookingDate: string
+  reason?: string | null
+  note?: string
+  /** Admin account creating the block. */
+  createdBy: string
 }

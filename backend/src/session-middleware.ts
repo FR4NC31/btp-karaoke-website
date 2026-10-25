@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory'
 import { auth } from './auth.ts'
 
-type AuthEnv = {
+export type AuthEnv = {
   Variables: {
     session: typeof auth.$Infer.Session | null
   }

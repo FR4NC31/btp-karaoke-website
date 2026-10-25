@@ -238,3 +238,42 @@ export const booking = pgTable(
       .where(sql`"bookingTime" IS NOT NULL AND "status" in ('pending', 'confirmed')`),
   ],
 )
+
+/**
+ * A day the studio is closed to new bookings — admin-managed from
+ * `/admin/bookings`. The reason is optional (NULL = "no reason given") and
+ * constrained to a small vocabulary so the UI can label it without parsing
+ * free text; `note` is internal context the admin sees, never the customer.
+ *
+ * Full-day only today: the unique index allows exactly one row per day. A
+ * future partial-day/time-range closure can reuse the same table by adding
+ * start/end columns and replacing the index with a partial one — keep the
+ * public `bookingDate` + `reason` shape stable when that lands.
+ */
+export const BOOKING_BLOCKOUT_REASONS = ['unavailable', 'maintenance', 'other'] as const
+
+export type BookingBlockoutReason = (typeof BOOKING_BLOCKOUT_REASONS)[number]
+
+export const bookingBlockout = pgTable(
+  'booking_blockout',
+  {
+    id: text('id').primaryKey(),
+    /** Whole day, ISO `YYYY-MM-DD`. One blockout row per day. */
+    bookingDate: date('bookingDate', { mode: 'string' }).notNull(),
+    /** NULL means the admin did not give a reason. */
+    reason: text('reason').$type<BookingBlockoutReason>(),
+    /** Admin-only context, e.g. "Annual electrical maintenance". */
+    note: text('note'),
+    /** Admin account that created the block; kept for audit if the account goes. */
+    createdBy: text('createdBy').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('booking_blockout_day_unique_idx').on(t.bookingDate),
+    check(
+      'booking_blockout_reason_check',
+      sql`"reason" is null or "reason" in ('unavailable', 'maintenance', 'other')`,
+    ),
+  ],
+)
