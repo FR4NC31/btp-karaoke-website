@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 24, 2026
+Last updated: October 25, 2026
 
 ### Features
 
@@ -107,6 +107,8 @@ Last updated: October 24, 2026
 
 ### Other Changes
 
+- refactor(playlists): drop the genre filter and genres (2c41651)
+- Merge pull request #42 from FR4NC31/fix/new-services-info (28cdb4d)
 - Merge branch 'develop' into fix/new-services-info (58e715d)
 - Merge pull request #41 from FR4NC31/qa/align-suite-time-slots-and-location (a65221c)
 - Merge branch 'develop' into qa/align-suite-time-slots-and-location (8d910e4)
