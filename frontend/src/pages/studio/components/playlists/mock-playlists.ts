@@ -1,16 +1,3 @@
-export const PLAYLIST_GENRES = [
-  'OPM',
-  'Pop',
-  'Rock',
-  'Acoustic',
-  'Duets',
-  'Ballads',
-  'Indie',
-  'High-Energy',
-] as const
-
-export type PlaylistGenre = (typeof PLAYLIST_GENRES)[number]
-
 export type PlaylistTone = 'red' | 'rose' | 'amber' | 'teal' | 'charcoal'
 
 export interface PlaylistTrack {
@@ -30,7 +17,6 @@ export interface Playlist {
   id: string
   name: string
   description: string
-  genres: PlaylistGenre[]
   tone: PlaylistTone
   updated: string
   createdBy: string
@@ -41,7 +27,6 @@ export interface Playlist {
 export interface NewPlaylistInput {
   name: string
   description: string
-  genre: PlaylistGenre
 }
 
 export interface NewTrackInput {
@@ -328,7 +313,6 @@ export const likedSongs: Playlist = {
   id: 'liked-songs',
   name: 'Liked Songs',
   description: 'Every song you have hearted in the studio, kept in one place.',
-  genres: ['OPM', 'Pop'],
   tone: 'red',
   updated: 'Oct 21',
   createdBy: 'Managed by the studio',
@@ -341,7 +325,6 @@ export const seedPlaylists: Playlist[] = [
     id: 'late-night-opm',
     name: 'Late Night OPM',
     description: 'Slow burns and after-hours OPM for the last set.',
-    genres: ['OPM', 'Ballads'],
     tone: 'red',
     updated: 'Oct 21',
     createdBy: 'Franc',
@@ -361,7 +344,6 @@ export const seedPlaylists: Playlist[] = [
     id: 'duets-and-harmonies',
     name: 'Duets & Harmonies',
     description: 'Two-mic songs for the crowd that sings together.',
-    genres: ['Duets', 'Pop'],
     tone: 'rose',
     updated: 'Oct 20',
     createdBy: 'Franc',
@@ -380,7 +362,6 @@ export const seedPlaylists: Playlist[] = [
     id: 'high-energy-ktv',
     name: 'High-Energy KTV',
     description: 'Loud, fast and built for the last hour of the night.',
-    genres: ['Pop', 'Rock', 'High-Energy'],
     tone: 'amber',
     updated: 'Oct 18',
     createdBy: 'Franc',
@@ -403,7 +384,6 @@ export const seedPlaylists: Playlist[] = [
     id: 'acoustic-reset',
     name: 'Acoustic Reset',
     description: 'Stripped-back reset for the room after the high.',
-    genres: ['Acoustic', 'OPM'],
     tone: 'teal',
     updated: 'Oct 16',
     createdBy: 'Franc',
@@ -420,7 +400,6 @@ export const seedPlaylists: Playlist[] = [
     id: 'new-set-ideas',
     name: 'New Set Ideas',
     description: 'A scratchpad for the next setlist. Nothing locked yet.',
-    genres: [],
     tone: 'charcoal',
     updated: 'Oct 12',
     createdBy: 'Franc',
@@ -433,7 +412,6 @@ export const trendingPlaylists: Playlist[] = [
     id: 'trending-audio',
     name: 'Trending Audio',
     description: 'The most-played minus-one tracks in the lounge this week.',
-    genres: ['Pop', 'OPM'],
     tone: 'rose',
     updated: 'This week',
     createdBy: 'BTP Editorial',
@@ -449,7 +427,6 @@ export const trendingPlaylists: Playlist[] = [
     id: 'trending-video',
     name: 'Trending Video',
     description: 'Karaoke videos the room is reaching for right now.',
-    genres: ['High-Energy', 'Pop'],
     tone: 'amber',
     updated: 'This week',
     createdBy: 'BTP Editorial',

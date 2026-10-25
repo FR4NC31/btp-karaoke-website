@@ -190,19 +190,6 @@ export default function PlaylistDetailPage() {
             {count} {count === 1 ? 'song' : 'songs'} · {duration} · Updated {playlist.updated}
           </p>
 
-          {playlist.genres.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {playlist.genres.map((genre) => (
-                <span
-                  key={genre}
-                  className="rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-[9px] font-bold tracking-wider text-text-secondary uppercase"
-                >
-                  {genre}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <button
               type="button"

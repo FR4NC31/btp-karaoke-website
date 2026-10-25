@@ -70,7 +70,6 @@ export function usePlaylistLibraryState(): PlaylistLibraryApi {
       id: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
       name,
       description: input.description.trim(),
-      genres: [input.genre],
       tone: CREATE_TONES[Math.floor(Math.random() * CREATE_TONES.length)] ?? 'red',
       updated: 'Just now',
       createdBy: 'You',
