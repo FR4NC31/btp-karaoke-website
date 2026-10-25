@@ -11,6 +11,8 @@
  * whole booking surface.
  */
 
+import { cached } from './cache'
+
 export interface Service {
   id: string
   code: string
@@ -121,7 +123,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function fetchServices(): Promise<{ services: Service[]; studioToday: string }> {
-  return request('/api/services')
+  return cached('services', 5 * 60 * 1000, () => request('/api/services'))
 }
 
 export function fetchBookings(): Promise<{ bookings: Booking[]; studioToday: string }> {
@@ -190,5 +192,5 @@ export function fetchBlockouts(): Promise<{
   blockouts: PublicBlockout[]
   studioToday: string
 }> {
-  return request('/api/bookings/blockouts')
+  return cached('blockouts', 30 * 1000, () => request('/api/bookings/blockouts'))
 }

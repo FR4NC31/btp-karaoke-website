@@ -1,4 +1,5 @@
 import { request } from './booking-api'
+import { cached } from './cache'
 
 
 export type MediaSection = 'video' | 'music' | 'radio'
@@ -38,7 +39,7 @@ export interface AdminMediaItem extends MediaItem {
 }
 
 export function fetchMediaCatalog(): Promise<{ items: MediaItem[] }> {
-  return request('/api/media')
+  return cached('media', 60 * 1000, () => request('/api/media'))
 }
 
 export function formatCount(value: number): string {
