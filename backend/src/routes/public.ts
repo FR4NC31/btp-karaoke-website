@@ -19,6 +19,7 @@ publicApi.get('/me', requireSession, (c) => {
 // `studioToday` lets the booking form set its minimum date in the studio's
 // own timezone rather than trusting the visitor's clock.
 publicApi.get('/services', async (c) => {
+  c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
   const services = await listServices()
   return c.json({ services, studioToday: studioToday() })
 })
@@ -26,6 +27,7 @@ publicApi.get('/services', async (c) => {
 // Public: the media hub catalog behind /studio — active rows only, already
 // section-ordered (video → music → radio) so the hub only has to group.
 publicApi.get('/media', async (c) => {
+  c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
   const items = await listPublicMedia()
   return c.json({ items })
 })

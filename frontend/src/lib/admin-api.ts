@@ -6,6 +6,7 @@ import {
   type BookingStatus,
 } from './booking-api'
 import type { AdminMediaItem, MediaSection } from './media-api'
+import { invalidate } from './cache'
 
 export type { AdminBlockout, BlockoutReason }
 
@@ -83,19 +84,25 @@ export function createAdminBlockout(input: {
   reason?: BlockoutReason | ''
   note?: string
 }): Promise<{ blockout: AdminBlockout }> {
-  return request('/api/admin/blockouts', {
+  return request<{ blockout: AdminBlockout }>('/api/admin/blockouts', {
     method: 'POST',
     body: JSON.stringify({
       bookingDate: input.bookingDate,
       reason: input.reason || null,
       note: input.note?.trim() || undefined,
     }),
+  }).then((result) => {
+    invalidate('blockouts')
+    return result
   })
 }
 
 export function deleteAdminBlockout(id: string): Promise<{ blockout: AdminBlockout }> {
-  return request(`/api/admin/blockouts/${encodeURIComponent(id)}/delete`, {
+  return request<{ blockout: AdminBlockout }>(`/api/admin/blockouts/${encodeURIComponent(id)}/delete`, {
     method: 'POST',
+  }).then((result) => {
+    invalidate('blockouts')
+    return result
   })
 }
 
@@ -152,9 +159,12 @@ export function fetchAdminMedia(section?: MediaSection): Promise<{ items: AdminM
 }
 
 export function createAdminMediaItem(input: AdminMediaInput): Promise<{ item: AdminMediaItem }> {
-  return request('/api/admin/media', {
+  return request<{ item: AdminMediaItem }>('/api/admin/media', {
     method: 'POST',
     body: JSON.stringify(mediaPayload(input)),
+  }).then((result) => {
+    invalidate('media')
+    return result
   })
 }
 
@@ -162,9 +172,12 @@ export function updateAdminMediaItem(
   id: string,
   input: AdminMediaInput,
 ): Promise<{ item: AdminMediaItem }> {
-  return request(`/api/admin/media/${encodeURIComponent(id)}`, {
+  return request<{ item: AdminMediaItem }>(`/api/admin/media/${encodeURIComponent(id)}`, {
     method: 'POST',
     body: JSON.stringify(mediaPayload(input)),
+  }).then((result) => {
+    invalidate('media')
+    return result
   })
 }
 
@@ -172,9 +185,12 @@ export function adminMediaVisibility(
   id: string,
   isActive: boolean,
 ): Promise<{ item: AdminMediaItem }> {
-  return request(`/api/admin/media/${encodeURIComponent(id)}/visibility`, {
+  return request<{ item: AdminMediaItem }>(`/api/admin/media/${encodeURIComponent(id)}/visibility`, {
     method: 'POST',
     body: JSON.stringify({ isActive }),
+  }).then((result) => {
+    invalidate('media')
+    return result
   })
 }
 
@@ -182,15 +198,21 @@ export function adminMediaMove(
   id: string,
   direction: 'up' | 'down',
 ): Promise<{ item: AdminMediaItem }> {
-  return request(`/api/admin/media/${encodeURIComponent(id)}/move`, {
+  return request<{ item: AdminMediaItem }>(`/api/admin/media/${encodeURIComponent(id)}/move`, {
     method: 'POST',
     body: JSON.stringify({ direction }),
+  }).then((result) => {
+    invalidate('media')
+    return result
   })
 }
 
 export function deleteAdminMediaItem(id: string): Promise<{ item: AdminMediaItem }> {
-  return request(`/api/admin/media/${encodeURIComponent(id)}/delete`, {
+  return request<{ item: AdminMediaItem }>(`/api/admin/media/${encodeURIComponent(id)}/delete`, {
     method: 'POST',
+  }).then((result) => {
+    invalidate('media')
+    return result
   })
 }
 
