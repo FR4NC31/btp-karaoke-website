@@ -115,6 +115,8 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into feat/client-cache (e8bbc6a)
+- Merge pull request #50 from FR4NC31/fix/player-queue-origin (9e5798d)
 - Merge remote-tracking branch 'origin/develop' into fix/player-queue-origin (98bc557)
 - Merge pull request #49 from FR4NC31/fix/player-queue-minimize (1eb6c03)
 - Merge pull request #48 from FR4NC31/feat/player-queue-overlay (b5a1877)
