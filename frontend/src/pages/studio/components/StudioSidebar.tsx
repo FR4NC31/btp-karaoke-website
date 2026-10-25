@@ -8,7 +8,6 @@ import {
   DashboardSquare01Icon,
   CalendarCheck01Icon,
   Playlist01Icon,
-  Queue01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
 import { useSession } from '../../../lib/auth-client'
@@ -18,7 +17,6 @@ import { sidebarSections, studioTools } from '../data'
 const deskLinks = [
   { to: '/studio', label: 'Media Hub', icon: DashboardSquare01Icon, end: true },
   { to: '/studio/playlists', label: 'Playlists', icon: Playlist01Icon, end: false },
-  { to: '/studio/player-queue', label: 'Player Queue', icon: Queue01Icon, end: true },
   { to: '/studio/bookings', label: 'Bookings', icon: CalendarCheck01Icon, end: false },
 ]
 
