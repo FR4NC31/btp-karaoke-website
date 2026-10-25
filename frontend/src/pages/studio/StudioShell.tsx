@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import StudioTopBar from './components/StudioTopBar'
 import StudioSidebar from './components/StudioSidebar'
@@ -28,6 +28,22 @@ export default function StudioShell() {
   const queue = useLoungeQueueState()
   const playlistLibrary = usePlaylistLibraryState()
   const { pathname } = useLocation()
+  const [queueOpen, setQueueOpen] = useState(false)
+  const prevPathRef = useRef(pathname)
+  useEffect(() => {
+    if (prevPathRef.current !== pathname) {
+      if (queueOpen && !pathname.startsWith('/studio/player-queue')) {
+        setQueueOpen(false)
+      }
+      prevPathRef.current = pathname
+    }
+  }, [pathname, queueOpen])
+  // Keep the queue open when arriving via a deep link to /studio/player-queue.
+  useEffect(() => {
+    if (pathname.startsWith('/studio/player-queue')) setQueueOpen(true)
+  }, [pathname])
+  const onConsoleRoute = pathname.startsWith('/studio/player-queue')
+  const onQueue = queueOpen || onConsoleRoute
   const currentOnAir = player.onAir ?? FALLBACK_ON_AIR
   const liked = playlistLibrary.isLiked({
     title: currentOnAir.title,
@@ -48,7 +64,7 @@ export default function StudioShell() {
     })
   }
 
-  const onConsole = pathname.startsWith('/studio/player-queue')
+  const onConsole = onQueue
   const onProfile = pathname.startsWith('/studio/profile')
   const onPlaylists = pathname.startsWith('/studio/playlists')
   const skipSkeleton = onConsole || onPlaylists
@@ -77,14 +93,24 @@ export default function StudioShell() {
                 )}
               </div>
 
-              <StudioPlayer player={player} />
+              <StudioPlayer
+                player={player}
+                queueOpen={queueOpen}
+                onToggleQueue={() => setQueueOpen((open) => !open)}
+              />
             </PlaylistLibraryProvider>
           </LoungeQueueProvider>
         </main>
       </div>
 
       {showPlayerBar && (
-        <PlayerBar player={player} liked={liked} onToggleLiked={toggleLiked} />
+        <PlayerBar
+          player={player}
+          liked={liked}
+          onToggleLiked={toggleLiked}
+          queueOpen={queueOpen}
+          onToggleQueue={() => setQueueOpen((open) => !open)}
+        />
       )}
     </div>
   )

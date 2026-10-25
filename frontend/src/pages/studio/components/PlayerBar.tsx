@@ -28,14 +28,18 @@ export default function PlayerBar({
   player,
   liked,
   onToggleLiked,
+  queueOpen = false,
+  onToggleQueue,
 }: {
   player: KaraokeVideoApi
   liked: boolean
   onToggleLiked: () => void
+  queueOpen?: boolean
+  onToggleQueue?: () => void
 }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const onQueue = pathname.startsWith('/studio/player-queue')
+  const onQueue = queueOpen || pathname.startsWith('/studio/player-queue')
   const storedOrigin =
     typeof window !== 'undefined' ? window.sessionStorage.getItem('playerQueueOrigin') : null
   const queueTarget = onQueue ? storedOrigin || '/studio' : '/studio/player-queue'
@@ -60,6 +64,10 @@ export default function PlayerBar({
       } catch {
         // Storage can be unavailable (private mode); fall back to /studio.
       }
+    }
+    if (onToggleQueue) {
+      onToggleQueue()
+      return
     }
     navigate(queueTarget)
   }
@@ -110,13 +118,17 @@ export default function PlayerBar({
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
         <Link
           to={queueTarget}
-          onClick={() => {
+          onClick={(event) => {
             if (!onQueue) {
               try {
                 window.sessionStorage.setItem('playerQueueOrigin', pathname)
               } catch {
                 // Ignore storage failures; /studio is the fallback.
               }
+            }
+            if (onToggleQueue) {
+              event.preventDefault()
+              onToggleQueue()
             }
           }}
           aria-label={`${queueAction}: ${nowTitle}${nowSubtitle ? ` by ${nowSubtitle}` : ''}`}

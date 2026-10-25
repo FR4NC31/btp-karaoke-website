@@ -38,7 +38,7 @@ test.describe('karaoke discovery', () => {
   test('KARAOKE-002: video song opens the console and auto-plays', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/studio')
     await page.getByRole('link', { name: 'Play The Reason' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Karaoke & Studio Audio Console' })).toBeVisible()
 
     const playerBar = page.getByRole('contentinfo')
@@ -197,7 +197,7 @@ test.describe('karaoke discovery', () => {
     await expect(page.getByRole('link', { name: 'Back' })).toHaveCount(0)
 
     await page.getByRole('link', { name: 'Play The Reason' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
@@ -249,7 +249,7 @@ test.describe('karaoke discovery', () => {
     await expect(mini.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
 
     await mini.getByRole('button', { name: 'Expand' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(mini).toBeHidden()
     await expect(video).toBeVisible()
     await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).paused)).toBe(false)
@@ -286,7 +286,7 @@ test.describe('karaoke discovery', () => {
       await expect(card).toContainText('112 BPM')
 
       await card.getByRole('link', { name: `Play ${title}` }).click()
-      await expect(page).toHaveURL('/studio/player-queue')
+      await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
 
       const stage = page.locator('main video')
       await expect(stage).toHaveAttribute('src', sourceUrl)
@@ -337,7 +337,7 @@ test.describe('karaoke discovery', () => {
     await expect(dialog.getByRole('button', { name: 'Added to queue' })).toBeVisible()
 
     await dialog.getByRole('link', { name: 'Open lounge queue' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
 
     const queue = page
       .locator('section')
@@ -662,7 +662,7 @@ test.describe('karaoke discovery', () => {
 
     const topBar = page.getByRole('banner')
     await topBar.getByRole('link', { name: 'Player Queue' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Karaoke & Studio Audio Console' }),
     ).toBeVisible()
@@ -676,7 +676,7 @@ test.describe('karaoke discovery', () => {
       .getByRole('complementary')
       .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
     await sidebar.getByRole('link', { name: 'Player Queue' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveClass(
       /bg-primary-soft/,
     )
@@ -684,7 +684,7 @@ test.describe('karaoke discovery', () => {
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
     await page.getByRole('link', { name: 'Play The Reason' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
 
@@ -696,7 +696,7 @@ test.describe('karaoke discovery', () => {
     await expect(page).toHaveURL('/studio')
 
     await playerBar.getByRole('link', { name: /Open player queue/ }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
@@ -706,7 +706,7 @@ test.describe('karaoke discovery', () => {
     })
     expect(emptyBarSpot).toBe(true)
     await playerBar.click({ position: { x: 4, y: 72 } })
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
   })
 
   test('KARAOKE-017: reopening the queue resumes playback and toggles back', { tag: '@p1' }, async ({ page }) => {
@@ -737,7 +737,7 @@ test.describe('karaoke discovery', () => {
     async function expectQueueResume(openQueue: () => Promise<void>) {
       const videoBefore = await stageTime()
       await openQueue()
-      await expect(page).toHaveURL('/studio/player-queue')
+      await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
       await expect(stage).toHaveAttribute('src', stageSource ?? '')
       await expect(stage).toBeVisible()
       await expect.poll(stageTime).toBeGreaterThan(videoBefore - 0.5)
@@ -746,7 +746,7 @@ test.describe('karaoke discovery', () => {
     }
 
     async function expectQueueMinimized(videoBefore: number) {
-      await expect(page).toHaveURL('/studio')
+      await expect(page.locator('[data-player-mode="expanded"]')).toBeHidden()
       await expect(stage).toBeHidden()
       await expect.poll(stageTime).toBeGreaterThan(videoBefore - 0.5)
       await expect.poll(stagePaused).toBe(false)
@@ -803,7 +803,7 @@ test.describe('karaoke discovery', () => {
     await expect.poll(stageTime).toBeGreaterThan(beforeBrowsing + 0.2)
 
     await topBar.getByRole('link', { name: 'Player Queue' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(stage).toBeVisible()
     await expect.poll(stagePaused).toBe(false)
     await expect.poll(stageTime).toBeGreaterThan(beforeBrowsing + 0.2)
@@ -831,7 +831,7 @@ test.describe('karaoke discovery', () => {
     await expect(page.getByRole('contentinfo').getByRole('button', { name: 'Pause' })).toBeVisible()
 
     await page.getByRole('contentinfo').getByRole('link', { name: /Open player queue/ }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(stage).toBeVisible()
     await expect.poll(stagePaused).toBe(false)
   })
@@ -856,7 +856,7 @@ test.describe('karaoke discovery', () => {
     await expect.poll(stagePaused).toBe(true)
 
     await page.getByRole('banner').getByRole('link', { name: 'Player Queue' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(stage).toBeVisible()
     await expect.poll(stagePaused).toBe(true)
     await expect(playerBar.getByRole('button', { name: 'Play' })).toBeVisible()
@@ -879,7 +879,7 @@ test.describe('karaoke discovery', () => {
     // The same src stays loaded on the persistent element, so selecting the
     // card again must reset the playhead explicitly.
     await page.getByRole('link', { name: 'Play The Reason' }).click()
-    await expect(page).toHaveURL('/studio/player-queue')
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(stage).toBeVisible()
     await expect.poll(stageTime).toBeLessThan(1)
     await expect.poll(stagePaused).toBe(false)
