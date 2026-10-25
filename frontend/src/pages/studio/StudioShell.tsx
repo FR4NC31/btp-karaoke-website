@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import StudioTopBar from './components/StudioTopBar'
 import StudioSidebar from './components/StudioSidebar'
@@ -28,22 +28,18 @@ export default function StudioShell() {
   const queue = useLoungeQueueState()
   const playlistLibrary = usePlaylistLibraryState()
   const { pathname } = useLocation()
-  const [queueOpen, setQueueOpen] = useState(false)
-  const prevPathRef = useRef(pathname)
-  useEffect(() => {
-    if (prevPathRef.current !== pathname) {
-      if (queueOpen && !pathname.startsWith('/studio/player-queue')) {
-        setQueueOpen(false)
-      }
-      prevPathRef.current = pathname
-    }
-  }, [pathname, queueOpen])
-  // Keep the queue open when arriving via a deep link to /studio/player-queue.
-  useEffect(() => {
-    if (pathname.startsWith('/studio/player-queue')) setQueueOpen(true)
-  }, [pathname])
+  const [overlayOpen, setOverlayOpen] = useState(false)
+  const [prevPathname, setPrevPathname] = useState(pathname)
   const onConsoleRoute = pathname.startsWith('/studio/player-queue')
-  const onQueue = queueOpen || onConsoleRoute
+  // Reset the overlay when the user navigates away (done during render to
+  // avoid cascading effect state updates).
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
+    if (overlayOpen && !onConsoleRoute) setOverlayOpen(false)
+  }
+  const queueOpen = overlayOpen || onConsoleRoute
+  const onQueue = queueOpen
+  const onConsole = onQueue
   const currentOnAir = player.onAir ?? FALLBACK_ON_AIR
   const liked = playlistLibrary.isLiked({
     title: currentOnAir.title,
@@ -64,7 +60,6 @@ export default function StudioShell() {
     })
   }
 
-  const onConsole = onQueue
   const onProfile = pathname.startsWith('/studio/profile')
   const onPlaylists = pathname.startsWith('/studio/playlists')
   const skipSkeleton = onConsole || onPlaylists
@@ -96,7 +91,7 @@ export default function StudioShell() {
               <StudioPlayer
                 player={player}
                 queueOpen={queueOpen}
-                onToggleQueue={() => setQueueOpen((open) => !open)}
+                onToggleQueue={() => setOverlayOpen((open) => !open)}
               />
             </PlaylistLibraryProvider>
           </LoungeQueueProvider>
@@ -109,7 +104,7 @@ export default function StudioShell() {
           liked={liked}
           onToggleLiked={toggleLiked}
           queueOpen={queueOpen}
-          onToggleQueue={() => setQueueOpen((open) => !open)}
+          onToggleQueue={() => setOverlayOpen((open) => !open)}
         />
       )}
     </div>
