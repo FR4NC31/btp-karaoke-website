@@ -108,6 +108,8 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- test(services): cover the redesigned public service sheet (e489e94)
+- Merge pull request #44 from FR4NC31/fix/booking-containtext-message (ad223ca)
 - Merge pull request #42 from FR4NC31/fix/new-services-info (28cdb4d)
 - Merge branch 'develop' into fix/new-services-info (58e715d)
 - Merge pull request #41 from FR4NC31/qa/align-suite-time-slots-and-location (a65221c)
