@@ -1,4 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { test, expect } from '../fixtures'
+import {
+  createMediaItemAsAdmin,
+  deleteMediaItemAsAdmin,
+  uploadMediaFileAsAdmin,
+} from '../helpers/media'
 
 test.describe('playlists', () => {
   test('PLAYLIST-001: the library shows Liked Songs and five saved sets', { tag: '@p1' }, async ({ page }) => {
@@ -25,43 +31,38 @@ test.describe('playlists', () => {
     await expect(cards.filter({ hasText: 'Late Night OPM' })).toHaveCount(1)
     await expect(cards.filter({ hasText: 'New Playlist' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'New Playlist' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Filter playlists' })).toBeVisible()
 
     const coverBox = await cards.first().locator('div.aspect-square').first().boundingBox()
     expect(coverBox).not.toBeNull()
     expect(coverBox!.width).toBeCloseTo(coverBox!.height, 0)
   })
 
-  test('PLAYLIST-002: the genre filter narrows the saved sets', { tag: '@p1' }, async ({ page }) => {
+  test('PLAYLIST-002: saved sets are not tied to a genre', { tag: '@p1' }, async ({ page }) => {
     await page.goto('/studio/playlists')
 
-    await page.getByRole('button', { name: 'Filter playlists' }).click()
-    const menu = page.getByRole('dialog', { name: 'Filter playlists' })
-    await expect(menu).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Filter playlists' })).toHaveCount(0)
 
-    const opm = menu.getByRole('button', { name: /^OPM, 2 playlists$/ })
-    await opm.click()
-    await expect(opm).toHaveAttribute('aria-pressed', 'true')
+    await page.getByRole('button', { name: 'New Playlist' }).click()
+    const dialog = page.getByRole('dialog', { name: 'New playlist' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByLabel('Genre')).toHaveCount(0)
+    await dialog.getByLabel('Playlist name').fill('Lounge Warm-Up')
+    await dialog.getByRole('button', { name: 'Create playlist' }).click()
+    await expect(dialog).toBeHidden()
 
-    // Multi-select is OR: OPM (2 sets) + Rock (1 set) = 3 sets, no duplicates.
-    const rock = menu.getByRole('button', { name: /^Rock, 1 playlist$/ })
-    await rock.click()
-    await expect(rock).toHaveAttribute('aria-pressed', 'true')
-    await menu.getByRole('button', { name: 'Done' }).click()
-    await expect(menu).toBeHidden()
-
-    await expect(page.getByText('3 of 5 playlists')).toBeVisible()
     const cards = page.locator(
       'section[aria-labelledby="your-playlists-heading"] article',
     )
-    await expect(cards).toHaveCount(3)
-    await expect(cards.filter({ hasText: 'Late Night OPM' })).toHaveCount(1)
-    await expect(cards.filter({ hasText: 'Acoustic Reset' })).toHaveCount(1)
-    await expect(cards.filter({ hasText: 'High-Energy KTV' })).toHaveCount(1)
-    await expect(cards.filter({ hasText: 'Duets & Harmonies' })).toHaveCount(0)
+    await expect(cards).toHaveCount(6)
+    const created = cards.filter({ hasText: 'Lounge Warm-Up' })
+    await expect(created).toHaveCount(1)
+    await expect(created).toContainText(/0 songs/i)
 
-    await page.getByRole('button', { name: 'Clear', exact: true }).click()
-    await expect(cards).toHaveCount(5)
+    await created.getByRole('link', { name: 'Lounge Warm-Up', exact: true }).click()
+    await expect(page).toHaveURL(/\/studio\/playlists\/lounge-warm-up/)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Lounge Warm-Up' }),
+    ).toBeVisible()
   })
 
   test('PLAYLIST-003: a saved set opens its tracklist and starts the console', { tag: '@p1' }, async ({ page }) => {
@@ -94,7 +95,6 @@ test.describe('playlists', () => {
 
     await dialog.getByLabel('Playlist name').fill('Friday Night OPM')
     await dialog.getByLabel('Description').fill('A Friday set for the lounge.')
-    await dialog.getByLabel('Genre').selectOption('OPM')
     await dialog.getByRole('button', { name: 'Create playlist' }).click()
     await expect(dialog).toBeHidden()
 
@@ -104,38 +104,92 @@ test.describe('playlists', () => {
     await expect(created).toContainText(/0 songs/i)
   })
 
-  test('PLAYLIST-005: a media card adds its song to a playlist', { tag: '@p1' }, async ({ page }) => {
+  test('PLAYLIST-005: a media card adds its song to a playlist', { tag: '@p1' }, async ({ page, baseURL }) => {
+    const title = `E2E Playlist Add ${Date.now()}`
+    // A music row never becomes the hub's first video card (h1 'The Reason').
+    const upload = await uploadMediaFileAsAdmin(baseURL, {
+      name: 'e2e-playlist-add.mp3',
+      mimeType: 'audio/mpeg',
+      data: readFileSync(new URL('../assets/silence.mp3', import.meta.url)),
+    })
+    expect(upload.status).toBe(201)
+    const { id } = await createMediaItemAsAdmin(baseURL, {
+      section: 'music',
+      title,
+      artist: 'E2E Artist',
+      tag: 'TAPE',
+      duration: '1:00',
+      sourceUrl: upload.body.file!.url,
+      sourceName: upload.body.file!.name,
+    })
+
+    try {
+      await page.goto('/studio')
+
+      const card = page.locator('main article').filter({ hasText: title })
+      await card.getByRole('button', { name: `More options for ${title}` }).click()
+      const menu = page.getByRole('dialog', { name: title })
+      await expect(menu.getByRole('button', { name: 'Add to playlist' })).toBeEnabled()
+      await menu.getByRole('button', { name: 'Add to playlist' }).click()
+
+      const dialog = page.getByRole('dialog', { name: 'Add to playlist' })
+      await expect(dialog).toBeVisible()
+      const lateNight = dialog.getByRole('button', { name: /Late Night OPM/ })
+      await expect(lateNight).toBeEnabled()
+      await lateNight.click()
+      await expect(dialog).toBeHidden()
+
+      const notice = page.getByRole('status').filter({ hasText: 'Added to Late Night OPM' })
+      await expect(notice).toBeVisible()
+      await expect(notice).toBeHidden({ timeout: 4000 })
+
+      // Reopening the picker reports the set that now holds the song as disabled.
+      await card.getByRole('button', { name: `More options for ${title}` }).click()
+      const savedMenu = page.getByRole('dialog', { name: title })
+      await expect(savedMenu.getByRole('button', { name: 'Add to playlist' })).toBeEnabled()
+      await savedMenu.getByRole('button', { name: 'Add to playlist' }).click()
+      const savedPicker = page.getByRole('dialog', { name: 'Add to playlist' })
+      await expect(savedPicker.getByRole('button', { name: /Late Night OPM/ })).toBeDisabled()
+      await expect(savedPicker).toContainText('Already in this playlist')
+      await savedPicker.getByRole('button', { name: 'Done' }).click()
+      await expect(savedPicker).toBeHidden()
+
+      await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
+      await expect(page).toHaveURL('/studio/playlists')
+
+      const playlistCard = page.locator('main article').filter({ hasText: 'Late Night OPM' })
+      await playlistCard.getByRole('link', { name: 'Late Night OPM', exact: true }).click()
+      await expect(page).toHaveURL('/studio/playlists/late-night-opm')
+
+      const tracklist = page.getByRole('list', { name: 'Late Night OPM tracks' })
+      await expect(tracklist.getByText(title)).toBeVisible()
+      await expect(tracklist.getByRole('listitem')).toHaveCount(10)
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, id)
+    }
+  })
+
+  test('PLAYLIST-013: already-saved sets stay disabled inside the picker', { tag: '@p1' }, async ({ page }) => {
     await page.goto('/studio')
 
     const card = page.locator('main article').filter({ hasText: 'The Reason' }).first()
     await card.getByRole('button', { name: 'More options for The Reason' }).click()
+
     const menu = page.getByRole('dialog', { name: 'The Reason' })
     await expect(menu.getByRole('button', { name: 'Add to playlist' })).toBeEnabled()
     await menu.getByRole('button', { name: 'Add to playlist' }).click()
 
-    const dialog = page.getByRole('dialog', { name: 'Add to playlist' })
-    await expect(dialog).toBeVisible()
-    await expect(dialog.getByText(/Already added to 3 playlists/i)).toHaveCount(0)
-    await expect(dialog.getByRole('button', { name: /Late Night OPM/ })).toBeDisabled()
-    const acoustic = dialog.getByRole('button', { name: /Acoustic Reset/ })
-    await acoustic.click()
-    await expect(dialog).toBeHidden()
+    const picker = page.getByRole('dialog', { name: 'Add to playlist' })
+    await expect(picker).toBeVisible()
+    for (const name of [/Late Night OPM/, /Duets & Harmonies/, /High-Energy KTV/]) {
+      await expect(picker.getByRole('button', { name })).toBeDisabled()
+    }
+    await expect(picker.getByText('Already in this playlist')).toHaveCount(3)
+    await expect(picker.getByRole('button', { name: /Acoustic Reset/ })).toBeEnabled()
+    await expect(picker.getByRole('button', { name: /New Set Ideas/ })).toBeEnabled()
 
-    const notice = page.getByRole('status').filter({ hasText: 'Added to Acoustic Reset' })
-    await expect(notice).toBeVisible()
-    await expect(notice).toContainText('Also already in 3 other playlists')
-    await expect(notice).toBeHidden({ timeout: 4000 })
-
-    await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
-    await expect(page).toHaveURL('/studio/playlists')
-
-    const playlistCard = page.locator('main article').filter({ hasText: 'Acoustic Reset' })
-    await playlistCard.getByRole('link', { name: 'Acoustic Reset', exact: true }).click()
-    await expect(page).toHaveURL('/studio/playlists/acoustic-reset')
-
-    const tracklist = page.getByRole('list', { name: 'Acoustic Reset tracks' })
-    await expect(tracklist.getByText('The Reason')).toBeVisible()
-    await expect(tracklist.getByRole('listitem')).toHaveCount(7)
+    await picker.getByRole('button', { name: 'Done' }).click()
+    await expect(picker).toBeHidden()
   })
 
   test('PLAYLIST-006: a saved set can be deleted', { tag: '@p1' }, async ({ page }) => {

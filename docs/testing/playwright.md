@@ -109,8 +109,8 @@ frontend/tests/e2e/
 ├── auth/signup.spec.ts          AUTH-010…014, 022 registration + contact + location rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
 ├── services/services.spec.ts    SERVICES-001…004 public service sheet: groups/prices, FILSCAP, subscription, VIP, CTAs
-├── karaoke/discovery.spec.ts    KARAOKE-001…021 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle
-├── karaoke/playlists.spec.ts    PLAYLIST-001…010 playlists library, detail, create/add/remove/delete, skeletons, shuffle
+├── karaoke/discovery.spec.ts    KARAOKE-001…022 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle, logo home
+├── karaoke/playlists.spec.ts    PLAYLIST-001…013 playlists library, detail, create/add/remove/delete, rename, liked songs, skeletons, shuffle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
 ├── booking/booking.spec.ts      BOOKING-001…009  booking desk: nav, filters, day + time-slot bookings, uniqueness
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
@@ -221,8 +221,9 @@ What the product actually implements today (test coverage is limited to this):
 | Song detail / lyrics page        | Does not exist        | —                         |
 | Music Player / Radio actions     | Visual only (buttons) | —                         |
 | Previous/Next/Shuffle/Repeat     | Working through the persistent transport on every studio route: repeat cycles off → all → one (all wraps the queue; one loops the element; off stops at the end); Previous/Next walk the playable rows; Shuffle draws unplayed songs, Previous walks the round back, and a following Next does not replay the song just left behind. The handlers stay attached while the player is mini/hidden, so skips work from the bar too; they are inert when no playable queue rows exist. | KARAOKE-014/015 |
-| Playlists library                | Working — playlist state is in-memory (`mock-playlists.ts`, reload reseeds); `/api/media` supplies catalog matching and playback metadata; Liked Songs strip, mosaic of 5 saved sets, genre filter, component-shaped skeleton | PLAYLIST-001/002/008 |
-| Playlist detail & management     | Working — tracklist hands over to the console; create, add-song-from-card, remove-song, delete and detail shuffle toggle all act on the in-memory catalog (reload reseeds) | PLAYLIST-003/004/005/006/007/009/010 |
+| Playlists library                | Working — playlist state is in-memory (`mock-playlists.ts`, reload reseeds); `/api/media` supplies catalog matching and playback metadata; Liked Songs strip, mosaic of 5 saved sets, component-shaped skeleton. No genre field/filter — sets are genre-agnostic | PLAYLIST-001/002/008 |
+| Playlist detail & management     | Working — tracklist hands over to the console; create, rename (card + detail; slug stays), add-song-from-card, remove-song, delete and detail shuffle toggle all act on the in-memory catalog (reload reseeds). The picker disables sets that already hold the song | PLAYLIST-003/004/005/006/007/009/010/011/013 |
+| Liked Songs wiring               | Working — the player-bar heart reads/writes the Liked Songs set (`aria-pressed`), and the strip count/Play button follow it | PLAYLIST-012, PLAYER-008 |
 
 ## Booking desk testing
 

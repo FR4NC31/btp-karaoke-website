@@ -8,11 +8,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '../../../../components/ui/dialog'
-import {
-  PLAYLIST_GENRES,
-  type NewPlaylistInput,
-  type PlaylistGenre,
-} from './mock-playlists'
+import type { NewPlaylistInput } from './mock-playlists'
 
 type CreatePlaylistDialogProps = {
   open: boolean
@@ -27,13 +23,11 @@ export default function CreatePlaylistDialog({
 }: CreatePlaylistDialogProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [genre, setGenre] = useState<PlaylistGenre>('OPM')
   const canCreate = name.trim().length > 0
 
   function reset() {
     setName('')
     setDescription('')
-    setGenre('OPM')
   }
 
   function handleOpenChange(next: boolean) {
@@ -44,7 +38,7 @@ export default function CreatePlaylistDialog({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!canCreate) return
-    onCreate({ name: name.trim(), description: description.trim(), genre })
+    onCreate({ name: name.trim(), description: description.trim() })
     reset()
     onOpenChange(false)
   }
@@ -103,27 +97,6 @@ export default function CreatePlaylistDialog({
               placeholder="What is this set for?"
               className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="new-playlist-genre"
-              className="mb-1.5 block text-[10px] font-bold tracking-[0.12em] text-text-muted uppercase"
-            >
-              Genre
-            </label>
-            <select
-              id="new-playlist-genre"
-              value={genre}
-              onChange={(event) => setGenre(event.target.value as PlaylistGenre)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-            >
-              {PLAYLIST_GENRES.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
           </div>
         </form>
 

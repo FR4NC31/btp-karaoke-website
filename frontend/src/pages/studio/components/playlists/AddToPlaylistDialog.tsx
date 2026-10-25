@@ -106,7 +106,7 @@ export default function AddToPlaylistDialog({
     event.preventDefault()
     const name = newName.trim()
     if (!name) return
-    const created = createPlaylist({ name, description: '', genre: 'OPM' })
+    const created = createPlaylist({ name, description: '' })
     addTrack(created.id, song)
     notifyAdded(created.id, created.name)
   }
