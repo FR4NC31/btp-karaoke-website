@@ -28,6 +28,18 @@ export default function StudioShell() {
   const queue = useLoungeQueueState()
   const playlistLibrary = usePlaylistLibraryState()
   const { pathname } = useLocation()
+  const [overlayOpen, setOverlayOpen] = useState(false)
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  const onConsoleRoute = pathname.startsWith('/studio/player-queue')
+  // Reset the overlay when the user navigates away (done during render to
+  // avoid cascading effect state updates).
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
+    if (overlayOpen && !onConsoleRoute) setOverlayOpen(false)
+  }
+  const queueOpen = overlayOpen || onConsoleRoute
+  const onQueue = queueOpen
+  const onConsole = onQueue
   const currentOnAir = player.onAir ?? FALLBACK_ON_AIR
   const liked = playlistLibrary.isLiked({
     title: currentOnAir.title,
@@ -48,7 +60,6 @@ export default function StudioShell() {
     })
   }
 
-  const onConsole = pathname.startsWith('/studio/player-queue')
   const onProfile = pathname.startsWith('/studio/profile')
   const onPlaylists = pathname.startsWith('/studio/playlists')
   const skipSkeleton = onConsole || onPlaylists
@@ -77,14 +88,24 @@ export default function StudioShell() {
                 )}
               </div>
 
-              <StudioPlayer player={player} />
+              <StudioPlayer
+                player={player}
+                queueOpen={queueOpen}
+                onToggleQueue={() => setOverlayOpen((open) => !open)}
+              />
             </PlaylistLibraryProvider>
           </LoungeQueueProvider>
         </main>
       </div>
 
       {showPlayerBar && (
-        <PlayerBar player={player} liked={liked} onToggleLiked={toggleLiked} />
+        <PlayerBar
+          player={player}
+          liked={liked}
+          onToggleLiked={toggleLiked}
+          queueOpen={queueOpen}
+          onToggleQueue={() => setOverlayOpen((open) => !open)}
+        />
       )}
     </div>
   )

@@ -6,6 +6,7 @@ Last updated: October 25, 2026
 
 ### Features
 
+- feat(player): make player queue an overlay to avoid page refresh (b65bee8)
 - feat(player): remember origin on queue maximize and animate transitions (fff9ad6)
 - feat(booking): admin-blockable closed days and on-the-hour slots (bf3a555)
 - feat(playlists): move add notice to a 2s toast (31b9d3a)
@@ -46,6 +47,7 @@ Last updated: October 25, 2026
 
 ### Bug Fixes
 
+- fix(lint): avoid ref access during render in StudioShell (e400a0e)
 - fix(test): pass slot assertion message to expect, not toContainText (c7892f9)
 - fix: Change info in services page (8a8157f)
 - fix(db): recreate booking indexes in migration 0008 (3603758)
@@ -110,6 +112,7 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge pull request #47 from FR4NC31/feat/player-queue-remember-origin (49af72e)
 - Merge pull request #46 from FR4NC31/feat/booking-blockouts-hour-slots (a827d6f)
 - Merge remote-tracking branch 'origin/develop' into feat/booking-blockouts-hour-slots (2cfcf3c)
 - Merge pull request #45 from FR4NC31/test/services-page-coverage (bd7e504)

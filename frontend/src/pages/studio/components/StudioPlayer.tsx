@@ -15,7 +15,15 @@ import { usePageTitle } from '../../../lib/page-title'
 import { resolveQueueSource, useLoungeQueue, type QueueItem } from '../../../lib/lounge-queue'
 import { fetchMediaCatalog, type AdminMediaItem, type MediaItem } from '../../../lib/media-api'
 
-export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
+export default function StudioPlayer({
+  player,
+  queueOpen = false,
+  onToggleQueue,
+}: {
+  player: KaraokeVideoApi
+  queueOpen?: boolean
+  onToggleQueue?: () => void
+}) {
   const {
     attachVideo,
     attachPlaylist,
@@ -38,7 +46,7 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
   const routeState = location.state as { autoplay?: boolean; item?: PreviewItem } | null
   const item = routeState?.item
   const autoplay = Boolean(routeState?.autoplay)
-  const onConsole = location.pathname.startsWith('/studio/player-queue')
+  const onConsole = location.pathname.startsWith('/studio/player-queue') || queueOpen
   const mode: PlayerViewMode = onConsole ? 'expanded' : pip ? 'mini' : 'hidden'
   const expanded = mode === 'expanded'
 
@@ -383,12 +391,14 @@ export default function StudioPlayer({ player }: { player: KaraokeVideoApi }) {
 
   const handleEnterPip = useCallback(() => {
     enterPip()
-    navigate('/studio')
-  }, [enterPip, navigate])
+    if (onToggleQueue) onToggleQueue()
+    else navigate('/studio')
+  }, [enterPip, onToggleQueue, navigate])
 
   const handleExpand = useCallback(() => {
-    navigate('/studio/player-queue')
-  }, [navigate])
+    if (onToggleQueue) onToggleQueue()
+    else navigate('/studio/player-queue')
+  }, [onToggleQueue, navigate])
 
   const handleCloseMini = useCallback(() => {
     exitPip()
