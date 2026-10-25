@@ -38,6 +38,10 @@ import { WING_LABELS } from './components/booking/constants'
  * `data.ts`, so prices live in one place.
  */
 
+/** Key for the in-progress booking form, so maximizing the player queue (which
+ *  unmounts this page) does not wipe the customer's draft. */
+const BOOKING_DRAFT_KEY = 'bookingFormDraft'
+
 /** The API's list order: newest session day first, then newest booking first. */
 function byNewest(a: Booking, b: Booking): number {
   if (a.bookingDate !== b.bookingDate) return a.bookingDate < b.bookingDate ? 1 : -1
@@ -82,6 +86,29 @@ export default function BookingPage() {
         setStudioToday(serviceResult.studioToday)
         setBookings(bookingResult.bookings)
         setBlockouts(blockoutResult.blockouts)
+
+        // Restore an in-progress booking so maximizing the player queue (which
+        // unmounts this page) does not wipe the customer's draft.
+        try {
+          const raw = window.sessionStorage.getItem(BOOKING_DRAFT_KEY)
+          if (raw) {
+            const draft = JSON.parse(raw) as {
+              serviceId?: string
+              bookingDate?: string
+              bookingTime?: string
+              notes?: string
+            }
+            const service = serviceResult.services.find((entry) => entry.id === draft.serviceId)
+            if (service) {
+              setSelected(service)
+              setBookingDate(draft.bookingDate || serviceResult.studioToday)
+              setBookingTime(draft.bookingTime || '')
+              setNotes(draft.notes || '')
+            }
+          }
+        } catch {
+          // Ignore malformed drafts.
+        }
       } catch (err) {
         if (!alive) return
         setLoadError(describeBookingError(err, 'Could not load the booking desk.'))
@@ -130,6 +157,32 @@ export default function BookingPage() {
     setFlash('')
   }
 
+  // Persist the in-progress form so it survives the page unmounting when the
+  // player queue is maximized from the player bar.
+  useEffect(() => {
+    if (!selected) {
+      try {
+        window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
+      } catch {
+        // Ignore storage failures.
+      }
+      return
+    }
+    try {
+      window.sessionStorage.setItem(
+        BOOKING_DRAFT_KEY,
+        JSON.stringify({
+          serviceId: selected.id,
+          bookingDate,
+          bookingTime,
+          notes,
+        }),
+      )
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [selected, bookingDate, bookingTime, notes])
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (!selected || submitting) return
@@ -166,6 +219,11 @@ export default function BookingPage() {
       // waiting on a second request; the quiet refresh reconciles the list.
       setBookings((prev) => [booking, ...prev].sort(byNewest))
       setSelected(null)
+      try {
+        window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
+      } catch {
+        // Ignore storage failures.
+      }
       setNotes('')
       setFlash(
         `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} ${booking.bookingTime ? `at ${booking.bookingTime.slice(0, 5)}` : ''} — reference ${booking.referenceCode}.`,
@@ -318,6 +376,11 @@ export default function BookingPage() {
             onClose={() => {
               setSelected(null)
               setFormError('')
+              try {
+                window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
+              } catch {
+                // Ignore storage failures.
+              }
             }}
             onSubmit={handleSubmit}
           />
