@@ -34,8 +34,19 @@ export default function StudioShell() {
   // Reset the overlay when the user navigates away (done during render to
   // avoid cascading effect state updates).
   if (prevPathname !== pathname) {
-    setPrevPathname(pathname)
+    if (onConsoleRoute && !overlayOpen) {
+      const origin =
+        prevPathname && !prevPathname.startsWith('/studio/player-queue')
+          ? prevPathname
+          : '/studio'
+      try {
+        window.sessionStorage.setItem('playerQueueOrigin', origin)
+      } catch {
+        // Ignore storage failures.
+      }
+    }
     if (overlayOpen && !onConsoleRoute) setOverlayOpen(false)
+    setPrevPathname(pathname)
   }
   const queueOpen = overlayOpen || onConsoleRoute
   const onQueue = queueOpen
