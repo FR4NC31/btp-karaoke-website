@@ -108,10 +108,12 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
-- test(services): cover the redesigned public service sheet (e489e94)
-- Merge pull request #44 from FR4NC31/fix/booking-containtext-message (ad223ca)
+- Merge remote-tracking branch 'origin/develop' into test/services-page-coverage (dd7bf74)
+- Merge pull request #43 from FR4NC31/refactor/playlists-drop-genre-filter (3db17d4)
 - Merge remote-tracking branch 'origin/develop' into refactor/playlists-drop-genre-filter (204b502)
+- test(services): cover the redesigned public service sheet (e489e94)
 - docs(testing): align playlists docs with the genre-filter removal (3c288b1)
+- Merge pull request #44 from FR4NC31/fix/booking-containtext-message (ad223ca)
 - refactor(playlists): drop the genre filter and genres (2c41651)
 - Merge pull request #42 from FR4NC31/fix/new-services-info (28cdb4d)
 - Merge branch 'develop' into fix/new-services-info (58e715d)
