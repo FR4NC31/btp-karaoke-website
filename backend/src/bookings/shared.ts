@@ -1,43 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db.ts'
-import { booking, service, type BookingStatus } from '../schema.ts'
+import { booking, bookingBlockout, service, type BookingStatus } from '../schema.ts'
 import { BookingError, type Booking } from './types.ts'
+import { blockoutMessage } from './validation.ts'
 
 /**
- * The studio's calendar day boundary. A booking is a *local* day, so "today"
- * must be resolved in the studio's timezone — comparing against UTC would let
- * someone book a day that has already ended in Manila (UTC+8), and block a
- * valid today between midnight and 08:00 local.
+ * Database-backed booking helpers. Pure input validation lives in
+ * validation.ts so it can be unit-tested without a database connection.
  */
-const STUDIO_TIMEZONE = process.env.STUDIO_TIMEZONE ?? 'Asia/Manila'
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
-const ISO_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
-
-/** Max horizon for a booking — a typo guard, not a business rule. */
-const MAX_DAYS_AHEAD = 730
-
-const NOTES_MAX = 500
-
-/** Today's date in the studio's timezone, as `YYYY-MM-DD`. */
-export function studioToday(): string {
-  // en-CA formats as YYYY-MM-DD, which is exactly the column's ISO form.
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: STUDIO_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
-}
-
-/** Shifts a `YYYY-MM-DD` string by whole days and returns the same form. */
-function addDays(isoDate: string, days: number): string {
-  // Defaults only satisfy noUncheckedIndexedAccess — callers pass studioToday().
-  const [y = 1970, m = 1, d = 1] = isoDate.split('-').map(Number)
-  const shifted = new Date(Date.UTC(y, m - 1, d + days))
-  return shifted.toISOString().slice(0, 10)
-}
 
 /**
  * The constraint name behind a 23505 (unique_violation), or null when `err`
@@ -144,92 +115,32 @@ export async function insertBookingRow(
   }
 }
 
-/**
- * True when `day` is a `YYYY-MM-DD` string naming a day that actually exists.
- *
- * The shape test alone accepts days that do not exist — 2027-02-29,
- * 2027-04-31, 2027-13-01 — and those reach Postgres, which rejects them as an
- * out-of-range `date`. `Date` rolls impossible days over (2027-04-31 -> 2027-05-01)
- * rather than failing, so parsing back and comparing is what actually catches
- * it. Shared by the booking writers and the admin date filter, which must not
- * hand Postgres a day it cannot parse.
- */
-export function isRealCalendarDay(day: string): boolean {
-  if (!ISO_DATE.test(day)) return false
-  // JavaScript's Date accepts year 0000 (1 BC), but Postgres rejects '0000-01-01'
-  // as a `date` input. No booking can legitimately start there either.
-  if (Number(day.slice(0, 4)) < 1) return false
-  const parsed = new Date(`${day}T00:00:00Z`)
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day
+/** Rejects a booking on a day the admin has blocked. */
+export async function assertDayNotBlocked(day: string): Promise<void> {
+  const rows = await db
+    .select({ reason: bookingBlockout.reason })
+    .from(bookingBlockout)
+    .where(eq(bookingBlockout.bookingDate, day))
+    .limit(1)
+
+  const blocked = rows[0]
+  if (blocked) {
+    throw new BookingError(blockoutMessage(day, blocked.reason), 409)
+  }
 }
 
-/**
- * Shared day validation for both booking paths (customer self-service and
- * admin reservations): format, real calendar day, not in the past, not
- * absurdly far ahead. Returns the trimmed day so callers cannot accidentally
- * keep the raw input.
- */
-export function validateBookingDay(raw: unknown): string {
-  const bookingDate = typeof raw === 'string' ? raw.trim() : ''
-
-  if (!ISO_DATE.test(bookingDate)) {
-    throw new BookingError('Pick a date in YYYY-MM-DD format.', 400)
-  }
-
-  if (!isRealCalendarDay(bookingDate)) {
-    throw new BookingError('That is not a real calendar date. Pick a valid day.', 400)
-  }
-
-  const today = studioToday()
-  if (bookingDate < today) {
-    throw new BookingError('That day has already passed. Pick today or a later date.', 400)
-  }
-  if (bookingDate > addDays(today, MAX_DAYS_AHEAD)) {
-    throw new BookingError('That date is too far ahead. Pick something within two years.', 400)
-  }
-
-  return bookingDate
-}
-
-/** Validates an optional `HH:MM` time slot. 24-hour clock — no open/closing
- *  restriction so overseas clients in any timezone can book. Returns null when
- *  not provided (per-day booking). Also rejects past same-day slots in
- *  STUDIO_TIMEZONE so a slot that has already passed today is rejected. */
-export function validateBookingTime(raw: unknown, date: string): string | null {
-  const bookingTime = typeof raw === 'string' ? raw.trim() : null
-  if (!bookingTime) return null
-  if (!ISO_TIME.test(bookingTime)) {
-    throw new BookingError('Pick a time in HH:MM format (24-hour clock).', 400)
-  }
-  // Reject past same-day slots in studio timezone
-  const now = new Date()
-  const today = new Date(now.toLocaleString('en-US', { timeZone: STUDIO_TIMEZONE }))
-  const combined = new Date(`${date}T${bookingTime}:00`.replace('T', ' ')).toLocaleString('en-US', { timeZone: STUDIO_TIMEZONE })
-  const bookingDateTimeObj = new Date(combined)
-  if (bookingDateTimeObj < today) {
-    throw new BookingError('Cannot book a time slot that has already passed.', 400)
-  }
-  return bookingTime
-}
-
-/** Shared notes validation. Returns the trimmed text, or null when empty. */
-export function validateNotes(raw: unknown): string | null {
-  const notes = typeof raw === 'string' ? raw.trim() || null : null
-  if (notes && notes.length > NOTES_MAX) {
-    throw new BookingError(`Notes must be ${NOTES_MAX} characters or fewer.`, 400)
-  }
-  return notes
-}
-
-/** Confirms the service exists and is bookable, or throws a 404. */
-export async function assertServiceAvailable(serviceId: string): Promise<void> {
-  const available = await db
-    .select({ id: service.id })
+/** Confirms the service exists and is bookable, or throws a 404. Returns the
+ *  billing unit so the caller can validate the time slot against it. */
+export async function assertServiceAvailable(serviceId: string): Promise<{ unit: string }> {
+  const rows = await db
+    .select({ unit: service.unit })
     .from(service)
     .where(and(eq(service.id, serviceId), eq(service.isActive, true)))
     .limit(1)
 
-  if (available.length === 0) {
+  const available = rows[0]
+  if (!available) {
     throw new BookingError('That service is not available.', 404)
   }
+  return available
 }

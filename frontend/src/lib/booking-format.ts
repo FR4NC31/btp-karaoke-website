@@ -22,3 +22,19 @@ const dayFormat = new Intl.DateTimeFormat('en-PH', {
 export function formatDay(isoDate: string): string {
   return dayFormat.format(new Date(`${isoDate}T00:00:00Z`))
 }
+
+/**
+ * The first day at or after `startIso` that is not blocked. Used to prefill the
+ * date field so a closed "today" does not greet the customer with an error.
+ * Falls back to `startIso` after 90 closed days — long enough for any real
+ * closure, short enough not to spin on bad data.
+ */
+export function nextOpenDay(startIso: string, isBlocked: (day: string) => boolean): string {
+  const date = new Date(`${startIso}T00:00:00Z`)
+  for (let offset = 0; offset < 90; offset += 1) {
+    const day = date.toISOString().slice(0, 10)
+    if (!isBlocked(day)) return day
+    date.setUTCDate(date.getUTCDate() + 1)
+  }
+  return startIso
+}

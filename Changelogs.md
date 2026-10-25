@@ -6,6 +6,7 @@ Last updated: October 25, 2026
 
 ### Features
 
+- feat(booking): admin-blockable closed days and on-the-hour slots (bf3a555)
 - feat(playlists): move add notice to a 2s toast (31b9d3a)
 - feat(studio): polish playlist covers and logo home (8e08787)
 - feat(playlists): wire liked songs and rename (e921a06)
@@ -108,6 +109,8 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into feat/booking-blockouts-hour-slots (2cfcf3c)
+- Merge pull request #45 from FR4NC31/test/services-page-coverage (bd7e504)
 - Merge remote-tracking branch 'origin/develop' into test/services-page-coverage (dd7bf74)
 - Merge pull request #43 from FR4NC31/refactor/playlists-drop-genre-filter (3db17d4)
 - Merge remote-tracking branch 'origin/develop' into refactor/playlists-drop-genre-filter (204b502)

@@ -1110,14 +1110,14 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 ### BOOKING-008
 
-- **Title:** A time-based service books a date with a time slot
+- **Title:** A time-based service books a date with an on-the-hour slot
 - **Priority:** P1
-- **Steps:** 1. Open the desk. 2. On the Music Studio Recording card (billed
+- **Steps:** 1. Open the desk. 2. On the Music and Vocal Recording card (billed
   per hour) click **Book this service**. 3. Confirm a **Session time** field is
-  shown. 4. Choose a day ~1–2 years out, fill `14:30`, add notes, confirm.
-  5. Cancel the new row.
+  shown and that its picker only offers whole-hour values (`HH:00`). 4. Choose a
+  day ~1–2 years out, pick `14:00`, add notes, confirm. 5. Cancel the new row.
 - **Expected:** The confirmation flash carries a reference; the row lists as
-  **pending** with the `14:30` slot (not "all day") and the notes; cancelling
+  **pending** with the `14:00` slot (not "all day") and the notes; cancelling
   flips it to **cancelled**.
 - **Automation:** Playwright — **Status: Automated**
 
@@ -1125,13 +1125,47 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 - **Title:** The same time slot cannot be booked twice, but another slot can
 - **Priority:** P2
-- **Steps:** 1. On the Studio Radio Online card, book a day ~1–2 years out at
-  09:00. 2. Submit the same day and slot again. 3. Then book the same service
-  and day at 10:45. 4. Cancel both rows.
-- **Expected:** The duplicate slot shows an alert containing "time slot";
-  the second, different slot succeeds — proving the day-wide index no longer
+- **Steps:** 1. On the Music, Vocal Audio Editing and Mastering card, book a day
+  ~1–2 years out at 09:00. 2. Submit the same day and slot again. 3. Then book
+  the same service and day at 11:00. 4. Cancel both rows.
+- **Expected:** The duplicate slot shows an alert containing "time slot"; the
+  second, different slot succeeds — proving the day-wide index no longer
   blocks a time-based service at another time.
 - **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-010
+
+- **Title:** An off-hour slot is rejected by the API
+- **Priority:** P1
+- **Steps:** 1. Signed in, POST `/api/bookings` with a `STUDIO-TRACKING` service,
+  a far-future day, and `bookingTime: "14:30"`.
+- **Expected:** HTTP 400 with an error matching "on the hour" — the server
+  enforces whole-hour starts even when the UI is bypassed.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-011
+
+- **Title:** A blocked day is refused by the desk and the API, then reopened
+- **Priority:** P1
+- **Steps:** 1. As an admin, block a far-future day with reason **Maintenance**
+  (and a note). 2. Open the customer desk: confirm the day appears under **Studio
+  closures**. 3. Pick a day-based service, fill the blocked day, and confirm the
+  form shows "The studio is unavailable on this day (Maintenance)" and disables
+  **Confirm booking**. 4. POST `/api/bookings` for the same day → 409. 5. Unblock
+  the day. 6. POST the same booking again → 201, then cancel it.
+- **Expected:** Both the client and the server refuse while the day is blocked;
+  reopening restores booking; cleanup leaves no blockout behind.
+- **Automation:** Playwright (`tests/e2e/booking/blockouts.spec.ts`) — **Status: Automated**
+
+### BOOKING-012
+
+- **Title:** A day can be blocked without a reason
+- **Priority:** P2
+- **Steps:** 1. As an admin, block a far-future day with **No reason**. 2. Open
+  the customer desk: confirm the day appears under **Studio closures** without a
+  reason suffix.
+- **Expected:** The closure is listed with just the date; unblocking is available.
+- **Automation:** Playwright (`tests/e2e/booking/blockouts.spec.ts`) — **Status: Automated**
 
 ---
 

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { requireAdmin } from '../../session-middleware.ts'
+import adminBlockouts from './blockouts.ts'
 import adminBookings from './bookings.ts'
 import adminMedia from './media.ts'
 import adminUsers from './users.ts'
@@ -14,6 +15,7 @@ const adminApi = new Hono()
 
 adminApi.use('*', requireAdmin)
 adminApi.route('/bookings', adminBookings)
+adminApi.route('/blockouts', adminBlockouts)
 adminApi.route('/users', adminUsers)
 adminApi.route('/media', adminMedia)
 

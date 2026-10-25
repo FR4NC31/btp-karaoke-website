@@ -1,9 +1,13 @@
 import {
   request,
+  type AdminBlockout,
+  type BlockoutReason,
   type Booking,
   type BookingStatus,
 } from './booking-api'
 import type { AdminMediaItem, MediaSection } from './media-api'
+
+export type { AdminBlockout, BlockoutReason }
 
 
 export interface AdminBooking extends Booking {
@@ -44,6 +48,7 @@ export function createAdminBooking(input: {
   guestName?: string
   serviceId: string
   bookingDate: string
+  bookingTime?: string | null
   notes?: string
 }): Promise<{ booking: AdminBooking }> {
   return request('/api/admin/bookings', {
@@ -64,6 +69,34 @@ export function adminBookingAction(
 export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
   const q = query.trim()
   return request(`/api/admin/users${q ? `?query=${encodeURIComponent(q)}` : ''}`)
+}
+
+export function fetchAdminBlockouts(): Promise<{
+  blockouts: AdminBlockout[]
+  studioToday: string
+}> {
+  return request('/api/admin/blockouts')
+}
+
+export function createAdminBlockout(input: {
+  bookingDate: string
+  reason?: BlockoutReason | ''
+  note?: string
+}): Promise<{ blockout: AdminBlockout }> {
+  return request('/api/admin/blockouts', {
+    method: 'POST',
+    body: JSON.stringify({
+      bookingDate: input.bookingDate,
+      reason: input.reason || null,
+      note: input.note?.trim() || undefined,
+    }),
+  })
+}
+
+export function deleteAdminBlockout(id: string): Promise<{ blockout: AdminBlockout }> {
+  return request(`/api/admin/blockouts/${encodeURIComponent(id)}/delete`, {
+    method: 'POST',
+  })
 }
 
 

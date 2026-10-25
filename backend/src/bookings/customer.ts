@@ -2,16 +2,15 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '../db.ts'
 import { booking, service } from '../schema.ts'
 import {
+  assertDayNotBlocked,
   assertServiceAvailable,
   bookingColumns,
   insertBookingRow,
   toBooking,
   uniqueViolationConstraint,
-  validateBookingDay,
-  validateBookingTime,
-  validateNotes,
   type BookingRow,
 } from './shared.ts'
+import { validateBookingDay, validateBookingTime, validateNotes } from './validation.ts'
 import { BookingError, type Booking, type CreateBookingInput } from './types.ts'
 
 /**
@@ -57,10 +56,11 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const bookingTime = validateBookingTime(input.bookingTime, input.bookingDate)
+  const { unit } = await assertServiceAvailable(input.serviceId)
+  const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
   const notes = validateNotes(input.notes)
 
-  await assertServiceAvailable(input.serviceId)
+  await assertDayNotBlocked(bookingDate)
 
   try {
     const bookingId = await insertBookingRow({

@@ -2,17 +2,20 @@ import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { db } from '../db.ts'
 import { booking, service, user, type BookingStatus } from '../schema.ts'
 import {
+  assertDayNotBlocked,
   assertServiceAvailable,
   bookingColumns,
   insertBookingRow,
-  isRealCalendarDay,
   toBooking,
   uniqueViolationConstraint,
+  type BookingRow,
+} from './shared.ts'
+import {
+  isRealCalendarDay,
   validateBookingDay,
   validateBookingTime,
   validateNotes,
-  type BookingRow,
-} from './shared.ts'
+} from './validation.ts'
 import {
   BookingError,
   type AdminBooking,
@@ -161,7 +164,8 @@ export async function createBookingForOthers(
   input: CreateBookingForOthersInput,
 ): Promise<AdminBooking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const bookingTime = validateBookingTime(input.bookingTime, bookingDate)
+  const { unit } = await assertServiceAvailable(input.serviceId)
+  const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
   const notes = validateNotes(input.notes)
 
   const userId = input.userId?.trim() || null
@@ -192,7 +196,7 @@ export async function createBookingForOthers(
     }
   }
 
-  await assertServiceAvailable(input.serviceId)
+  await assertDayNotBlocked(bookingDate)
 
   try {
     const bookingId = await insertBookingRow({
