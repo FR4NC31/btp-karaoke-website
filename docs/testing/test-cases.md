@@ -376,6 +376,59 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
 
 ---
 
+## Services — `frontend/tests/e2e/services/services.spec.ts`
+
+### SERVICES-001
+
+- **Title:** The service sheet lists groups, cards and prices
+- **Priority:** P1
+- **Steps:** 1. Visit `/services` as a guest.
+- **Expected:** The hero reads **BTP Music Production** with the
+  **FILSCAP-Accredited Studio Services** badge and tagline. Three groups render
+  — **Music Production & Recording** (4 cards), **Music Lessons & Artist
+  Development** (2) and **Vocalists, Artists & Entertainment** (3) — with their
+  prices and units (e.g. **₱500** / **per hour**, **Starting at ₱1,000** /
+  **per video**) and the entertainment variance note. No `mailto:` or `tel:`
+  links appear: contact details stay on `/contact`.
+- **Automation:** Playwright — **Status: Automated**
+
+### SERVICES-002
+
+- **Title:** The FILSCAP panel shows assistance, fee and disclaimer
+- **Priority:** P1
+- **Steps:** 1. Visit `/services`. 2. Scroll to **FILSCAP Membership & Musical
+  Works Assistance**. 3. Click **Ask about assistance**.
+- **Expected:** The panel lists the 5 assistance items, the **Administrative
+  Assistance Fee** (**Starting at ₱2,500**) and the important disclaimer
+  (approval and royalties are not guaranteed). The link lands on `/contact`
+  (**Direct Lines**).
+- **Automation:** Playwright — **Status: Automated**
+
+### SERVICES-003
+
+- **Title:** The subscription and VIP panels show plans and benefits
+- **Priority:** P1
+- **Steps:** 1. Visit `/services`.
+- **Expected:** **BTP Music Online Subscription** shows the Monthly (**₱20**
+  **per month**) and Annual (**₱180** **per year**) plans plus the 4 listed
+  benefits and terms. **BTP Music Production VIP Membership Card** shows
+  **20% OFF**, the **20% discount on eligible services.** benefit, the 7
+  eligible services and the membership terms.
+- **Automation:** Playwright — **Status: Automated**
+
+### SERVICES-004
+
+- **Title:** The header and inquiry CTAs lead to `/services` and `/contact`
+- **Priority:** P1
+- **Steps:** 1. From `/`, click **Services** in the primary navigation.
+  2. Click **Inquire & Book**. 3. Return to `/services` and click **Contact
+  Us**.
+- **Expected:** The nav link opens `/services` and carries
+  `aria-current="page"`; both CTAs land on `/contact` (**Direct Lines**).
+- **Automation:** Playwright — **Status: Automated**
+
+---
+
 ## Karaoke discovery — `frontend/tests/e2e/karaoke/discovery.spec.ts`
 
 ### KARAOKE-001

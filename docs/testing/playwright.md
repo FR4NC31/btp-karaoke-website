@@ -108,6 +108,7 @@ frontend/tests/e2e/
 ├── auth/signin.spec.ts          AUTH-001…021    login, logout, validation, Google
 ├── auth/signup.spec.ts          AUTH-010…014, 022 registration + contact + location rules
 ├── navigation/navigation.spec.ts NAV-001…004    header, cross-links, mobile menu
+├── services/services.spec.ts    SERVICES-001…004 public service sheet: groups/prices, FILSCAP, subscription, VIP, CTAs
 ├── karaoke/discovery.spec.ts    KARAOKE-001…022 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle, logo home
 ├── karaoke/playlists.spec.ts    PLAYLIST-001…013 playlists library, detail, create/add/remove/delete, rename, liked songs, skeletons, shuffle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
