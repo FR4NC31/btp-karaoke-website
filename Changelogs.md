@@ -6,6 +6,7 @@ Last updated: October 25, 2026
 
 ### Features
 
+- feat(booking): admin-blockable closed days and on-the-hour slots (bf3a555)
 - feat(playlists): move add notice to a 2s toast (31b9d3a)
 - feat(studio): polish playlist covers and logo home (8e08787)
 - feat(playlists): wire liked songs and rename (e921a06)
@@ -108,6 +109,7 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge pull request #43 from FR4NC31/refactor/playlists-drop-genre-filter (3db17d4)
 - Merge remote-tracking branch 'origin/develop' into refactor/playlists-drop-genre-filter (204b502)
 - docs(testing): align playlists docs with the genre-filter removal (3c288b1)
 - Merge pull request #44 from FR4NC31/fix/booking-containtext-message (ad223ca)
