@@ -64,8 +64,15 @@ export default function PlayerBar({
       } catch {
         // Storage can be unavailable (private mode); fall back to /studio.
       }
+      if (onToggleQueue) {
+        onToggleQueue()
+        return
+      }
+      navigate(queueTarget)
+      return
     }
-    if (onToggleQueue) {
+    // Minimize
+    if (onToggleQueue && !pathname.startsWith('/studio/player-queue')) {
       onToggleQueue()
       return
     }
@@ -125,11 +132,17 @@ export default function PlayerBar({
               } catch {
                 // Ignore storage failures; /studio is the fallback.
               }
-            }
-            if (onToggleQueue) {
+              if (onToggleQueue) {
+                event.preventDefault()
+                onToggleQueue()
+              }
+            } else if (onToggleQueue && !pathname.startsWith('/studio/player-queue')) {
+              // Overlay mode: close in place instead of navigating.
               event.preventDefault()
               onToggleQueue()
             }
+            // Route-based open (deep link / media card): let the link navigate
+            // to the stored origin (or /studio).
           }}
           aria-label={`${queueAction}: ${nowTitle}${nowSubtitle ? ` by ${nowSubtitle}` : ''}`}
           title={`${queueAction}: ${nowTitle}`}
