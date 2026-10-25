@@ -47,6 +47,7 @@ Last updated: October 25, 2026
 
 ### Bug Fixes
 
+- fix(lint): avoid ref access during render in StudioShell (e400a0e)
 - fix(test): pass slot assertion message to expect, not toContainText (c7892f9)
 - fix: Change info in services page (8a8157f)
 - fix(db): recreate booking indexes in migration 0008 (3603758)
