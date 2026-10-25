@@ -170,7 +170,7 @@ test.describe('booking desk', () => {
     const row = bookingRow(page, reference!)
     await expect(row).toBeVisible()
     await expect(row).toContainText('pending')
-    await expect(row).toContainText('14:30', 'the slot should show with the day, not "all day"')
+    await expect(row, 'the slot should show with the day, not "all day"').toContainText('14:30')
     await expect(row).toContainText('E2E time slot booking')
 
     await row.getByRole('button', { name: 'Cancel booking' }).click()

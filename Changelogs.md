@@ -44,6 +44,7 @@ Last updated: October 25, 2026
 
 ### Bug Fixes
 
+- fix(test): pass slot assertion message to expect, not toContainText (c7892f9)
 - fix: Change info in services page (8a8157f)
 - fix(db): recreate booking indexes in migration 0008 (3603758)
 - fix(booking): preserve request headers and classify minute slots (c750291)
