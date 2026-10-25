@@ -109,6 +109,8 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into feat/booking-blockouts-hour-slots (2cfcf3c)
+- Merge pull request #45 from FR4NC31/test/services-page-coverage (bd7e504)
 - Merge remote-tracking branch 'origin/develop' into test/services-page-coverage (dd7bf74)
 - Merge pull request #43 from FR4NC31/refactor/playlists-drop-genre-filter (3db17d4)
 - Merge remote-tracking branch 'origin/develop' into refactor/playlists-drop-genre-filter (204b502)
