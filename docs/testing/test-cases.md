@@ -667,6 +667,16 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   persistent element does not resume from the earlier position.
 - **Automation:** Playwright — **Status: Automated**
 
+### KARAOKE-022
+
+- **Title:** The studio logo returns to the hub
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/playlists`. 2. Click the banner **Studio home**
+  logo link.
+- **Expected:** Lands on `/studio` with the media hub loaded, and the logo link
+  carries `aria-current="page"` when already on `/studio`.
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Playlists — `frontend/tests/e2e/karaoke/playlists.spec.ts`
@@ -685,20 +695,21 @@ set detail.
   curated cards, and **Your Playlists** (h2) are visible; stats read **5
   playlists · 35 tracks · 2h 18m**; 5 user playlist `<article>` cards render
   (Late Night OPM present); the solid top-right **New Playlist** button is the
-  only creation entry (no in-grid create card); the **Filter playlists** button
-  is present.
+  only creation entry (no in-grid create card); no genre/filter control is
+  rendered.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYLIST-002
 
-- **Title:** The genre filter narrows the saved sets
+- **Title:** Saved sets are not tied to a genre
 - **Priority:** P1
-- **Steps:** 1. Click **Filter playlists**. 2. Click **OPM** (2 playlists),
-  then **Rock** (1 playlist). 3. Click **Done**. 4. Click **Clear**.
-- **Expected:** The anchored filter popover lists all 8 genres with counts and
-  `aria-pressed` toggles; multi-select is OR (OPM + Rock = 3 of 5 sets, no
-  duplicates). Late Night OPM, Acoustic Reset and High-Energy KTV remain;
-  Duets & Harmonies is hidden. **Clear** restores all 5 cards.
+- **Steps:** 1. Open `/studio/playlists`. 2. Confirm no **Filter playlists**
+  control exists. 3. Click **New Playlist** and confirm the dialog has no
+  **Genre** field. 4. Create **Lounge Warm-Up**.
+- **Expected:** Sets are genre-agnostic since the filter was dropped: the
+  library header has no genre filter, the create dialog asks only for name and
+  description, and the new set appears as a sixth card with **0 songs** and
+  opens at `/studio/playlists/lounge-warm-up`.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYLIST-003
@@ -720,7 +731,7 @@ set detail.
 - **Title:** The New Playlist dialog adds a saved set
 - **Priority:** P1
 - **Steps:** 1. Click **New Playlist**. 2. Fill **Playlist name** and
-  **Description**, choose **Genre** OPM. 3. Click **Create playlist**.
+  **Description**. 3. Click **Create playlist**.
 - **Expected:** The dialog closes; a new card **Friday Night OPM** appears in
   Your Playlists with **0 songs** / **empty playlist**. Creation is in-memory
   and survives route hops (resets on reload).
@@ -730,13 +741,14 @@ set detail.
 
 - **Title:** A media card adds its song to a playlist
 - **Priority:** P1
-- **Steps:** 1. On `/studio`, open **More options for The Reason** and click
-  **Add to playlist**. 2. Click **Acoustic Reset**. 3. Click **Done**. 4. Open
-  **Playlists → Acoustic Reset**.
+- **Steps:** 1. Via the admin API, upload an audio file and create a temporary
+  `music` row (**E2E Playlist Add …**). 2. On `/studio`, open **More options**
+  for that card and click **Add to playlist**. 3. Click **Late Night OPM**.
+  4. Open **Playlists → Late Night OPM**.
 - **Expected:** **Add to playlist** is enabled for queueable cards (radio stays
-  disabled); the picker lists existing sets with already-added sets disabled;
-  Acoustic Reset accepts The Reason (button becomes disabled / Already added),
-  and its tracklist grows from 6 to 7 rows.
+  disabled); choosing Late Night OPM closes the picker, shows the **Added to
+  Late Night OPM** status toast that auto-hides (~2s), and the set's tracklist
+  grows from 9 to 10 rows. The test deletes its media row afterwards.
 - **Automation:** Playwright — **Status: Automated**
 
 ### PLAYLIST-006
@@ -797,6 +809,42 @@ set detail.
   warning-colored on, stays on the detail page, and turns back off on the second
   click. With shuffle on, Play opens the console and the PlayerBar's **Shuffle**
   control starts pressed; clicking that control turns shuffle off again.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-011
+
+- **Title:** A saved set can be renamed from its card and detail
+- **Priority:** P1
+- **Steps:** 1. On **New Set Ideas**, open **More options** → **Rename
+  playlist**. 2. Change the name to **Sunday Sessions**, save. 3. Open the
+  detail and rename again to **Sunday Unplugged**.
+- **Expected:** The dialog is prefilled with the current name and the card
+  updates in place; the URL slug is unchanged (`/playlists/new-set-ideas`) and
+  the detail h1 follows both renames. System sets (Liked Songs, Trending) are
+  not renamable.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-012
+
+- **Title:** The player heart fills and clears Liked Songs
+- **Priority:** P1
+- **Steps:** 1. Play **The Reason** (seeded as liked). 2. Toggle the player-bar
+  **Like** button twice, visiting `/studio/playlists` between toggles.
+- **Expected:** `aria-pressed` and the heart color mirror membership in Liked
+  Songs; unliking leaves 0 songs and disables **Play Liked Songs**, liking again
+  restores 1 song and enables it. State is in-memory and resets on reload.
+- **Automation:** Playwright — **Status: Automated**
+
+### PLAYLIST-013
+
+- **Title:** Already-saved sets stay disabled inside the picker
+- **Priority:** P1
+- **Steps:** 1. On `/studio`, open **More options for The Reason** → **Add to
+  playlist**.
+- **Expected:** The Reason is seeded into three sets, so **Late Night OPM**,
+  **Duets & Harmonies** and **High-Energy KTV** are disabled and each carries
+  **Already in this playlist**; **Acoustic Reset** and **New Set Ideas** stay
+  selectable.
 - **Automation:** Playwright — **Status: Automated**
 
 ---
