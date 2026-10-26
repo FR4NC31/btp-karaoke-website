@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 26, 2026
+Last updated: October 27, 2026
 
 ### Features
 
@@ -117,6 +117,8 @@ Last updated: October 26, 2026
 
 ### Other Changes
 
+- refactor: reorganize backend modules and add circular profile image crop (2e0bba8)
+- Merge pull request #53 from FR4NC31/fix/redis-fallback (40fbc19)
 - Merge pull request #52 from FR4NC31/feat/redis-cache (89c7cc8)
 - Merge remote-tracking branch 'origin/develop' into feat/redis-cache (bd1823d)
 - Merge pull request #51 from FR4NC31/feat/client-cache (6f988d5)
