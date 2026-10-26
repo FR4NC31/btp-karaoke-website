@@ -12,20 +12,34 @@ let redis: any = null
 if (REDIS_URL) {
   try {
     const RedisCtor = Redis as any
+    const isTls = REDIS_URL.startsWith('rediss://')
     redis = new RedisCtor(REDIS_URL, {
       lazyConnect: true,
       maxRetriesPerRequest: 1,
       enableReadyCheck: false,
+      connectTimeout: 5000,
+      retryStrategy: () => null,
+      ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
     })
-    redis.connect().catch(() => {
+    redis
+      .connect()
+      .then(() => console.log('[cache] Redis connected'))
+      .catch((err: Error) => {
+        console.error('[cache] Redis connection failed, using in-memory fallback:', err.message)
+        try { redis?.disconnect() } catch {}
+        redis = null
+      })
+    redis.on('error', (err: Error) => {
+      console.error('[cache] Redis error, falling back to in-memory:', err.message)
+      try { redis?.disconnect() } catch {}
       redis = null
     })
-    redis.on('error', () => {
-      redis = null
-    })
-  } catch {
+  } catch (err) {
+    console.error('[cache] Redis init failed:', err)
     redis = null
   }
+} else {
+  console.log('[cache] REDIS_URL not set, using in-memory cache')
 }
 
 type MemoryEntry = { value: string; expires: number }
