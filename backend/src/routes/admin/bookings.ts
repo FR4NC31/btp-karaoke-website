@@ -8,8 +8,8 @@ import {
   studioToday,
   type AdminBookingAction,
   type BookingStatus,
-} from '../../bookings.ts'
-import { BOOKING_STATUSES } from '../../schema.ts'
+} from '../../modules/bookings/index.ts'
+import { BOOKING_STATUSES } from '../../db/schema.ts'
 
 const adminBookings = new Hono()
 
@@ -106,3 +106,4 @@ adminBookings.post('/:id/:action', async (c) => {
 })
 
 export default adminBookings
+

@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { listServices, studioToday } from '../bookings.ts'
-import { listPublicMedia } from '../media.ts'
-import { requireSession } from '../session-middleware.ts'
+import { listServices, studioToday } from '../modules/bookings/index.ts'
+import { listPublicMedia } from '../modules/media/index.ts'
+import { requireSession } from '../middleware/session.ts'
 
 const publicApi = new Hono()
 
@@ -33,3 +33,4 @@ publicApi.get('/media', async (c) => {
 })
 
 export default publicApi
+

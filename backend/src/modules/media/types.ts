@@ -55,3 +55,4 @@ export class MediaError extends Error {
     this.status = status
   }
 }
+

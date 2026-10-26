@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pool } from '../src/db.ts'
+import { pool } from '../src/db/client.ts'
 import { requireDisposableDatabase } from './e2e-db-guard.ts'
 
 /**
@@ -37,3 +37,4 @@ try {
 } finally {
   await pool.end()
 }
+

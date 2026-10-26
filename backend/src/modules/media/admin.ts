@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { asc, eq, or, sql } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { mediaItem } from '../schema.ts'
+import { db } from '../../db/client.ts'
+import { mediaItem } from '../../db/schema.ts'
 import {
   isUploadedImageUrl,
   isUploadedMediaUrl,
   removeUploadedMedia,
   uploadedMediaOnDisk,
-} from '../uploads.ts'
+} from '../uploads/storage.ts'
 import { toMediaItem } from './mapping.ts'
 import { MediaError, type MediaItem } from './types.ts'
 import { validateFields } from './validation.ts'
@@ -283,3 +283,4 @@ export async function discardUpload(url: unknown): Promise<void> {
     await removeUploadedMedia(trimmed)
   })
 }
+

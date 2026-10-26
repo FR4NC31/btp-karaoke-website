@@ -1,4 +1,4 @@
-import { isUploadedImageUrl, isUploadedMediaUrl } from '../uploads.ts'
+import { isUploadedImageUrl, isUploadedMediaUrl } from '../uploads/storage.ts'
 import { MediaError, type MediaSection } from './types.ts'
 
 const SECTION_VALUES: MediaSection[] = ['video', 'music', 'radio']
@@ -158,3 +158,4 @@ export function validateFields(input: Record<string, unknown>): ValidatedFields 
     coverName: cleanText(input.coverName, 'Cover name'),
   }
 }
+

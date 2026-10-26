@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { booking, service, user, type BookingStatus } from '../schema.ts'
+import { db } from '../../db/client.ts'
+import { booking, service, user, type BookingStatus } from '../../db/schema.ts'
 import {
   assertDayNotBlocked,
   assertServiceAvailable,
@@ -295,3 +295,4 @@ export async function listUsersForTagging(query?: string): Promise<TagUser[]> {
     .orderBy(asc(user.name))
     .limit(TAG_USERS_LIMIT)
 }
+

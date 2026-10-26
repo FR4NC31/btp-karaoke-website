@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { resolveAuthNetworkSettings } from './auth-settings.ts'
+import { resolveAuthNetworkSettings } from './settings.ts'
 
 test('defaults to x-forwarded-for and the local frontend', () => {
   const settings = resolveAuthNetworkSettings({})
@@ -69,3 +69,4 @@ test('rejects a non-http frontend origin', () => {
     /FRONTEND_ORIGIN must use http or https/,
   )
 })
+

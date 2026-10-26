@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory'
-import { auth } from './auth.ts'
+import { auth } from '../modules/auth/auth.ts'
 
 export type AuthEnv = {
   Variables: {
@@ -53,3 +53,5 @@ export const requireAdmin = createMiddleware<AuthEnv>(async (c, next) => {
   c.set('session', session)
   await next()
 })
+
+

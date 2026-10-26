@@ -1,4 +1,4 @@
-import type { BookingBlockoutReason, BookingStatus } from '../schema.ts'
+import type { BookingBlockoutReason, BookingStatus } from '../../db/schema.ts'
 
 export type { BookingBlockoutReason, BookingStatus }
 
@@ -127,3 +127,4 @@ export interface CreateBlockoutInput {
   /** Admin account creating the block. */
   createdBy: string
 }
+

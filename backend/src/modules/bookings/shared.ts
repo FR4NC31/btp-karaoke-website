@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { booking, bookingBlockout, service, type BookingStatus } from '../schema.ts'
+import { db } from '../../db/client.ts'
+import { booking, bookingBlockout, service, type BookingStatus } from '../../db/schema.ts'
 import { BookingError, type Booking } from './types.ts'
 import { blockoutMessage } from './validation.ts'
 
@@ -144,3 +144,4 @@ export async function assertServiceAvailable(serviceId: string): Promise<{ unit:
   }
   return available
 }
+

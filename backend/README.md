@@ -25,7 +25,7 @@ Bun is used only to install dependencies.
 
 ## Database & migrations
 
-PostgreSQL on Aiven. Two libraries share one connection pool (`src/db.ts`):
+PostgreSQL on Aiven. Two libraries share one connection pool (`src/db/client.ts`):
 
 | Owner            | Tables                                          | Migrations live in        |
 | ---------------- | ----------------------------------------------- | ------------------------- |
@@ -37,7 +37,7 @@ so application tables must never live there or they would be clobbered.
 
 ```bash
 cd backend
-npm run db:generate   # src/schema.ts -> a new drizzle/*.sql file (offline)
+npm run db:generate   # src/db/schema.ts -> a new drizzle/*.sql file (offline)
 npm run migrate       # apply pending migrations
 npm run seed          # (re)load the service catalog + the one real media row
 npm run migrate -- --status   # what has been applied
@@ -69,12 +69,12 @@ uses that command, then `npm run migrate`, `npm run seed`, and
 
 `user.role` (the admin flag) and the profile location columns (`province`,
 `city_municipality`, `barangay`) are the deliberate exceptions to the ownership
-table above. All four are declared in `src/schema.ts`; `role` is added by
+table above. All four are declared in `src/db/schema.ts`; `role` is added by
 `drizzle/0001_*.sql` and location by `drizzle/0007_*.sql`, while Better Auth
-reads them through `user.additionalFields` in `src/auth.ts`. That is what makes
+reads them through `user.additionalFields` in `src/modules/auth/auth.ts`. That is what makes
 `role` unsettable from the client (`input: false`), and what lets the
 `databaseHooks.user.create.before` / `update.before` guard reject partial or
-malformed location writes (`src/location.ts`). The ALTERs are `IF NOT EXISTS`
+malformed location writes (`src/modules/users/location.ts`). The ALTERs are `IF NOT EXISTS`
 so the fresh-database order above still works (Better Auth creates the columns
 first). Promote and revoke admins with:
 
@@ -85,8 +85,8 @@ npm run promote-admin -- --list                       # who is an admin?
 ```
 
 **Never run `drizzle-kit push` against this database.** It reconciles the whole
-database against `src/schema.ts` and would drop the Better Auth tables it cannot
-see. Add a column to `src/schema.ts`, generate, and apply instead.
+database against `src/db/schema.ts` and would drop the Better Auth tables it cannot
+see. Add a column to `src/db/schema.ts`, generate, and apply instead.
 
 ## Uploaded media files
 
@@ -121,3 +121,4 @@ so an uploaded video seeks in the console like the bundled master.
   (`drizzle/0005_*.sql` — video rows' old subtitle text was backfilled).
   Video rows fall back to `frontend/src/assets/video_local/the-reason.mp4`
   when no file is attached; radio stations carry no file (streams).
+

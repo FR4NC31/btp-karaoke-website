@@ -14,8 +14,8 @@
  * This file is the public barrel; the implementation lives in src/media/.
  */
 
-export { MediaError, type MediaItem, type MediaSection, type PublicMediaItem } from './media/types.ts'
-export { invalidateMediaCache, listMediaForAdmin, listPublicMedia } from './media/queries.ts'
+export { MediaError, type MediaItem, type MediaSection, type PublicMediaItem } from './types.ts'
+export { invalidateMediaCache, listMediaForAdmin, listPublicMedia } from './queries.ts'
 export {
   createMediaItem,
   deleteMediaItem,
@@ -23,4 +23,5 @@ export {
   moveMediaItem,
   setMediaVisibility,
   updateMediaItem,
-} from './media/admin.ts'
+} from './admin.ts'
+

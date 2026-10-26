@@ -2,9 +2,9 @@ import { dash } from '@better-auth/infra'
 import { betterAuth } from 'better-auth'
 import type { User } from 'better-auth'
 import { APIError } from 'better-auth/api'
-import { resolveAuthNetworkSettings } from './auth-settings.ts'
-import { pool } from './db.ts'
-import { validateLocationUpdate } from './location.ts'
+import { resolveAuthNetworkSettings } from './settings.ts'
+import { pool } from '../../db/client.ts'
+import { validateLocationUpdate } from '../users/location.ts'
 
 const { frontendOrigin, ipAddressHeaders, trustedProxies, errorURL } =
   resolveAuthNetworkSettings()
@@ -177,3 +177,4 @@ export const auth = betterAuth({
     }),
   ],
 })
+

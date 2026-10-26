@@ -10,8 +10,8 @@ import {
   setMediaVisibility,
   updateMediaItem,
   type MediaSection,
-} from '../../media.ts'
-import { UploadError, storeMediaUpload } from '../../uploads.ts'
+} from '../../modules/media/index.ts'
+import { UploadError, storeMediaUpload } from '../../modules/uploads/storage.ts'
 
 /**
  * Admin media hub catalog. /studio renders what these routes curate — video
@@ -193,3 +193,4 @@ adminMedia.post('/:id/delete', async (c) => {
 })
 
 export default adminMedia
+

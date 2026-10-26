@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { requireAdmin } from '../../session-middleware.ts'
+import { requireAdmin } from '../../middleware/session.ts'
 import adminBlockouts from './blockouts.ts'
 import adminBookings from './bookings.ts'
 import adminMedia from './media.ts'
@@ -20,3 +20,4 @@ adminApi.route('/users', adminUsers)
 adminApi.route('/media', adminMedia)
 
 export default adminApi
+
