@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 25, 2026
+Last updated: October 26, 2026
 
 ### Features
 
+- feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
 - feat(player): make player queue an overlay to avoid page refresh (b65bee8)
 - feat(player): remember origin on queue maximize and animate transitions (fff9ad6)
 - feat(booking): admin-blockable closed days and on-the-hour slots (bf3a555)
@@ -114,6 +115,7 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge pull request #50 from FR4NC31/fix/player-queue-origin (9e5798d)
 - Merge remote-tracking branch 'origin/develop' into fix/player-queue-origin (98bc557)
 - Merge pull request #49 from FR4NC31/fix/player-queue-minimize (1eb6c03)
 - Merge pull request #48 from FR4NC31/feat/player-queue-overlay (b5a1877)
