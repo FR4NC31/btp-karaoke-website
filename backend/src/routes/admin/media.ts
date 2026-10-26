@@ -4,6 +4,7 @@ import {
   createMediaItem,
   deleteMediaItem,
   discardUpload,
+  invalidateMediaCache,
   listMediaForAdmin,
   moveMediaItem,
   setMediaVisibility,
@@ -46,6 +47,7 @@ adminMedia.post('/', async (c) => {
 
   try {
     const item = await createMediaItem((body ?? {}) as Record<string, unknown>)
+    await invalidateMediaCache()
     return c.json({ item }, 201)
   } catch (err) {
     if (err instanceof MediaError) {
@@ -122,6 +124,7 @@ adminMedia.post('/:id', async (c) => {
 
   try {
     const item = await updateMediaItem(c.req.param('id'), (body ?? {}) as Record<string, unknown>)
+    await invalidateMediaCache()
     return c.json({ item })
   } catch (err) {
     if (err instanceof MediaError) {
@@ -143,6 +146,7 @@ adminMedia.post('/:id/visibility', async (c) => {
   const { isActive } = (body ?? {}) as Record<string, unknown>
   try {
     const item = await setMediaVisibility(c.req.param('id'), isActive)
+    await invalidateMediaCache()
     return c.json({ item })
   } catch (err) {
     if (err instanceof MediaError) {
@@ -164,6 +168,7 @@ adminMedia.post('/:id/move', async (c) => {
   const { direction } = (body ?? {}) as Record<string, unknown>
   try {
     const item = await moveMediaItem(c.req.param('id'), direction)
+    await invalidateMediaCache()
     return c.json({ item })
   } catch (err) {
     if (err instanceof MediaError) {
@@ -177,6 +182,7 @@ adminMedia.post('/:id/move', async (c) => {
 adminMedia.post('/:id/delete', async (c) => {
   try {
     const item = await deleteMediaItem(c.req.param('id'))
+    await invalidateMediaCache()
     return c.json({ item })
   } catch (err) {
     if (err instanceof MediaError) {
