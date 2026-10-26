@@ -25,6 +25,7 @@ const bookingApi = new Hono()
  * the optional reason so the desk can disable them; notes/creators stay admin.
  */
 bookingApi.get('/blockouts', requireSession, async (c) => {
+  c.header('Cache-Control', 'private, max-age=30, stale-while-revalidate=120')
   const blockouts = await listPublicBlockouts()
   return c.json({ blockouts, studioToday: studioToday() })
 })
