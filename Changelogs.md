@@ -49,6 +49,7 @@ Last updated: October 26, 2026
 
 ### Bug Fixes
 
+- fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
 - fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
 - fix(player): allow minimizing overlay-opened queue; remove queue from sidebar (b0c8fd4)
 - fix(lint): avoid ref access during render in StudioShell (e400a0e)
@@ -116,6 +117,7 @@ Last updated: October 26, 2026
 
 ### Other Changes
 
+- Merge pull request #52 from FR4NC31/feat/redis-cache (89c7cc8)
 - Merge remote-tracking branch 'origin/develop' into feat/redis-cache (bd1823d)
 - Merge pull request #51 from FR4NC31/feat/client-cache (6f988d5)
 - Merge remote-tracking branch 'origin/develop' into feat/client-cache (e8bbc6a)
