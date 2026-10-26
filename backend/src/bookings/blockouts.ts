@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { and, asc, eq, gte, inArray } from 'drizzle-orm'
 import { db } from '../db.ts'
 import { booking, bookingBlockout } from '../schema.ts'
+import { cacheDel, cacheDelPrefix, cacheGet, cacheSet } from '../cache.ts'
 import { uniqueViolationConstraint } from './shared.ts'
 import {
   studioToday,
@@ -57,24 +58,36 @@ function toPublicBlockout(row: Pick<BlockoutRow, 'bookingDate' | 'reason'>): Pub
 
 /** Upcoming blocked days for the admin console, soonest first. */
 export async function listBlockouts(from = studioToday()): Promise<AdminBlockout[]> {
+  const key = `blockouts:admin:${from}`
+  const cached = await cacheGet<AdminBlockout[]>(key)
+  if (cached) return cached
+
   const rows = await db
     .select(blockoutColumns)
     .from(bookingBlockout)
     .where(gte(bookingBlockout.bookingDate, from))
     .orderBy(asc(bookingBlockout.bookingDate))
 
-  return rows.map(toAdminBlockout)
+  const value = rows.map(toAdminBlockout)
+  await cacheSet(key, value, 15)
+  return value
 }
 
 /** Upcoming blocked days for the customer desk — no internal fields. */
 export async function listPublicBlockouts(from = studioToday()): Promise<PublicBlockout[]> {
+  const key = `blockouts:public:${from}`
+  const cached = await cacheGet<PublicBlockout[]>(key)
+  if (cached) return cached
+
   const rows = await db
     .select({ bookingDate: bookingBlockout.bookingDate, reason: bookingBlockout.reason })
     .from(bookingBlockout)
     .where(gte(bookingBlockout.bookingDate, from))
     .orderBy(asc(bookingBlockout.bookingDate))
 
-  return rows.map(toPublicBlockout)
+  const value = rows.map(toPublicBlockout)
+  await cacheSet(key, value, 30)
+  return value
 }
 
 /** The blockout on `day`, if any — used by the writers and tests. */
@@ -134,6 +147,7 @@ export async function createBlockout(input: CreateBlockoutInput): Promise<AdminB
       // An insert without a returning row is a server-side inconsistency.
       throw new Error('The blocked day insert returned no row.')
     }
+    await cacheDelPrefix('blockouts:')
     return toAdminBlockout(row)
   } catch (err) {
     if (uniqueViolationConstraint(err) === 'booking_blockout_day_unique_idx') {
@@ -154,5 +168,6 @@ export async function deleteBlockout(id: string): Promise<AdminBlockout> {
   if (!row) {
     throw new BookingError('That blocked day does not exist.', 404)
   }
+  await cacheDelPrefix('blockouts:')
   return toAdminBlockout(row)
 }

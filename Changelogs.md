@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 25, 2026
+Last updated: October 26, 2026
 
 ### Features
 
+- feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
 - feat: client-side cache for catalogs/closures + backend cache headers (2c1d8cb)
 - feat(player): make player queue an overlay to avoid page refresh (b65bee8)
 - feat(player): remember origin on queue maximize and animate transitions (fff9ad6)
@@ -115,6 +116,8 @@ Last updated: October 25, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into feat/redis-cache (bd1823d)
+- Merge pull request #51 from FR4NC31/feat/client-cache (6f988d5)
 - Merge remote-tracking branch 'origin/develop' into feat/client-cache (e8bbc6a)
 - Merge pull request #50 from FR4NC31/fix/player-queue-origin (9e5798d)
 - Merge remote-tracking branch 'origin/develop' into fix/player-queue-origin (98bc557)

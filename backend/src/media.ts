@@ -15,7 +15,7 @@
  */
 
 export { MediaError, type MediaItem, type MediaSection, type PublicMediaItem } from './media/types.ts'
-export { listMediaForAdmin, listPublicMedia } from './media/queries.ts'
+export { invalidateMediaCache, listMediaForAdmin, listPublicMedia } from './media/queries.ts'
 export {
   createMediaItem,
   deleteMediaItem,
