@@ -1,4 +1,4 @@
-import { mediaItem } from '../schema.ts'
+import { mediaItem } from '../../db/schema.ts'
 import type { MediaItem, MediaSection, PublicMediaItem } from './types.ts'
 
 type MediaRow = typeof mediaItem.$inferSelect
@@ -50,3 +50,4 @@ export function toPublicMediaItem(item: MediaItem): PublicMediaItem {
     sortOrder: item.sortOrder,
   }
 }
+

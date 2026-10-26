@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Menu01Icon, Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { Menu01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
 import BrandLogo from '../components/BrandLogo'
 import AuthDialog from '../components/AuthDialog'
 import SiteFooter from './SiteFooter'
@@ -60,7 +60,7 @@ export default function RootLayout() {
   )
 
   return (
-    <div className="min-h-dvh bg-background text-text-primary">
+    <div className="flex min-h-dvh flex-col bg-background text-text-primary">
       <header className="border-b border-border bg-surface px-4 py-3 sm:px-6">
         <div className="flex items-center gap-4 sm:gap-6">
           <Link to="/" aria-label="BTP KARAOKE" className="flex shrink-0 items-center gap-2.5">
@@ -100,22 +100,6 @@ export default function RootLayout() {
             </ul>
 
             <div className="flex items-center gap-3">
-              <div className="relative hidden lg:block">
-                <HugeiconsIcon
-                  icon={Search01Icon}
-                  size={16}
-                  className="absolute top-1/2 left-3 -translate-y-1/2 text-text-muted"
-                />
-                <input
-                  type="search"
-                  aria-label="Search catalog"
-                  placeholder="Search catalog, OPM…"
-                  className="w-60 rounded-lg border border-border bg-background py-2 pr-12 pl-9 text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                />
-                <kbd className="absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
-                  ⌘K
-                </kbd>
-              </div>
               {showHeaderAuth && headerAuthButtons()}
             </div>
           </nav>
@@ -162,7 +146,7 @@ export default function RootLayout() {
         )}
       </header>
 
-      <main className="mx-auto max-w-6xl p-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 p-6">
         <Outlet context={{ openAuth }} />
       </main>
 

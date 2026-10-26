@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, gte, inArray } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { booking, bookingBlockout } from '../schema.ts'
-import { cacheDel, cacheDelPrefix, cacheGet, cacheSet } from '../cache.ts'
+import { db } from '../../db/client.ts'
+import { booking, bookingBlockout } from '../../db/schema.ts'
+import { cacheDel, cacheDelPrefix, cacheGet, cacheSet } from '../../shared/cache.ts'
 import { uniqueViolationConstraint } from './shared.ts'
 import {
   studioToday,
@@ -171,3 +171,4 @@ export async function deleteBlockout(id: string): Promise<AdminBlockout> {
   await cacheDelPrefix('blockouts:')
   return toAdminBlockout(row)
 }
+

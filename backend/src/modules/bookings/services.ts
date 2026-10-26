@@ -1,7 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { service } from '../schema.ts'
-import { cacheDel, cacheGet, cacheSet } from '../cache.ts'
+import { db } from '../../db/client.ts'
+import { service } from '../../db/schema.ts'
+import { cacheDel, cacheGet, cacheSet } from '../../shared/cache.ts'
 import type { Service } from './types.ts'
 
 const SERVICES_KEY = 'services:active'
@@ -37,3 +37,4 @@ export async function listServices(): Promise<Service[]> {
 export async function invalidateServicesCache(): Promise<void> {
   await cacheDel(SERVICES_KEY)
 }
+

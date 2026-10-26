@@ -1,6 +1,6 @@
 import { inArray, sql } from 'drizzle-orm'
-import { db, pool } from '../src/db.ts'
-import { mediaItem, service } from '../src/schema.ts'
+import { db, pool } from '../src/db/client.ts'
+import { mediaItem, service } from '../src/db/schema.ts'
 
 /**
  * Service catalog for the booking desk and the /services page.
@@ -246,3 +246,4 @@ try {
 } finally {
   await pool.end()
 }
+

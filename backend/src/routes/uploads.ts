@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { Readable } from 'node:stream'
-import { mediaContentType, mediaFilePath } from '../uploads.ts'
+import { mediaContentType, mediaFilePath } from '../modules/uploads/storage.ts'
 
 const uploadApi = new Hono()
 
@@ -79,3 +79,4 @@ uploadApi.get('/media/:name', async (c) => {
 })
 
 export default uploadApi
+

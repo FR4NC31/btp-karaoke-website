@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { sql } from 'drizzle-orm'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
-import { db, pool } from '../src/db.ts'
+import { db, pool } from '../src/db/client.ts'
 
 /**
  * Applies `backend/drizzle/*.sql` through Drizzle's own migrator, which tracks
@@ -114,3 +114,4 @@ try {
 } finally {
   await pool.end()
 }
+

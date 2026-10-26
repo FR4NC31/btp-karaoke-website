@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { listUsersForTagging } from '../../bookings.ts'
+import { listUsersForTagging } from '../../modules/bookings/index.ts'
 
 const adminUsers = new Hono()
 
@@ -10,3 +10,4 @@ adminUsers.get('/', async (c) => {
 })
 
 export default adminUsers
+

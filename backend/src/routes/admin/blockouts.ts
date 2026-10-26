@@ -6,8 +6,8 @@ import {
   deleteBlockout,
   listBlockouts,
   studioToday,
-} from '../../bookings.ts'
-import type { AuthEnv } from '../../session-middleware.ts'
+} from '../../modules/bookings/index.ts'
+import type { AuthEnv } from '../../middleware/session.ts'
 
 /**
  * Admin-managed closed days. Mounted under /api/admin/blockouts, so the
@@ -77,3 +77,4 @@ adminBlockouts.post('/:id/delete', async (c) => {
 })
 
 export default adminBlockouts
+

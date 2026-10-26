@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { booking, service } from '../schema.ts'
+import { db } from '../../db/client.ts'
+import { booking, service } from '../../db/schema.ts'
 import {
   assertDayNotBlocked,
   assertServiceAvailable,
@@ -124,3 +124,4 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
   }
   return cancelled
 }
+

@@ -100,3 +100,4 @@ test('the customer-facing closure message carries the reason label', () => {
   assert.match(blockoutMessage('2026-12-24', 'unavailable'), /\(Unavailable\)/)
   assert.doesNotMatch(blockoutMessage('2026-12-24', null), /\(/)
 })
+

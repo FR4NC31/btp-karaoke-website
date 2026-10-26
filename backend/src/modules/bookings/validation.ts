@@ -1,4 +1,4 @@
-import { BOOKING_BLOCKOUT_REASONS, type BookingBlockoutReason } from '../schema.ts'
+import { BOOKING_BLOCKOUT_REASONS, type BookingBlockoutReason } from '../../db/schema.ts'
 import { BookingError } from './types.ts'
 
 /**
@@ -186,3 +186,4 @@ export function validateBlockoutReason(raw: unknown): BookingBlockoutReason | nu
   }
   return value as BookingBlockoutReason
 }
+

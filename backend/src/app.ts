@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { auth } from './auth.ts'
-import { requireTrustedOrigin } from './origin-guard.ts'
+import { auth } from './modules/auth/auth.ts'
+import { requireTrustedOrigin } from './middleware/origin-guard.ts'
 import adminApi from './routes/admin/index.ts'
 import bookingApi from './routes/bookings.ts'
 import publicApi from './routes/public.ts'
@@ -61,3 +61,4 @@ app.route('/api/bookings', bookingApi)
 app.route('/api/admin', adminApi)
 
 export default app
+

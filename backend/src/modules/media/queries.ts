@@ -1,7 +1,7 @@
 import { asc, eq, sql } from 'drizzle-orm'
-import { db } from '../db.ts'
-import { mediaItem } from '../schema.ts'
-import { cacheDel, cacheDelPrefix, cacheGet, cacheSet } from '../cache.ts'
+import { db } from '../../db/client.ts'
+import { mediaItem } from '../../db/schema.ts'
+import { cacheDel, cacheDelPrefix, cacheGet, cacheSet } from '../../shared/cache.ts'
 import { toMediaItem, toPublicMediaItem } from './mapping.ts'
 import type { MediaItem, MediaSection, PublicMediaItem } from './types.ts'
 
@@ -54,3 +54,4 @@ export async function listMediaForAdmin(section?: MediaSection): Promise<MediaIt
 export async function invalidateMediaCache(): Promise<void> {
   await cacheDelPrefix('media:')
 }
+

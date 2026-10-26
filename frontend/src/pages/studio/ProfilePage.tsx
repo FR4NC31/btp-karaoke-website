@@ -31,7 +31,7 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <ProfileTabs tab={tab} onTabChange={setTab} />
       {tab === 'account' ? (
-        <AccountTab identity={identity} onLocationSaved={() => refetch()} />
+        <AccountTab identity={identity} onLocationSaved={() => refetch()} onImageSaved={() => refetch()} />
       ) : (
         <PublicProfileTab />
       )}

@@ -7,8 +7,8 @@ import {
   listBookingsForUser,
   listPublicBlockouts,
   studioToday,
-} from '../bookings.ts'
-import { requireSession } from '../session-middleware.ts'
+} from '../modules/bookings/index.ts'
+import { requireSession } from '../middleware/session.ts'
 
 /**
  * The signed-in customer's own reservations.
@@ -104,3 +104,4 @@ bookingApi.post('/:id/cancel', requireSession, async (c) => {
 })
 
 export default bookingApi
+

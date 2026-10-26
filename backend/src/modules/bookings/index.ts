@@ -28,20 +28,21 @@ export {
   type PublicBlockout,
   type Service,
   type TagUser,
-} from './bookings/types.ts'
+} from './types.ts'
 
-export { blockoutReasonLabel, studioToday } from './bookings/validation.ts'
-export { listServices } from './bookings/services.ts'
+export { blockoutReasonLabel, studioToday } from './validation.ts'
+export { listServices } from './services.ts'
 export {
   createBlockout,
   deleteBlockout,
   listBlockouts,
   listPublicBlockouts,
-} from './bookings/blockouts.ts'
-export { cancelBooking, createBooking, listBookingsForUser } from './bookings/customer.ts'
+} from './blockouts.ts'
+export { cancelBooking, createBooking, listBookingsForUser } from './customer.ts'
 export {
   adminSetBookingStatus,
   createBookingForOthers,
   listAllBookings,
   listUsersForTagging,
-} from './bookings/admin.ts'
+} from './admin.ts'
+

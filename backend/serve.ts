@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server'
-import app from './src/index.ts'
+import app from './src/app.ts'
 
 const configuredPort = Number(process.env.PORT)
 const port = Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535
