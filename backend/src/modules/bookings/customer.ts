@@ -12,6 +12,7 @@ import {
 } from './shared.ts'
 import { validateBookingDay, validateBookingTime, validateNotes } from './validation.ts'
 import { BookingError, type Booking, type CreateBookingInput } from './types.ts'
+import { membershipDiscountPercent } from '../membership/index.ts'
 
 /**
  * The signed-in user's own bookings, newest day first.
@@ -56,11 +57,14 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const { unit } = await assertServiceAvailable(input.serviceId)
+  const { unit, pricePhp } = await assertServiceAvailable(input.serviceId)
   const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
   const notes = validateNotes(input.notes)
 
   await assertDayNotBlocked(bookingDate)
+
+  const discountPercent = await membershipDiscountPercent(input.userId)
+  const amountDuePhp = pricePhp * (1 - discountPercent / 100)
 
   try {
     const bookingId = await insertBookingRow({
@@ -70,6 +74,8 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       bookingTime,
       status: 'pending',
       notes,
+      discountPercent,
+      amountDuePhp: String(amountDuePhp),
     })
 
     const created = await findBookingForUser(bookingId, input.userId)

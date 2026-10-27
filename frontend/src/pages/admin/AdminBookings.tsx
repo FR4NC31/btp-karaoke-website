@@ -13,6 +13,7 @@ import { ReservationRowsSkeleton } from './AdminSkeletons'
 import AdminBookingRow from './components/bookings/AdminBookingRow'
 import BlockedDaysPanel from './components/bookings/BlockedDaysPanel'
 import BookingsFilters from './components/bookings/BookingsFilters'
+import MembershipPanel from './components/MembershipPanel'
 
 
 export default function AdminBookings() {
@@ -141,6 +142,8 @@ export default function AdminBookings() {
       />
 
       <BlockedDaysPanel studioToday={studioToday} />
+
+      <MembershipPanel />
 
       {loading ? (
         <ReservationRowsSkeleton />

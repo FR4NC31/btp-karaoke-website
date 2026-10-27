@@ -131,9 +131,9 @@ export async function assertDayNotBlocked(day: string): Promise<void> {
 
 /** Confirms the service exists and is bookable, or throws a 404. Returns the
  *  billing unit so the caller can validate the time slot against it. */
-export async function assertServiceAvailable(serviceId: string): Promise<{ unit: string }> {
+export async function assertServiceAvailable(serviceId: string): Promise<{ unit: string; pricePhp: number }> {
   const rows = await db
-    .select({ unit: service.unit })
+    .select({ unit: service.unit, pricePhp: service.pricePhp })
     .from(service)
     .where(and(eq(service.id, serviceId), eq(service.isActive, true)))
     .limit(1)
@@ -142,6 +142,6 @@ export async function assertServiceAvailable(serviceId: string): Promise<{ unit:
   if (!available) {
     throw new BookingError('That service is not available.', 404)
   }
-  return available
+  return { unit: available.unit, pricePhp: Number(available.pricePhp) }
 }
 

@@ -74,6 +74,13 @@ export const user = pgTable('user', {
    * `npm run promote-admin -- email@example.com` (scripts/promote-admin.ts).
    */
   role: text('role').notNull().default('user'),
+  /**
+   * Membership tier for perks: 'free' (default), 'subscriber' (ad-free
+   * streaming) or 'vip' (20% off services). Granted/revoked by admins only;
+   * clients cannot set it (input: false in auth.ts).
+   */
+  membershipTier: text('membership_tier').notNull().default('free'),
+  membershipExpiresAt: timestamp('membership_expires_at', { withTimezone: true }),
 })
 
 /**
@@ -214,6 +221,10 @@ export const booking = pgTable(
      */
     status: text('status').$type<BookingStatus>().notNull().default('pending'),
     notes: text('notes'),
+    /** Percent off the listed price granted by the customer's membership tier. */
+    discountPercent: integer('discount_percent').notNull().default(0),
+    /** Final amount due after the discount (defaults to the listed price). */
+    amountDuePhp: numeric('amount_due_php', { precision: 12, scale: 2 }),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
   },
