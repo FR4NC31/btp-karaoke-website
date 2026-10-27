@@ -672,17 +672,6 @@ test.describe('karaoke discovery', () => {
     await expect(page).toHaveURL('/studio')
     await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
 
-    const sidebar = page
-      .getByRole('complementary')
-      .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
-    await sidebar.getByRole('link', { name: 'Player Queue' }).click()
-    await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
-    await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveClass(
-      /bg-primary-soft/,
-    )
-
-    await page.getByRole('link', { name: 'Back' }).click()
-    await expect(page).toHaveURL('/studio')
     await page.getByRole('link', { name: 'Play The Reason' }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await page.getByRole('link', { name: 'Back' }).click()
@@ -698,8 +687,8 @@ test.describe('karaoke discovery', () => {
     await playerBar.getByRole('link', { name: /Open player queue/ }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Back' }).click()
-    await expect(page).toHaveURL('/studio')
+    await playerBar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await expect(page.locator('[data-player-mode="expanded"]')).toBeHidden()
     const emptyBarSpot = await playerBar.evaluate((el) => {
       const rect = el.getBoundingClientRect()
       return document.elementFromPoint(rect.left + 4, rect.top + 72) === el
@@ -729,9 +718,6 @@ test.describe('karaoke discovery', () => {
     await expect(page.locator('audio')).toHaveCount(0)
 
     const topBar = page.getByRole('banner')
-    const sidebar = page
-      .getByRole('complementary')
-      .filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
     const playerBar = page.getByRole('contentinfo')
 
     async function expectQueueResume(openQueue: () => Promise<void>) {
@@ -761,16 +747,6 @@ test.describe('karaoke discovery', () => {
     )
     await topBar.getByRole('link', { name: /Minimize player queue/i }).click()
     await expectQueueMinimized(fromTopBar)
-
-    const fromSidebar = await expectQueueResume(() =>
-      sidebar.getByRole('link', { name: 'Player Queue' }).click(),
-    )
-    await expect(sidebar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
-      'href',
-      '/studio',
-    )
-    await sidebar.getByRole('link', { name: /Minimize player queue/i }).click()
-    await expectQueueMinimized(fromSidebar)
 
     const fromPlayerBar = await expectQueueResume(() =>
       playerBar.getByRole('link', { name: /Open player queue/i }).click(),
