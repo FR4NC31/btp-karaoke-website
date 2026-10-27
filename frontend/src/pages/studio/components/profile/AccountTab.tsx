@@ -55,6 +55,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved }: 
     if (!naturalSize.w || !naturalSize.h) return
     const minZoom = Math.max(0.1, CROP_SIZE / Math.min(naturalSize.w, naturalSize.h))
     const z = Math.max(zoom, minZoom)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (z !== zoom) setZoom(z)
     const maxX = Math.max(0, (naturalSize.w * z - CROP_SIZE) / 2)
     const maxY = Math.max(0, (naturalSize.h * z - CROP_SIZE) / 2)
