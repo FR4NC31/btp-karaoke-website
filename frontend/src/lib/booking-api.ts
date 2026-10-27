@@ -45,6 +45,10 @@ export interface Booking {
   bookingTime: string | null
   status: BookingStatus
   notes: string | null
+  /** 'filler' (cash/bank) or 'gcash' — null for older rows. */
+  paymentMethod?: 'filler' | 'gcash' | null
+  /** Uploaded GCash receipt URL, if any. */
+  receiptUrl?: string | null
   createdAt: string
 }
 
