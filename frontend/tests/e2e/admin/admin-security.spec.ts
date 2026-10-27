@@ -125,7 +125,7 @@ test.describe('admin console route guard (UI)', () => {
     const topBar = page.getByRole('banner')
     await expect(topBar.getByRole('link', { name: 'Bookings' })).toBeVisible()
     await expect(topBar.getByRole('link', { name: 'Admin Console' })).toBeHidden()
-    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeHidden()
+    await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeHidden()
   })
 
   test.describe('signed out', () => {

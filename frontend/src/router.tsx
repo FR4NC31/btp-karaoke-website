@@ -25,6 +25,7 @@ import AdminBookings from "./pages/admin/AdminBookings"
 import AdminMedia from "./pages/admin/AdminMedia"
 import AdminMediaForm from "./pages/admin/AdminMediaForm"
 
+
 export const router = createBrowserRouter([
     {
         element: <DocumentTitle />,

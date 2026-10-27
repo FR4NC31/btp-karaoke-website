@@ -1,117 +1,87 @@
+import { Link } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { TaskDone01Icon } from '@hugeicons/core-free-icons'
-import type { AdminBooking, AdminBookingAction } from '../../../../lib/admin-api'
+import { Calendar03Icon, EyeIcon } from '@hugeicons/core-free-icons'
+import type { AdminBooking } from '../../../../lib/admin-api'
 import { STATUS_STYLES, formatDay, peso } from '../../../../lib/booking-format'
-import { ROW_ACTIONS } from './helpers'
-
-function ActionButton({
-  label,
-  kind,
-  disabled,
-  onClick,
-}: {
-  label: string
-  kind: 'primary' | 'danger' | 'neutral'
-  disabled: boolean
-  onClick: () => void
-}) {
-  const classes =
-    kind === 'primary'
-      ? 'bg-primary text-text-primary hover:bg-primary-hover'
-      : kind === 'danger'
-        ? 'border border-border text-text-secondary hover:border-error/50 hover:text-error'
-        : 'border border-border text-text-secondary hover:text-text-primary'
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-lg px-3.5 py-2 text-xs font-bold tracking-widest uppercase transition disabled:cursor-not-allowed disabled:opacity-60 ${classes}`}
-    >
-      {label}
-    </button>
-  )
-}
 
 type AdminBookingRowProps = {
   booking: AdminBooking
-  busy: boolean
-  onAction: (booking: AdminBooking, action: AdminBookingAction) => void
+  onOpen: (booking: AdminBooking) => void
 }
 
-export default function AdminBookingRow({ booking, busy, onAction }: AdminBookingRowProps) {
+/**
+ * One reservation in the desk list. The row is a summary only — the eye
+ * button opens the details dialog where the lifecycle actions live, and the
+ * calendar button jumps to the closure desk for that day.
+ */
+export default function AdminBookingRow({ booking, onOpen }: AdminBookingRowProps) {
+  const day = formatDay(booking.bookingDate)
+
   return (
-    <li className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-surface p-4">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="font-heading text-base font-bold tracking-wide uppercase">
-            {booking.customerName}
-          </p>
-          <span
-            className={`rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${STATUS_STYLES[booking.status]}`}
-          >
-            {booking.status}
-          </span>
-          {booking.guestName && (
-            <span className="rounded border border-border bg-surface-elevated px-2 py-0.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
-              Guest
+    <li className="rounded-xl border border-border bg-surface">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold text-text-primary">
+              {booking.customerName}
+            </p>
+            {booking.guestName && (
+              <span className="rounded border border-border bg-surface-elevated px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-text-muted uppercase">
+                Guest
+              </span>
+            )}
+          </div>
+
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-text-secondary">
+            <span className="truncate">{booking.serviceName}</span>
+            <span aria-hidden="true" className="text-text-muted">
+              ·
             </span>
-          )}
-        </div>
-        <p className="mt-1.5 text-sm text-text-secondary">
-          {booking.serviceName} · {formatDay(booking.bookingDate)} · {peso.format(booking.amountDuePhp ?? booking.pricePhp)}
-        </p>
-        <p className="mt-1 text-[11px] tracking-widest text-text-muted uppercase">
-          {booking.referenceCode}
-          {booking.customerContact ? ` · ${booking.customerContact}` : ''}
-          {booking.customerEmail ? ` · ${booking.customerEmail}` : ''}
-        </p>
-        {booking.notes && (
-          <p className="mt-2 max-w-prose text-xs leading-relaxed text-text-muted">
-            {booking.notes}
+            <span className="whitespace-nowrap">
+              {day}
+              {booking.bookingTime ? `, ${booking.bookingTime.slice(0, 5)}` : ', whole day'}
+            </span>
+            <span aria-hidden="true" className="text-text-muted">
+              ·
+            </span>
+            <span className="font-semibold whitespace-nowrap text-success">
+              {peso.format(booking.amountDuePhp ?? booking.pricePhp)}
+            </span>
           </p>
-        )}
-        {booking.paymentMethod && (
-          <p className="mt-2 text-[11px] font-bold tracking-widest text-text-muted uppercase">
-            Payment: {booking.paymentMethod === 'gcash' ? 'GCash' : 'Filler (cash)'}
+
+          <p className="mt-1 truncate text-[10px] font-bold tracking-[0.16em] text-text-muted uppercase">
+            {booking.referenceCode}
+            {booking.customerEmail ? ` · ${booking.customerEmail}` : ''}
           </p>
-        )}
-        {booking.receiptUrl && (
-          <a
-            href={booking.receiptUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-block"
-          >
-            <img
-              src={booking.receiptUrl}
-              alt="GCash receipt"
-              className="h-16 w-16 rounded-lg border border-border object-cover"
-            />
-          </a>
-        )}
-      </div>
-
-      {ROW_ACTIONS[booking.status] && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {ROW_ACTIONS[booking.status]!.map((rowAction) => (
-            <ActionButton
-              key={rowAction.action}
-              label={busy ? 'Working…' : rowAction.label}
-              kind={rowAction.kind}
-              disabled={busy}
-              onClick={() => onAction(booking, rowAction.action)}
-            />
-          ))}
         </div>
-      )}
 
-      {booking.status === 'completed' && (
-        <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold tracking-widest text-text-muted uppercase">
-          <HugeiconsIcon icon={TaskDone01Icon} size={14} />
-          Done
+        <span
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold capitalize ${STATUS_STYLES[booking.status]}`}
+        >
+          <span className="size-1.5 rounded-full bg-current" />
+          {booking.status}
         </span>
-      )}
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onOpen(booking)}
+            aria-label={`View ${booking.referenceCode}`}
+            title="View reservation"
+            className="grid size-8 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/50 hover:text-text-primary"
+          >
+            <HugeiconsIcon icon={EyeIcon} size={14} />
+          </button>
+          <Link
+            to={`/admin/blocked-days?date=${booking.bookingDate}`}
+            aria-label={`Block ${day}`}
+            title="Block this day"
+            className="grid size-8 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/50 hover:text-text-primary"
+          >
+            <HugeiconsIcon icon={Calendar03Icon} size={14} />
+          </Link>
+        </div>
+      </div>
     </li>
   )
 }

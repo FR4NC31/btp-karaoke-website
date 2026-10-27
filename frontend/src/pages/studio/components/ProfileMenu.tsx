@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { UserIcon, Settings01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
+import { UserIcon, Settings01Icon, Logout01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import UserAvatar from '../../../components/UserAvatar'
 import { signOut, useSession } from '../../../lib/auth-client'
 import { readableError, unexpectedError } from '../../../lib/auth-errors'
 import { markSessionExit } from '../../../lib/session-exit'
 
-export default function ProfileMenu() {
+export default function ProfileMenu({ showIdentity = false }: { showIdentity?: boolean }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
@@ -58,16 +58,35 @@ export default function ProfileMenu() {
         onClick={() => setProfileOpen((v) => !v)}
         aria-label="Open profile menu"
         aria-expanded={profileOpen}
-        className={`block rounded-full transition ring-offset-2 ring-offset-surface focus:outline-none ${
-          profileOpen ? 'ring-2 ring-primary' : 'hover:ring-2 hover:ring-border'
-        }`}
+        className={`transition ring-offset-2 ring-offset-surface focus:outline-none ${
+          showIdentity
+            ? 'flex items-center gap-2 rounded-lg px-1.5 py-1'
+            : 'block rounded-full'
+        } ${profileOpen ? 'ring-2 ring-primary' : 'hover:ring-2 hover:ring-border'}`}
       >
         <UserAvatar
           image={user?.image}
           icon={UserIcon}
           iconSize={16}
-          className="size-9 rounded-full"
+          className="size-9 shrink-0 rounded-full"
         />
+        {showIdentity && (
+          <span className="hidden min-w-0 text-left sm:block">
+            <span className="block max-w-32 truncate text-xs font-semibold text-text-primary">
+              {name}
+            </span>
+            <span className="block text-[9px] font-bold tracking-widest text-text-muted uppercase">
+              Admin
+            </span>
+          </span>
+        )}
+        {showIdentity && (
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            size={12}
+            className="hidden shrink-0 text-text-muted sm:block"
+          />
+        )}
       </button>
 
       {profileOpen && (

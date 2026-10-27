@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Scrollable regions that should not show a scrollbar (admin dashboard panels). */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @font-face {
   font-family: 'Barlow Condensed';
   src: url('./assets/Fonts/barlow_condensed/BarlowCondensed-Regular.ttf') format('truetype');
