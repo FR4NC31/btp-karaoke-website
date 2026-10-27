@@ -1,5 +1,6 @@
 import { HugeiconsIcon } from '@hugeicons/react'
-import { TaskDone01Icon } from '@hugeicons/core-free-icons'
+import { TaskDone01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
+import type { IconSvgElement } from '@hugeicons/react'
 import type { AdminBooking, AdminBookingAction } from '../../../../lib/admin-api'
 import { STATUS_STYLES, formatDay, peso } from '../../../../lib/booking-format'
 import { ROW_ACTIONS } from './helpers'
@@ -9,11 +10,13 @@ function ActionButton({
   kind,
   disabled,
   onClick,
+  icon,
 }: {
   label: string
   kind: 'primary' | 'danger' | 'neutral'
   disabled: boolean
   onClick: () => void
+  icon?: IconSvgElement
 }) {
   const classes =
     kind === 'primary'
@@ -24,11 +27,17 @@ function ActionButton({
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-3.5 py-2 text-xs font-bold tracking-widest uppercase transition disabled:cursor-not-allowed disabled:opacity-60 ${classes}`}
+      className={`inline-flex items-center justify-center rounded-lg px-2.5 py-2 transition disabled:cursor-not-allowed disabled:opacity-60 ${classes}`}
     >
-      {label}
+      {icon ? (
+        <HugeiconsIcon icon={icon} size={16} />
+      ) : (
+        label
+      )}
     </button>
   )
 }
@@ -100,6 +109,13 @@ export default function AdminBookingRow({ booking, busy, onAction }: AdminBookin
               label={busy ? 'Working…' : rowAction.label}
               kind={rowAction.kind}
               disabled={busy}
+              icon={
+                !busy && (rowAction.action === 'complete' || rowAction.action === 'cancel')
+                  ? rowAction.action === 'complete'
+                    ? TaskDone01Icon
+                    : Cancel01Icon
+                  : undefined
+              }
               onClick={() => onAction(booking, rowAction.action)}
             />
           ))}
