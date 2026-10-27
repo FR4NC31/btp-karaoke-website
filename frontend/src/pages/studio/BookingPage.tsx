@@ -89,6 +89,7 @@ export default function BookingPage() {
   // don't leak object URLs.
   useEffect(() => {
     if (!paymentReceipt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaymentReceiptPreview(null)
       return
     }
