@@ -121,6 +121,8 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge remote-tracking branch 'origin/develop' into feat/payment-method (04e83be)
+- Merge pull request #58 from FR4NC31/fix/cubic-membership (6b6fd80)
 - Merge pull request #57 from FR4NC31/feat/membership-tier (1bf7541)
 - Merge pull request #56 from FR4NC31/fix/lint-accounttab (915d136)
 - Merge pull request #54 from FR4NC31/refactor/backend-modules-and-profile-image-crop (048b958)
