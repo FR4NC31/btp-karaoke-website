@@ -3,8 +3,10 @@ import {
   ADMIN_ACTION_NAMES,
   BookingError,
   adminSetBookingStatus,
+  approvePayment,
   createBookingForOthers,
   listAllBookings,
+  rejectPayment,
   studioToday,
   type AdminBookingAction,
   type BookingStatus,
@@ -96,6 +98,30 @@ adminBookings.post('/:id/:action', async (c) => {
 
   try {
     const booking = await adminSetBookingStatus(c.req.param('id'), action as AdminBookingAction)
+    return c.json({ booking })
+  } catch (err) {
+    if (err instanceof BookingError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+adminBookings.post('/:id/approve-payment', async (c) => {
+  try {
+    const booking = await approvePayment(c.req.param('id'))
+    return c.json({ booking })
+  } catch (err) {
+    if (err instanceof BookingError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+adminBookings.post('/:id/reject-payment', async (c) => {
+  try {
+    const booking = await rejectPayment(c.req.param('id'))
     return c.json({ booking })
   } catch (err) {
     if (err instanceof BookingError) {

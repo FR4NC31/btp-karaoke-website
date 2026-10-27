@@ -35,6 +35,10 @@ export interface Booking {
   serviceName: string
   serviceUnit: string
   pricePhp: number
+  /** Final amount due after membership discount (falls back to pricePhp). */
+  amountDuePhp: number
+  /** Percent off the listed price granted by the customer's membership tier. */
+  discountPercent: number
   /** Whole day, `YYYY-MM-DD`. */
   bookingDate: string
   /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. */
@@ -130,11 +134,23 @@ export function fetchBookings(): Promise<{ bookings: Booking[]; studioToday: str
   return request('/api/bookings')
 }
 
+export function fetchBlockouts(): Promise<{
+  blockouts: PublicBlockout[]
+  studioToday: string
+}> {
+  return cached('blockouts', 30 * 1000, () => request('/api/bookings/blockouts'))
+}
+
+export function fetchGcashQr(): Promise<{ url: string | null }> {
+  return request('/api/settings/gcash-qr')
+}
+
 export function createBooking(input: {
   serviceId: string
   bookingDate: string
   bookingTime?: string | null
   notes?: string
+  paymentMethod?: 'filler' | 'gcash'
 }): Promise<{ booking: Booking }> {
   return request('/api/bookings', {
     method: 'POST',
@@ -188,9 +204,16 @@ export function blockoutReasonLabel(reason: BlockoutReason | null): string | nul
   return reason ? BLOCKOUT_REASON_LABELS[reason] : null
 }
 
-export function fetchBlockouts(): Promise<{
-  blockouts: PublicBlockout[]
-  studioToday: string
-}> {
-  return cached('blockouts', 30 * 1000, () => request('/api/bookings/blockouts'))
+export async function uploadReceipt(
+  bookingId: string,
+  file: File,
+): Promise<{ booking: Booking; file: { url: string } }> {
+  return request(`/api/bookings/${encodeURIComponent(bookingId)}/receipt`, {
+    method: 'POST',
+    body: file,
+    headers: {
+      'Content-Type': file.type || 'image/jpeg',
+      'X-File-Name': encodeURIComponent(file.name),
+    },
+  })
 }

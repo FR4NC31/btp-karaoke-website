@@ -39,6 +39,8 @@ export const bookingColumns = {
   bookingTime: booking.bookingTime,
   status: booking.status,
   notes: booking.notes,
+  discountPercent: booking.discountPercent,
+  amountDuePhp: booking.amountDuePhp,
   createdAt: booking.createdAt,
   serviceCode: service.code,
   serviceName: service.name,
@@ -54,6 +56,8 @@ export type BookingRow = {
   bookingTime: string | null
   status: BookingStatus
   notes: string | null
+  discountPercent: number
+  amountDuePhp: string | null
   createdAt: Date
   serviceCode: string
   serviceName: string
@@ -67,6 +71,8 @@ export function toBooking(row: BookingRow): Booking {
   return {
     ...row,
     pricePhp: Number(row.pricePhp),
+    amountDuePhp: row.amountDuePhp ? Number(row.amountDuePhp) : Number(row.pricePhp),
+    discountPercent: Number(row.discountPercent ?? 0),
     createdAt: row.createdAt.toISOString(),
   }
 }
@@ -131,9 +137,9 @@ export async function assertDayNotBlocked(day: string): Promise<void> {
 
 /** Confirms the service exists and is bookable, or throws a 404. Returns the
  *  billing unit so the caller can validate the time slot against it. */
-export async function assertServiceAvailable(serviceId: string): Promise<{ unit: string }> {
+export async function assertServiceAvailable(serviceId: string): Promise<{ unit: string; pricePhp: number }> {
   const rows = await db
-    .select({ unit: service.unit })
+    .select({ unit: service.unit, pricePhp: service.pricePhp })
     .from(service)
     .where(and(eq(service.id, serviceId), eq(service.isActive, true)))
     .limit(1)
@@ -142,6 +148,6 @@ export async function assertServiceAvailable(serviceId: string): Promise<{ unit:
   if (!available) {
     throw new BookingError('That service is not available.', 404)
   }
-  return available
+  return { unit: available.unit, pricePhp: Number(available.pricePhp) }
 }
 

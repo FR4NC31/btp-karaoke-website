@@ -162,6 +162,22 @@ export const auth = betterAuth({
         defaultValue: 'user',
         input: false,
       },
+      // Membership tier for perks: 'free' (default), 'subscriber' (ad-free
+      // streaming) or 'vip' (20% off services). Granted/revoked by admins
+      // only; clients cannot set it (input: false).
+      membershipTier: {
+        type: 'string',
+        required: false,
+        defaultValue: 'free',
+        input: false,
+        fieldName: 'membership_tier',
+      },
+      membershipExpiresAt: {
+        type: 'date',
+        required: false,
+        input: false,
+        fieldName: 'membership_expires_at',
+      },
     },
   },
   trustedOrigins: [

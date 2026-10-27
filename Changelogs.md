@@ -6,6 +6,8 @@ Last updated: October 27, 2026
 
 ### Features
 
+- feat(payment): payment method modal (filler/gcash), receipt upload, 5-min hold + abuse suspension, admin approve/reject (e8aeeb2)
+- feat(membership): user tier (free/subscriber/vip) with VIP booking discount + admin grant UI (6f78b32)
 - feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
 - feat: client-side cache for catalogs/closures + backend cache headers (2c1d8cb)
 - feat(player): make player queue an overlay to avoid page refresh (b65bee8)
@@ -49,6 +51,8 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix: remove duplicate MembershipTier type (1405e13)
+- fix(membership): address Cubic review (expiry, amountDue, race, cache, validation) (4f15030)
 - fix(lint): suppress set-state-in-effect in AccountTab crop effect (7e7304d)
 - fix(player): navigate to /studio on PiP when opened via route (ce32362)
 - fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
@@ -119,9 +123,10 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
-- Merge remote-tracking branch 'origin/develop' into fix/discovery-tests (e2331ad)
+- Merge remote-tracking branch 'origin/develop' into feat/payment-method (04e83be)
+- Merge pull request #58 from FR4NC31/fix/cubic-membership (6b6fd80)
+- Merge pull request #57 from FR4NC31/feat/membership-tier (1bf7541)
 - Merge pull request #56 from FR4NC31/fix/lint-accounttab (915d136)
-- test(karaoke): align discovery tests with player overlay behavior (ecabc7e)
 - Merge pull request #54 from FR4NC31/refactor/backend-modules-and-profile-image-crop (048b958)
 - refactor: reorganize backend modules and add circular profile image crop (2e0bba8)
 - Merge pull request #53 from FR4NC31/fix/redis-fallback (40fbc19)

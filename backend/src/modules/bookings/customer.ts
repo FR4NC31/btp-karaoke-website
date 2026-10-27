@@ -12,6 +12,8 @@ import {
 } from './shared.ts'
 import { validateBookingDay, validateBookingTime, validateNotes } from './validation.ts'
 import { BookingError, type Booking, type CreateBookingInput } from './types.ts'
+import { membershipDiscountPercent } from '../membership/index.ts'
+import { getUserSuspension, recordPaymentSuccess, releaseExpiredPaymentHolds } from './payment-holds.ts'
 
 /**
  * The signed-in user's own bookings, newest day first.
@@ -55,12 +57,26 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  * surfacing it as a friendly 409 rather than a raw constraint error.
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
+  // Enforce abuse suspension.
+  const susp = await getUserSuspension(input.userId)
+  if (susp && susp > new Date()) {
+    throw new BookingError(`Booking temporarily suspended until ${susp.toISOString()}.`, 403)
+  }
+
+  // Release any expired holds before attempting a new one.
+  await releaseExpiredPaymentHolds()
+
   const bookingDate = validateBookingDay(input.bookingDate)
-  const { unit } = await assertServiceAvailable(input.serviceId)
+  const { unit, pricePhp } = await assertServiceAvailable(input.serviceId)
   const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
   const notes = validateNotes(input.notes)
 
   await assertDayNotBlocked(bookingDate)
+
+  const discountPercent = await membershipDiscountPercent(input.userId)
+  const amountDuePhp = pricePhp * (1 - discountPercent / 100)
+
+  const paymentDeadline = new Date(Date.now() + 5 * 60 * 1000)
 
   try {
     const bookingId = await insertBookingRow({
@@ -70,6 +86,11 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       bookingTime,
       status: 'pending',
       notes,
+      discountPercent,
+      amountDuePhp: String(amountDuePhp),
+      paymentMethod: input.paymentMethod ?? null,
+      receiptUrl: input.receiptUrl ?? null,
+      paymentDeadline,
     })
 
     const created = await findBookingForUser(bookingId, input.userId)
@@ -78,6 +99,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       // caller's — a plain Error surfaces as a 500.
       throw new Error('The booking could not be read back after saving.')
     }
+    await recordPaymentSuccess(input.userId)
     return created
   } catch (err) {
     // Handle both day-wide and time-slot unique constraint violations
@@ -101,6 +123,17 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  * zero-row result is then re-read to say *why* — missing, not yours, or no
  * longer pending.
  */
+export async function attachReceipt(bookingId: string, userId: string, receiptUrl: string): Promise<Booking> {
+  const existing = await findBookingForUser(bookingId, userId)
+  if (!existing) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.status !== 'pending') {
+    throw new BookingError('Receipts can only be attached to pending bookings.', 409)
+  }
+  await db.update(booking).set({ receiptUrl, paymentDeadline: new Date(Date.now() + 5 * 60 * 1000), updatedAt: new Date() }).where(eq(booking.id, bookingId))
+  const updated = await findBookingForUser(bookingId, userId)
+  if (!updated) throw new Error('The booking could not be read back after updating.')
+  return updated
+}
 export async function cancelBooking(bookingId: string, userId: string): Promise<Booking> {
   const updated = await db
     .update(booking)

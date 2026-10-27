@@ -24,6 +24,8 @@ import {
   type ListBookingsFilter,
   type TagUser,
 } from './types.ts'
+import { membershipDiscountPercent } from '../membership/index.ts'
+import { recordPaymentFailure, recordPaymentSuccess } from './payment-holds.ts'
 
 /**
  * The only status moves an admin can make, and the states they are legal
@@ -164,7 +166,7 @@ export async function createBookingForOthers(
   input: CreateBookingForOthersInput,
 ): Promise<AdminBooking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const { unit } = await assertServiceAvailable(input.serviceId)
+  const { unit, pricePhp } = await assertServiceAvailable(input.serviceId)
   const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
   const notes = validateNotes(input.notes)
 
@@ -198,6 +200,9 @@ export async function createBookingForOthers(
 
   await assertDayNotBlocked(bookingDate)
 
+  const discountPercent = await membershipDiscountPercent(userId)
+  const amountDuePhp = pricePhp * (1 - discountPercent / 100)
+
   try {
     const bookingId = await insertBookingRow({
       userId,
@@ -207,6 +212,11 @@ export async function createBookingForOthers(
       bookingTime,
       status: 'confirmed',
       notes,
+      discountPercent,
+      amountDuePhp: String(amountDuePhp),
+      paymentMethod: input.paymentMethod ?? null,
+      receiptUrl: input.receiptUrl ?? null,
+      paymentDeadline: new Date(Date.now() + 5 * 60 * 1000),
     })
 
     const created = await findBookingByIdForAdmin(bookingId)
@@ -279,11 +289,41 @@ export async function adminSetBookingStatus(
   })
 }
 
-/**
- * Registered accounts matching `query` (name or email), for the admin's
- * customer tag picker. Deliberately minimal — id, name, email — so the admin
- * UI never receives more account data than it displays.
- */
+export async function approvePayment(bookingId: string): Promise<AdminBooking> {
+  const existing = await findBookingByIdForAdmin(bookingId)
+  if (!existing) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.status !== 'pending') {
+    throw new BookingError(`A ${existing.status} reservation cannot be approved.`, 409)
+  }
+  const updated = await db
+    .update(booking)
+    .set({ status: 'confirmed', updatedAt: new Date() })
+    .where(eq(booking.id, bookingId))
+    .returning({ id: booking.id })
+  if (updated.length === 0) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.userId) await recordPaymentSuccess(existing.userId)
+  const result = await findBookingByIdForAdmin(bookingId)
+  if (!result) throw new Error('The reservation could not be read back after updating.')
+  return result
+}
+
+export async function rejectPayment(bookingId: string): Promise<AdminBooking> {
+  const existing = await findBookingByIdForAdmin(bookingId)
+  if (!existing) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.status !== 'pending') {
+    throw new BookingError(`A ${existing.status} reservation cannot be rejected.`, 409)
+  }
+  const updated = await db
+    .update(booking)
+    .set({ status: 'rejected', updatedAt: new Date() })
+    .where(eq(booking.id, bookingId))
+    .returning({ id: booking.id })
+  if (updated.length === 0) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.userId) await recordPaymentFailure(existing.userId)
+  const result = await findBookingByIdForAdmin(bookingId)
+  if (!result) throw new Error('The reservation could not be read back after updating.')
+  return result
+}
 export async function listUsersForTagging(query?: string): Promise<TagUser[]> {
   const q = query?.trim()
   const like = q ? `%${escapeLike(q)}%` : null

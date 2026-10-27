@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import {
   BookingError,
+  attachReceipt,
   cancelBooking,
   createBooking,
   listBookingsForUser,
@@ -9,6 +10,7 @@ import {
   studioToday,
 } from '../modules/bookings/index.ts'
 import { requireSession } from '../middleware/session.ts'
+import { storeMediaUpload, UploadError } from '../modules/uploads/storage.ts'
 
 /**
  * The signed-in customer's own reservations.
@@ -98,6 +100,26 @@ bookingApi.post('/:id/cancel', requireSession, async (c) => {
   } catch (err) {
     if (err instanceof BookingError) {
       return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+bookingApi.post('/:id/receipt', requireSession, async (c) => {
+  const session = c.get('session')
+  if (!session) throw new HTTPException(401)
+  try {
+    const file = await storeMediaUpload({
+      originalName: c.req.header('x-file-name') ?? 'receipt.jpg',
+      contentType: c.req.header('content-type') ?? 'image/jpeg',
+      contentLength: c.req.header('content-length'),
+      body: c.req.raw.body,
+    })
+    const booking = await attachReceipt(c.req.param('id'), session.user.id, file.url)
+    return c.json({ booking, file })
+  } catch (err) {
+    if (err instanceof BookingError || err instanceof UploadError) {
+      return c.json({ error: err.message }, ((err as { status?: number }).status ?? 400) as any)
     }
     throw err
   }

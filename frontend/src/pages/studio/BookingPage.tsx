@@ -9,17 +9,20 @@ import {
   describeBookingError,
   fetchBlockouts,
   fetchBookings,
+  fetchGcashQr,
   fetchServices,
   isTimeBasedService,
+  uploadReceipt,
   type Booking,
   type PublicBlockout,
   type Service,
 } from '../../lib/booking-api'
+import { WING_LABELS } from './components/booking/constants'
 import { formatDay, nextOpenDay } from '../../lib/booking-format'
 import BookingForm from './components/booking/BookingForm'
 import BookingServiceCard from './components/booking/BookingServiceCard'
 import BookingsPanel from './components/booking/BookingsPanel'
-import { WING_LABELS } from './components/booking/constants'
+import { useSession } from '../../lib/auth-client'
 
 /**
  * /studio/bookings — the booking desk.
@@ -50,6 +53,12 @@ function byNewest(a: Booking, b: Booking): number {
 }
 
 export default function BookingPage() {
+  const { data: session } = useSession()
+  const membershipTier = session?.user?.membershipTier
+  const membershipExpiresAt = session?.user?.membershipExpiresAt
+  const isVip =
+    membershipTier === 'vip' &&
+    (!membershipExpiresAt || String(membershipExpiresAt).slice(0, 10) >= new Date().toISOString().slice(0, 10))
   const [services, setServices] = useState<Service[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [blockouts, setBlockouts] = useState<PublicBlockout[]>([])
@@ -63,10 +72,23 @@ export default function BookingPage() {
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
   const [notes, setNotes] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [cancellingId, setCancellingId] = useState('')
+
+  // Payment modal state.
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'filler' | 'gcash'>('filler')
+  const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
+  const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null)
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false)
+  const [pendingBooking, setPendingBooking] = useState<{
+    service: Service
+    bookingDate: string
+    bookingTime?: string
+    notes?: string
+  } | null>(null)
   // Bumped when a mutation starts, so a refresh that was already in flight
   // cannot overwrite the row set the mutation just produced.
   const bookingGeneration = useRef(0)
@@ -98,7 +120,7 @@ export default function BookingPage() {
               bookingTime?: string
               notes?: string
             }
-            const service = serviceResult.services.find((entry) => entry.id === draft.serviceId)
+            const service = serviceResult.services.find((entry: Service) => entry.id === draft.serviceId)
             if (service) {
               setSelected(service)
               setBookingDate(draft.bookingDate || serviceResult.studioToday)
@@ -204,21 +226,49 @@ export default function BookingPage() {
     // Time-based services require a time slot; per-day services omit it.
     const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
 
+    setPendingBooking({
+      service: selected,
+      bookingDate,
+      bookingTime: timePayload,
+      notes: notes.trim() || undefined,
+    })
+    setPaymentMethod('filler')
+    setPaymentReceipt(null)
+    setPaymentOpen(true)
+    void fetchGcashQr()
+      .then((r: { url: string | null }) => setGcashQrUrl(r.url))
+      .catch(() => setGcashQrUrl(null))
+    return
+  }
+
+  async function handlePaymentSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!pendingBooking || paymentSubmitting) return
+    if (paymentMethod === 'gcash' && !paymentReceipt) {
+      setFormError('Please upload your GCash receipt screenshot.')
+      return
+    }
+
     bookingGeneration.current += 1
-    setSubmitting(true)
+    setPaymentSubmitting(true)
     setFormError('')
     setLoadError('')
     try {
       const { booking } = await createBooking({
-        serviceId: selected.id,
-        bookingDate,
-        bookingTime: timePayload,
-        notes: notes.trim() || undefined,
+        serviceId: pendingBooking.service.id,
+        bookingDate: pendingBooking.bookingDate,
+        bookingTime: pendingBooking.bookingTime,
+        notes: pendingBooking.notes,
+        paymentMethod,
       })
-      // Show the new row immediately, in the server's order, rather than
-      // waiting on a second request; the quiet refresh reconciles the list.
+      if (paymentMethod === 'gcash' && paymentReceipt) {
+        await uploadReceipt(booking.id, paymentReceipt)
+      }
       setBookings((prev) => [booking, ...prev].sort(byNewest))
       setSelected(null)
+      setPendingBooking(null)
+      setPaymentOpen(false)
+      setPaymentReceipt(null)
       try {
         window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
       } catch {
@@ -226,13 +276,13 @@ export default function BookingPage() {
       }
       setNotes('')
       setFlash(
-        `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} ${booking.bookingTime ? `at ${booking.bookingTime.slice(0, 5)}` : ''} — reference ${booking.referenceCode}.`,
+        `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} ${booking.bookingTime ? `at ${booking.bookingTime.slice(0, 5)}` : ''} — reference ${booking.referenceCode}. Awaiting payment approval.`,
       )
       void refreshBookingsQuietly()
     } catch (err) {
       setFormError(describeBookingError(err, 'The booking could not be saved.'))
     } finally {
-      setSubmitting(false)
+      setPaymentSubmitting(false)
     }
   }
 
@@ -287,6 +337,11 @@ export default function BookingPage() {
           Per-hour services (recording, editing, coaching) book a date + a start time on the hour
           (e.g. 1:00 PM–2:00 PM) — open 24 hours. Per-song, per-video, per-day and per-event
           services book a date; rates marked “starting” are confirmed after consultation.
+          {isVip && (
+            <span className="mt-1 block font-semibold text-primary">
+              VIP member: 20% off all services applied at checkout.
+            </span>
+          )}
         </p>
       </header>
 
@@ -409,6 +464,95 @@ export default function BookingPage() {
         cancellingId={cancellingId}
         onCancel={handleCancel}
       />
+
+      {paymentOpen && pendingBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <form
+            onSubmit={handlePaymentSubmit}
+            className="w-full max-w-md space-y-4 rounded-xl border border-border bg-surface p-6"
+          >
+            <h2 className="font-heading text-lg font-bold tracking-wide uppercase">
+              Payment method
+            </h2>
+            <p className="text-xs text-text-muted">
+              {pendingBooking.service.name} · {formatDay(pendingBooking.bookingDate)}
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('filler')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-bold tracking-widest uppercase transition ${
+                  paymentMethod === 'filler'
+                    ? 'border-primary bg-primary-soft text-primary'
+                    : 'border-border text-text-secondary'
+                }`}
+              >
+                Filler (cash)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('gcash')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-bold tracking-widest uppercase transition ${
+                  paymentMethod === 'gcash'
+                    ? 'border-primary bg-primary-soft text-primary'
+                    : 'border-border text-text-secondary'
+                }`}
+              >
+                GCash
+              </button>
+            </div>
+
+            {paymentMethod === 'gcash' && (
+              <div className="space-y-3">
+                {gcashQrUrl ? (
+                  <img src={gcashQrUrl} alt="GCash QR code" className="mx-auto max-h-64 rounded-lg border border-border" />
+                ) : (
+                  <p className="text-xs text-text-muted">No QR code configured yet.</p>
+                )}
+                <div>
+                  <label className="block text-[11px] font-bold tracking-widest text-text-secondary uppercase">
+                    Upload receipt screenshot
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setPaymentReceipt(e.target.files?.[0] ?? null)}
+                    className="mt-2 w-full text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {formError && (
+              <p role="alert" className="text-sm text-error">
+                {formError}
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={paymentSubmitting}
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {paymentSubmitting ? 'Submitting…' : 'Submit booking'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentOpen(false)
+                  setPendingBooking(null)
+                  setPaymentReceipt(null)
+                }}
+                className="rounded-lg border border-border px-4 py-2.5 text-sm text-text-secondary transition hover:text-text-primary"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

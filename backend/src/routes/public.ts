@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { listServices, studioToday } from '../modules/bookings/index.ts'
 import { listPublicMedia } from '../modules/media/index.ts'
+import { getUserMembership } from '../modules/membership/index.ts'
+import { getGcashQrUrl } from '../modules/settings/index.ts'
 import { requireSession } from '../middleware/session.ts'
 
 const publicApi = new Hono()
@@ -24,12 +26,25 @@ publicApi.get('/services', async (c) => {
   return c.json({ services, studioToday: studioToday() })
 })
 
-// Public: the media hub catalog behind /studio — active rows only, already
-// section-ordered (video → music → radio) so the hub only has to group.
 publicApi.get('/media', async (c) => {
   c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
   const items = await listPublicMedia()
   return c.json({ items })
+})
+
+// Signed-in: the caller's own membership tier + expiry.
+publicApi.get('/me/membership', requireSession, async (c) => {
+  c.header('Cache-Control', 'private, no-store')
+  const session = c.get('session')
+  if (!session) throw new HTTPException(401)
+  const membership = await getUserMembership(session.user.id)
+  return c.json({ membership })
+})
+
+// Public: the GCash QR code uploaded by an admin (null if not set yet).
+publicApi.get('/settings/gcash-qr', async (c) => {
+  const url = await getGcashQrUrl()
+  return c.json({ url })
 })
 
 export default publicApi
