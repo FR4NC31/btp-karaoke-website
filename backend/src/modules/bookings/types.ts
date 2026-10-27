@@ -37,9 +37,9 @@ export interface Booking {
 
 /** Thrown for anything the route should turn into a specific HTTP status. */
 export class BookingError extends Error {
-  readonly status: 400 | 404 | 409
+  readonly status: 400 | 403 | 404 | 409
 
-  constructor(message: string, status: 400 | 404 | 409) {
+  constructor(message: string, status: 400 | 403 | 404 | 409) {
     super(message)
     this.name = 'BookingError'
     this.status = status
@@ -82,6 +82,8 @@ export interface CreateBookingInput {
   /** Optional time slot `HH:MM` for per-hour services. Omit for per-day bookings. */
   bookingTime?: string | null
   notes?: string
+  paymentMethod?: 'filler' | 'gcash'
+  receiptUrl?: string
 }
 
 export interface CreateBookingForOthersInput {
@@ -94,6 +96,8 @@ export interface CreateBookingForOthersInput {
   /** Optional time slot `HH:MM` for per-hour services. Omit for per-day bookings. */
   bookingTime?: string | null
   notes?: string
+  paymentMethod?: 'filler' | 'gcash'
+  receiptUrl?: string
 }
 
 /** Minimal identity for the "tag a customer" picker. */

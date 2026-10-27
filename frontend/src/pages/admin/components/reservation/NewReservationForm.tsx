@@ -87,7 +87,7 @@ export default function NewReservationForm({
         // on submit for a reason the admin has not seen yet.
         setBookingDate(
           nextOpenDay(serviceResult.studioToday, (day) =>
-            blockoutResult.blockouts.some((blockout) => blockout.bookingDate === day),
+            blockoutResult.blockouts.some((blockout: { bookingDate: string }) => blockout.bookingDate === day),
           ),
         )
       } catch (err) {

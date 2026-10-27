@@ -67,12 +67,23 @@ export function adminBookingAction(
   })
 }
 
+export function fetchGcashQr(): Promise<{ url: string | null }> {
+  return request('/api/settings/gcash-qr')
+}
+
+export function setGcashQrUrl(url: string): Promise<{ url: string }> {
+  return request('/api/admin/settings/gcash-qr', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  })
+}
+
+export type MembershipTier = 'free' | 'subscriber' | 'vip'
+
 export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
   const q = query.trim()
   return request(`/api/admin/users${q ? `?query=${encodeURIComponent(q)}` : ''}`)
 }
-
-export type MembershipTier = 'free' | 'subscriber' | 'vip'
 
 export function fetchUserMembership(
   userId: string,
