@@ -6,6 +6,7 @@ Last updated: October 27, 2026
 
 ### Features
 
+- feat(membership): user tier (free/subscriber/vip) with VIP booking discount + admin grant UI (6f78b32)
 - feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
 - feat: client-side cache for catalogs/closures + backend cache headers (2c1d8cb)
 - feat(player): make player queue an overlay to avoid page refresh (b65bee8)
@@ -118,6 +119,7 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge pull request #56 from FR4NC31/fix/lint-accounttab (915d136)
 - Merge pull request #54 from FR4NC31/refactor/backend-modules-and-profile-image-crop (048b958)
 - refactor: reorganize backend modules and add circular profile image crop (2e0bba8)
 - Merge pull request #53 from FR4NC31/fix/redis-fallback (40fbc19)
