@@ -83,6 +83,19 @@ export default function BookingPage() {
   const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
   const [paymentReceiptPreview, setPaymentReceiptPreview] = useState<string | null>(null)
   const paymentReceiptInputRef = useRef<HTMLInputElement>(null)
+
+  // Own the blob URL lifecycle for the receipt preview: create it when a file
+  // is chosen, revoke it on replacement/unmount so Strict Mode and navigation
+  // don't leak object URLs.
+  useEffect(() => {
+    if (!paymentReceipt) {
+      setPaymentReceiptPreview(null)
+      return
+    }
+    const url = URL.createObjectURL(paymentReceipt)
+    setPaymentReceiptPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [paymentReceipt])
   const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null)
   const [paymentSubmitting, setPaymentSubmitting] = useState(false)
   const [pendingBooking, setPendingBooking] = useState<{
@@ -236,10 +249,6 @@ export default function BookingPage() {
     })
     setPaymentMethod('filler')
     setPaymentReceipt(null)
-    setPaymentReceiptPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return null
-    })
     setPaymentOpen(true)
     void fetchGcashQr()
       .then((r: { url: string | null }) => setGcashQrUrl(r.url))
@@ -275,10 +284,6 @@ export default function BookingPage() {
       setPendingBooking(null)
       setPaymentOpen(false)
       setPaymentReceipt(null)
-      setPaymentReceiptPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev)
-        return null
-      })
       try {
         window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
       } catch {
@@ -535,10 +540,6 @@ export default function BookingPage() {
                     onChange={(e) => {
                       const file = e.target.files?.[0] ?? null
                       setPaymentReceipt(file)
-                      setPaymentReceiptPreview((prev) => {
-                        if (prev) URL.revokeObjectURL(prev)
-                        return file ? URL.createObjectURL(file) : null
-                      })
                       // Allow re-selecting the same file later.
                       e.target.value = ''
                     }}
@@ -567,10 +568,6 @@ export default function BookingPage() {
                             type="button"
                             onClick={() => {
                               setPaymentReceipt(null)
-                              setPaymentReceiptPreview((prev) => {
-                                if (prev) URL.revokeObjectURL(prev)
-                                return null
-                              })
                             }}
                             className="text-text-secondary underline-offset-4 transition hover:text-error hover:underline"
                           >
