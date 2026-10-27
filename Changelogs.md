@@ -51,6 +51,7 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix(booking): manage receipt preview blob URL lifecycle via effect (702d5db)
 - fix(booking): replace native file input with empty-state upload UI for GCash receipt (76a83d7)
 - fix: remove duplicate MembershipTier type (1405e13)
 - fix(membership): address Cubic review (expiry, amountDue, race, cache, validation) (4f15030)
