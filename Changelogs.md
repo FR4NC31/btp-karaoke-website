@@ -51,6 +51,7 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix: remove duplicate MembershipTier type (1405e13)
 - fix(membership): address Cubic review (expiry, amountDue, race, cache, validation) (4f15030)
 - fix(lint): suppress set-state-in-effect in AccountTab crop effect (7e7304d)
 - fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
