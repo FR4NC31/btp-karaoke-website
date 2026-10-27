@@ -71,6 +71,25 @@ export default function AdminBookingRow({ booking, busy, onAction }: AdminBookin
             {booking.notes}
           </p>
         )}
+        {booking.paymentMethod && (
+          <p className="mt-2 text-[11px] font-bold tracking-widest text-text-muted uppercase">
+            Payment: {booking.paymentMethod === 'gcash' ? 'GCash' : 'Filler (cash)'}
+          </p>
+        )}
+        {booking.receiptUrl && (
+          <a
+            href={booking.receiptUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block"
+          >
+            <img
+              src={booking.receiptUrl}
+              alt="GCash receipt"
+              className="h-16 w-16 rounded-lg border border-border object-cover"
+            />
+          </a>
+        )}
       </div>
 
       {ROW_ACTIONS[booking.status] && (

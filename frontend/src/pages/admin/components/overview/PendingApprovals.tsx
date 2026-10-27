@@ -63,6 +63,25 @@ export default function PendingApprovals({
                     {booking.notes}
                   </p>
                 )}
+                {booking.paymentMethod && (
+                  <p className="mt-2 text-[11px] font-bold tracking-widest text-text-muted uppercase">
+                    Payment: {booking.paymentMethod === 'gcash' ? 'GCash' : 'Filler (cash)'}
+                  </p>
+                )}
+                {booking.receiptUrl && (
+                  <a
+                    href={booking.receiptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-block"
+                  >
+                    <img
+                      src={booking.receiptUrl}
+                      alt="GCash receipt"
+                      className="h-20 w-20 rounded-lg border border-border object-cover"
+                    />
+                  </a>
+                )}
               </div>
 
               <div className="flex shrink-0 items-center gap-2">

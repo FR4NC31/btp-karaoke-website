@@ -81,6 +81,22 @@ export default function BookingPage() {
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'filler' | 'gcash'>('filler')
   const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
+  const [paymentReceiptPreview, setPaymentReceiptPreview] = useState<string | null>(null)
+  const paymentReceiptInputRef = useRef<HTMLInputElement>(null)
+
+  // Own the blob URL lifecycle for the receipt preview: create it when a file
+  // is chosen, revoke it on replacement/unmount so Strict Mode and navigation
+  // don't leak object URLs.
+  useEffect(() => {
+    if (!paymentReceipt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPaymentReceiptPreview(null)
+      return
+    }
+    const url = URL.createObjectURL(paymentReceipt)
+    setPaymentReceiptPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [paymentReceipt])
   const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null)
   const [paymentSubmitting, setPaymentSubmitting] = useState(false)
   const [pendingBooking, setPendingBooking] = useState<{
@@ -511,15 +527,84 @@ export default function BookingPage() {
                   <p className="text-xs text-text-muted">No QR code configured yet.</p>
                 )}
                 <div>
-                  <label className="block text-[11px] font-bold tracking-widest text-text-secondary uppercase">
+                  <label
+                    htmlFor="payment-receipt"
+                    className="block text-[11px] font-bold tracking-widest text-text-secondary uppercase"
+                  >
                     Upload receipt screenshot
                   </label>
                   <input
+                    ref={paymentReceiptInputRef}
+                    id="payment-receipt"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setPaymentReceipt(e.target.files?.[0] ?? null)}
-                    className="mt-2 w-full text-sm"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null
+                      setPaymentReceipt(file)
+                      // Allow re-selecting the same file later.
+                      e.target.value = ''
+                    }}
+                    className="sr-only"
                   />
+                  {paymentReceiptPreview ? (
+                    <div className="mt-2 space-y-2">
+                      <img
+                        src={paymentReceiptPreview}
+                        alt="Receipt preview"
+                        className="max-h-48 rounded-lg border border-border object-contain"
+                      />
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-text-secondary">
+                          {paymentReceipt?.name}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => paymentReceiptInputRef.current?.click()}
+                            className="text-text-secondary underline-offset-4 transition hover:text-text-primary hover:underline"
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentReceipt(null)
+                            }}
+                            className="text-text-secondary underline-offset-4 transition hover:text-error hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="payment-receipt"
+                      className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-background px-4 py-6 text-center transition hover:border-primary hover:bg-surface-elevated"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        className="size-8 text-text-muted"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+                        />
+                      </svg>
+                      <span className="text-xs font-semibold text-text-secondary">
+                        Click to upload receipt
+                      </span>
+                      <span className="text-[11px] text-text-muted">
+                        PNG, JPG or screenshot
+                      </span>
+                    </label>
+                  )}
                 </div>
               </div>
             )}
@@ -544,6 +629,10 @@ export default function BookingPage() {
                   setPaymentOpen(false)
                   setPendingBooking(null)
                   setPaymentReceipt(null)
+                  setPaymentReceiptPreview((prev) => {
+                    if (prev) URL.revokeObjectURL(prev)
+                    return null
+                  })
                 }}
                 className="rounded-lg border border-border px-4 py-2.5 text-sm text-text-secondary transition hover:text-text-primary"
               >

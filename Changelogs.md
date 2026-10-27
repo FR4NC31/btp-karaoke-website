@@ -6,6 +6,7 @@ Last updated: October 27, 2026
 
 ### Features
 
+- feat(admin): show booking details and uploaded GCash receipt for verification (a3c7480)
 - feat(payment): payment method modal (filler/gcash), receipt upload, 5-min hold + abuse suspension, admin approve/reject (e8aeeb2)
 - feat(membership): user tier (free/subscriber/vip) with VIP booking discount + admin grant UI (6f78b32)
 - feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
@@ -51,6 +52,9 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix(booking): suppress set-state-in-effect lint for receipt preview (db54ccd)
+- fix(booking): manage receipt preview blob URL lifecycle via effect (702d5db)
+- fix(booking): replace native file input with empty-state upload UI for GCash receipt (76a83d7)
 - fix: remove duplicate MembershipTier type (1405e13)
 - fix(membership): address Cubic review (expiry, amountDue, race, cache, validation) (4f15030)
 - fix(lint): suppress set-state-in-effect in AccountTab crop effect (7e7304d)
@@ -123,6 +127,7 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge pull request #55 from FR4NC31/fix/discovery-tests (6cb64de)
 - Merge branch 'develop' into fix/discovery-tests (ea97f58)
 - Merge pull request #59 from FR4NC31/feat/payment-method (adfc651)
 - Merge remote-tracking branch 'origin/develop' into feat/payment-method (04e83be)
