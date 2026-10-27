@@ -72,6 +72,23 @@ export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
   return request(`/api/admin/users${q ? `?query=${encodeURIComponent(q)}` : ''}`)
 }
 
+export function fetchUserMembership(
+  userId: string,
+): Promise<{ membership: { tier: string; expiresAt: string | null } }> {
+  return request(`/api/admin/users/${encodeURIComponent(userId)}/membership`)
+}
+
+export function setUserMembership(
+  userId: string,
+  tier: string,
+  expiresAt: string | null,
+): Promise<{ membership: { tier: string; expiresAt: string | null } }> {
+  return request(`/api/admin/users/${encodeURIComponent(userId)}/membership`, {
+    method: 'POST',
+    body: JSON.stringify({ tier, expiresAt }),
+  })
+}
+
 export function fetchAdminBlockouts(): Promise<{
   blockouts: AdminBlockout[]
   studioToday: string

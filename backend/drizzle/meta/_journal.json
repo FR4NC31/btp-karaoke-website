@@ -71,6 +71,13 @@
       "when": 1792905777657,
       "tag": "0009_old_lily_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793081899265,
+      "tag": "0010_rare_the_liberteens",
+      "breakpoints": true
     }
   ]
 }

@@ -24,6 +24,7 @@ import {
   type ListBookingsFilter,
   type TagUser,
 } from './types.ts'
+import { membershipDiscountPercent } from '../membership/index.ts'
 
 /**
  * The only status moves an admin can make, and the states they are legal
@@ -164,7 +165,7 @@ export async function createBookingForOthers(
   input: CreateBookingForOthersInput,
 ): Promise<AdminBooking> {
   const bookingDate = validateBookingDay(input.bookingDate)
-  const { unit } = await assertServiceAvailable(input.serviceId)
+  const { unit, pricePhp } = await assertServiceAvailable(input.serviceId)
   const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
   const notes = validateNotes(input.notes)
 
@@ -198,6 +199,9 @@ export async function createBookingForOthers(
 
   await assertDayNotBlocked(bookingDate)
 
+  const discountPercent = await membershipDiscountPercent(userId)
+  const amountDuePhp = pricePhp * (1 - discountPercent / 100)
+
   try {
     const bookingId = await insertBookingRow({
       userId,
@@ -207,6 +211,8 @@ export async function createBookingForOthers(
       bookingTime,
       status: 'confirmed',
       notes,
+      discountPercent,
+      amountDuePhp: String(amountDuePhp),
     })
 
     const created = await findBookingByIdForAdmin(bookingId)

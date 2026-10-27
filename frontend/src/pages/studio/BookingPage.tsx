@@ -15,11 +15,12 @@ import {
   type PublicBlockout,
   type Service,
 } from '../../lib/booking-api'
+import { WING_LABELS } from './components/booking/constants'
 import { formatDay, nextOpenDay } from '../../lib/booking-format'
 import BookingForm from './components/booking/BookingForm'
 import BookingServiceCard from './components/booking/BookingServiceCard'
 import BookingsPanel from './components/booking/BookingsPanel'
-import { WING_LABELS } from './components/booking/constants'
+import { useSession } from '../../lib/auth-client'
 
 /**
  * /studio/bookings — the booking desk.
@@ -50,6 +51,8 @@ function byNewest(a: Booking, b: Booking): number {
 }
 
 export default function BookingPage() {
+  const { data: session } = useSession()
+  const isVip = session?.user?.membershipTier === 'vip'
   const [services, setServices] = useState<Service[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [blockouts, setBlockouts] = useState<PublicBlockout[]>([])
@@ -287,6 +290,11 @@ export default function BookingPage() {
           Per-hour services (recording, editing, coaching) book a date + a start time on the hour
           (e.g. 1:00 PM–2:00 PM) — open 24 hours. Per-song, per-video, per-day and per-event
           services book a date; rates marked “starting” are confirmed after consultation.
+          {isVip && (
+            <span className="mt-1 block font-semibold text-primary">
+              VIP member: 20% off all services applied at checkout.
+            </span>
+          )}
         </p>
       </header>
 
