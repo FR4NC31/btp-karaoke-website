@@ -49,6 +49,7 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix(player): navigate to /studio on PiP when opened via route (ce32362)
 - fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
 - fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
 - fix(player): allow minimizing overlay-opened queue; remove queue from sidebar (b0c8fd4)
