@@ -85,8 +85,6 @@ export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
   return request(`/api/admin/users${q ? `?query=${encodeURIComponent(q)}` : ''}`)
 }
 
-export type MembershipTier = 'free' | 'subscriber' | 'vip'
-
 export function fetchUserMembership(
   userId: string,
 ): Promise<{ membership: { tier: MembershipTier; expiresAt: string | null } }> {
