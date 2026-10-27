@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
@@ -15,6 +15,8 @@ export default function MembershipPanel() {
   const [tier, setTier] = useState<(typeof TIERS)[number]>('free')
   const [expiresAt, setExpiresAt] = useState('')
   const [current, setCurrent] = useState<{ tier: string; expiresAt: string | null } | null>(null)
+  const [loadingMembership, setLoadingMembership] = useState(false)
+  const pickRequestId = useRef(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [flash, setFlash] = useState('')
@@ -42,13 +44,20 @@ export default function MembershipPanel() {
     setQuery(user.email)
     setError('')
     setFlash('')
+    setCurrent(null)
+    setLoadingMembership(true)
+    const requestId = ++pickRequestId.current
     try {
       const { membership } = await fetchUserMembership(user.id)
+      if (requestId !== pickRequestId.current) return // stale
       setCurrent(membership)
       setTier(membership.tier as (typeof TIERS)[number])
       setExpiresAt(membership.expiresAt ? membership.expiresAt.slice(0, 10) : '')
     } catch (err) {
+      if (requestId !== pickRequestId.current) return
       setError(describeBookingError(err, 'Could not load membership.'))
+    } finally {
+      if (requestId === pickRequestId.current) setLoadingMembership(false)
     }
   }
 
@@ -163,10 +172,10 @@ export default function MembershipPanel() {
             </div>
             <button
               type="submit"
-              disabled={busy}
+              disabled={busy || loadingMembership}
               className="rounded-lg bg-primary px-4 py-2 text-xs font-bold tracking-widest text-text-primary uppercase transition hover:bg-primary-hover disabled:opacity-60"
             >
-              {busy ? 'Saving…' : 'Grant tier'}
+              {busy ? 'Saving…' : loadingMembership ? 'Loading…' : 'Grant tier'}
             </button>
           </div>
         </form>
