@@ -49,6 +49,7 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix(lint): suppress set-state-in-effect in AccountTab crop effect (7e7304d)
 - fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
 - fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
 - fix(player): allow minimizing overlay-opened queue; remove queue from sidebar (b0c8fd4)
@@ -117,6 +118,7 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge pull request #54 from FR4NC31/refactor/backend-modules-and-profile-image-crop (048b958)
 - refactor: reorganize backend modules and add circular profile image crop (2e0bba8)
 - Merge pull request #53 from FR4NC31/fix/redis-fallback (40fbc19)
 - Merge pull request #52 from FR4NC31/feat/redis-cache (89c7cc8)
