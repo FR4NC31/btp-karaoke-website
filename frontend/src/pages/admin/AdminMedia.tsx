@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import {
@@ -115,21 +114,6 @@ export default function AdminMedia() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-wide uppercase">Media Hub</h1>
-          <p className="mt-1 text-xs font-bold tracking-widest text-primary uppercase">
-            Video songs, minus-one tracks and radio stations
-          </p>
-        </div>
-        <Link
-          to="/admin/media/new"
-          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover"
-        >
-          + New item
-        </Link>
-      </header>
-
       {loadError && (
         <p role="alert" className="rounded-lg border border-error/40 bg-error/10 px-4 py-3 text-sm text-error">
           {loadError}

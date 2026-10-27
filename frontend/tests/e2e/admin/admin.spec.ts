@@ -89,7 +89,7 @@ test.describe('admin sign-in', () => {
   test('ADMIN-001: signing in lands an admin on the console', { tag: '@p1' }, async ({ page }) => {
     await signInAsAdmin(page)
 
-    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Pending approvals' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Today at the studio' })).toBeVisible()
   })
@@ -100,7 +100,7 @@ test.describe('reservation queue', () => {
     const { referenceCode } = await createPendingAsCustomer(baseURL, 'STUDIO-TRACKING', '09:00')
 
     await page.goto('/admin')
-    const row = pendingQueue(page).locator('li').filter({ hasText: referenceCode })
+    const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
     await expect(row).toBeVisible()
 
     await row.getByRole('button', { name: 'Confirm' }).click()
@@ -109,12 +109,15 @@ test.describe('reservation queue', () => {
 
     await page.goto('/admin/bookings')
     await page.getByLabel('Search').fill(referenceCode)
-    await page.getByRole('button', { name: 'Search' }).click()
 
     const listed = reservationRow(page, referenceCode)
     await expect(listed).toContainText('confirmed')
-    await listed.getByRole('button', { name: 'Mark completed' }).click()
+    await listed.getByRole('button', { name: `View ${referenceCode}` }).click()
+    const details = page.getByRole('dialog')
+    await expect(details).toContainText(referenceCode)
+    await details.getByRole('button', { name: 'Mark completed' }).click()
     await expect(flashWith(page, `${referenceCode} is now completed.`)).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(listed).toContainText('completed')
   })
 
@@ -122,7 +125,7 @@ test.describe('reservation queue', () => {
     const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM')
 
     await page.goto('/admin')
-    const row = pendingQueue(page).locator('li').filter({ hasText: referenceCode })
+    const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
     await expect(row).toBeVisible()
 
     await row.getByRole('button', { name: 'Reject' }).click()
@@ -131,7 +134,6 @@ test.describe('reservation queue', () => {
 
     await page.goto('/admin/bookings')
     await page.getByLabel('Search').fill(referenceCode)
-    await page.getByRole('button', { name: 'Search' }).click()
     await expect(reservationRow(page, referenceCode)).toContainText('rejected')
   })
 })
@@ -164,15 +166,16 @@ test.describe('booking for others', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     await page.getByLabel('Search').fill(referenceCode)
-    await page.getByRole('button', { name: 'Search' }).click()
 
     const listed = reservationRow(page, referenceCode)
     await expect(listed).toContainText('confirmed')
     await expect(listed).toContainText('Guest')
     await expect(listed).toContainText(guestName)
 
-    await listed.getByRole('button', { name: 'Cancel' }).click()
+    await listed.getByRole('button', { name: `View ${referenceCode}` }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
     await expect(flashWith(page, `${referenceCode} is now cancelled.`)).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(listed).toContainText('cancelled')
   })
 
@@ -199,15 +202,16 @@ test.describe('booking for others', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     await page.getByLabel('Search').fill(referenceCode)
-    await page.getByRole('button', { name: 'Search' }).click()
 
     const listed = reservationRow(page, referenceCode)
     await expect(listed).toContainText('confirmed')
     await expect(listed).toContainText(TEST_USER.email)
     await expect(listed).not.toContainText('Guest')
 
-    await listed.getByRole('button', { name: 'Mark completed' }).click()
+    await listed.getByRole('button', { name: `View ${referenceCode}` }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Mark completed' }).click()
     await expect(flashWith(page, `${referenceCode} is now completed.`)).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(listed).toContainText('completed')
   })
 })
@@ -221,7 +225,7 @@ test.describe('console entry points', () => {
     await consoleLink.click()
 
     await expect(page).toHaveURL('/admin')
-    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
   })
 
   test('ADMIN-011: a signed-in admin is never dropped into the user dashboard', { tag: '@p1' }, async ({ page }) => {
@@ -233,7 +237,7 @@ test.describe('console entry points', () => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Sign In', exact: true }).click()
     await expect(page).toHaveURL('/admin')
-    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 })

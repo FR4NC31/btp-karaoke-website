@@ -320,23 +320,6 @@ export default function AdminMediaForm() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-wide uppercase">
-            {editing ? 'Edit catalog item' : 'New catalog item'}
-          </h1>
-          <p className="mt-1 text-xs font-bold tracking-widest text-primary uppercase">
-            {editing ? 'Changes go live on the hub immediately' : 'Publish to the studio hub'}
-          </p>
-        </div>
-        <Link
-          to="/admin/media"
-          className="rounded-lg border border-border bg-surface-elevated px-4 py-2 text-xs font-bold tracking-widest text-text-secondary uppercase transition hover:text-text-primary"
-        >
-          Back to Media Hub
-        </Link>
-      </header>
-
       {loadError && (
         <p role="alert" className="rounded-lg border border-error/40 bg-error/10 px-4 py-3 text-sm text-error">
           {loadError}

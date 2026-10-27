@@ -7,7 +7,7 @@ test.use({ storageState: ADMIN_STORAGE_STATE })
 /**
  * Studio closures (BOOKING-011/012).
  *
- * An admin blocks a whole day from /admin/bookings; the customer desk lists it
+ * An admin blocks a whole day from /admin/blocked-days; the customer desk lists it
  * and refuses the date client-side, and the API refuses it too. Unblocking
  * reopens the day. Days are random and far out, and cleanup runs in `finally`
  * so a failed assertion cannot leave the QA calendar closed.
@@ -68,7 +68,7 @@ test.describe('studio closures', () => {
     const serviceId = await serviceIdByCode(page, 'KARAOKE-MV')
 
     try {
-      await page.goto('/admin/bookings')
+      await page.goto('/admin/blocked-days')
       await expect(page.getByRole('heading', { name: 'Blocked days' })).toBeVisible()
 
       await page.locator('#blockout-date').fill(day)
@@ -108,7 +108,7 @@ test.describe('studio closures', () => {
       expect(blockedBody.error).toContain('Maintenance')
 
       // Reopening the day makes the same request succeed.
-      await page.goto('/admin/bookings')
+      await page.goto('/admin/blocked-days')
       await page.getByRole('button', { name: `Unblock ${label}` }).click()
       await expect(
         page.getByRole('status').filter({ hasText: `Reopened ${label}.` }),
@@ -130,7 +130,7 @@ test.describe('studio closures', () => {
     const label = formatDay(day)
 
     try {
-      await page.goto('/admin/bookings')
+      await page.goto('/admin/blocked-days')
       await page.locator('#blockout-date').fill(day)
       await page.getByRole('button', { name: 'Block this day' }).click()
       await expect(

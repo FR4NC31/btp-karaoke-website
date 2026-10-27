@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
+import {
+  CalendarCheck01Icon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  MoneyBag02Icon,
+  MusicNote01Icon,
+} from '@hugeicons/core-free-icons'
 import {
   adminBookingAction,
   fetchAdminBookings,
   type AdminBooking,
 } from '../../lib/admin-api'
 import { describeBookingError } from '../../lib/booking-api'
-import { formatDay } from '../../lib/booking-format'
 import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
 import { OverviewSkeleton } from './AdminSkeletons'
 import OverviewSummary, { type OverviewStat } from './components/overview/OverviewSummary'
 import PendingApprovals from './components/overview/PendingApprovals'
 import TodayAtStudio from './components/overview/TodayAtStudio'
+import ActivityLog from './components/overview/ActivityLog'
+import { activityEntriesFrom } from './components/overview/activity-log-data'
 
 /**
  * /admin — the work queue.
@@ -28,7 +35,7 @@ import TodayAtStudio from './components/overview/TodayAtStudio'
  */
 
 export default function AdminOverview() {
-  const { openNewReservation, reservationsRevision } = useNewReservationDialog()
+  const { reservationsRevision } = useNewReservationDialog()
   const [bookings, setBookings] = useState<AdminBooking[]>([])
   const [studioToday, setStudioToday] = useState('')
   const [loading, setLoading] = useState(true)
@@ -76,6 +83,16 @@ export default function AdminOverview() {
     setStudioToday(result.studioToday)
   }
 
+  /** Manual refresh from the activity-log header. */
+  async function handleRefresh() {
+    setLoadError('')
+    try {
+      await refresh()
+    } catch (err) {
+      setLoadError(describeBookingError(err, 'Could not refresh the dashboard.'))
+    }
+  }
+
   async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
     if (actingId) return
     const generation = loadGeneration.current
@@ -111,28 +128,95 @@ export default function AdminOverview() {
   }
 
   const pending = bookings.filter((b) => b.status === 'pending')
-  const upcoming = bookings.filter((b) => b.status === 'confirmed' && b.bookingDate >= studioToday)
   const today = bookings.filter(
     (b) =>
       b.bookingDate === studioToday &&
       (b.status === 'pending' || b.status === 'confirmed' || b.status === 'completed'),
   )
 
+  // KPI inputs — all derived from the same reservation snapshot the page loads,
+  // so the cards, the queue and the activity log can never disagree.
+  const month = studioToday.slice(0, 7)
+  const monthBookings = month
+    ? bookings.filter((b) => b.bookingDate.startsWith(month))
+    : []
+  const keptThisMonth = monthBookings.filter(
+    (b) => b.status !== 'rejected' && b.status !== 'cancelled',
+  )
+  const completedThisMonth = keptThisMonth.filter((b) => b.status === 'completed')
+  const confirmedThisMonth = keptThisMonth.filter((b) => b.status === 'confirmed')
+  const revenueThisMonth = keptThisMonth.reduce((sum, b) => sum + b.amountDuePhp, 0)
+  const settledRevenue = completedThisMonth.reduce((sum, b) => sum + b.amountDuePhp, 0)
+  const keptShare = monthBookings.length
+    ? Math.round((keptThisMonth.length / monthBookings.length) * 100)
+    : 0
+  const settledShare = revenueThisMonth
+    ? Math.round((settledRevenue / revenueThisMonth) * 100)
+    : 0
+  const activeToday = today.filter((b) => b.status === 'confirmed')
+  const completedToday = today.filter((b) => b.status === 'completed')
+  const pad = (count: number) => String(count).padStart(2, '0')
+  const compactPeso = new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  })
+
   const stats: OverviewStat[] = [
     {
-      label: 'Pending queue',
-      value: pending.length,
-      hint: 'Waiting on you to confirm or reject',
+      label: 'Pending Approvals',
+      value: pad(pending.length),
+      trend: {
+        label: 'review queue',
+        value: pending.length > 0 ? 'Action' : 'Clear',
+        color: pending.length > 0 ? 'warning' : 'success',
+      },
+      detail:
+        pending.length > 0
+          ? `${pending.length} request${pending.length === 1 ? '' : 's'} waiting on you`
+          : 'Every request has been answered',
+      icon: Clock01Icon,
+      link: { label: 'Review', to: '/admin/bookings' },
     },
     {
-      label: 'Upcoming sessions',
-      value: upcoming.length,
-      hint: 'Confirmed sessions from today onwards',
+      label: 'Active Sessions',
+      value: pad(activeToday.length),
+      trend: {
+        label: 'closed today',
+        value: `${completedToday.length}`,
+        color: completedToday.length > 0 ? 'success' : 'text-muted',
+      },
+      detail:
+        today.length > 0
+          ? `${today.length} on today's schedule`
+          : 'No sessions booked today',
+      icon: MusicNote01Icon,
+      link: { label: 'Schedule', to: '/admin/bookings' },
     },
     {
-      label: "Today's schedule",
-      value: today.length,
-      hint: `Live schedule for ${studioToday || 'today'}`,
+      label: 'Studio Bookings',
+      value: pad(keptThisMonth.length),
+      trend: {
+        label: 'kept this month',
+        value: `${keptShare}%`,
+        color: keptShare >= 80 ? 'success' : 'warning',
+      },
+      detail: `${completedThisMonth.length} completed · ${confirmedThisMonth.length} confirmed`,
+      icon: CalendarCheck01Icon,
+      link: { label: 'Schedule', to: '/admin/bookings' },
+    },
+    {
+      label: 'Monthly Revenue',
+      value: revenueThisMonth > 0 ? compactPeso.format(revenueThisMonth) : '₱0',
+      trend: {
+        label: 'collected',
+        value: `${settledShare}%`,
+        color: settledShare >= 50 ? 'success' : 'warning',
+      },
+      detail: 'Booked value this month',
+      icon: MoneyBag02Icon,
+      link: { label: 'Reservations', to: '/admin/bookings' },
     },
   ]
 
@@ -141,23 +225,7 @@ export default function AdminOverview() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-wide uppercase">Overview</h1>
-          <p className="mt-1 text-xs font-bold tracking-widest text-primary uppercase">
-            {studioToday ? `Studio day · ${formatDay(studioToday)}` : 'Studio control room'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openNewReservation}
-          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover"
-        >
-          + New reservation
-        </button>
-      </header>
-
+    <div className="space-y-6">
       {loadError && (
         <p role="alert" className="rounded-lg border border-error/40 bg-error/10 px-4 py-3 text-sm text-error">
           {loadError}
@@ -176,12 +244,16 @@ export default function AdminOverview() {
 
       <OverviewSummary stats={stats} />
 
-      <PendingApprovals
-        pending={pending}
-        actingId={actingId}
-        actingAction={actingAction}
-        onAction={handleAction}
-      />
+      <div className="grid gap-5 xl:h-[600px] xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <ActivityLog entries={activityEntriesFrom(bookings)} onRefresh={handleRefresh} />
+
+        <PendingApprovals
+          pending={pending}
+          actingId={actingId}
+          actingAction={actingAction}
+          onAction={handleAction}
+        />
+      </div>
 
       <TodayAtStudio today={today} />
     </div>

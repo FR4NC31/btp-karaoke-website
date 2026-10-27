@@ -19,7 +19,8 @@ import { formatDay } from '../../../../lib/booking-format'
 const NOTE_MAX = 500
 
 type BlockedDaysPanelProps = {
-  studioToday: string
+  studioToday?: string
+  initialDate?: string
 }
 
 /**
@@ -27,9 +28,13 @@ type BlockedDaysPanelProps = {
  * reservations — the API refuses while live bookings remain on that day, so
  * the admin cancels/moves them first.
  */
-export default function BlockedDaysPanel({ studioToday }: BlockedDaysPanelProps) {
+export default function BlockedDaysPanel({
+  studioToday: initialStudioToday = '',
+  initialDate = '',
+}: BlockedDaysPanelProps) {
   const [blockouts, setBlockouts] = useState<AdminBlockout[]>([])
-  const [bookingDate, setBookingDate] = useState('')
+  const [studioToday, setStudioToday] = useState(initialStudioToday)
+  const [bookingDate, setBookingDate] = useState(initialDate)
   const [reason, setReason] = useState<BlockoutReason | ''>('')
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(true)
@@ -45,6 +50,7 @@ export default function BlockedDaysPanel({ studioToday }: BlockedDaysPanelProps)
         const result = await fetchAdminBlockouts()
         if (!alive) return
         setBlockouts(result.blockouts)
+        setStudioToday(result.studioToday)
       } catch (err) {
         if (!alive) return
         setError(describeBookingError(err, 'Could not load the blocked days.'))
@@ -112,7 +118,7 @@ export default function BlockedDaysPanel({ studioToday }: BlockedDaysPanelProps)
   return (
     <section
       aria-labelledby="blocked-days-heading"
-      className="space-y-4 rounded-xl border border-border bg-surface p-4"
+      className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -120,7 +126,7 @@ export default function BlockedDaysPanel({ studioToday }: BlockedDaysPanelProps)
             id="blocked-days-heading"
             className="font-heading text-sm font-bold tracking-widest uppercase"
           >
-            Blocked days
+            Studio closures
           </h2>
           <p className="mt-1 text-xs text-text-muted">
             Close a whole day for maintenance, a private event, or no reason at all. Cancel or

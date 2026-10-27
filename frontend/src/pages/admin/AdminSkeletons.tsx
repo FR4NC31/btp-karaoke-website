@@ -36,14 +36,32 @@ export function OverviewSkeleton() {
         <Bar className="h-10 w-44 rounded-lg" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }, (_, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="rounded-xl border border-border bg-surface p-5">
-            <Bar className="h-2.5 w-28" />
-            <Bar className="mt-3 h-8 w-16" />
-            <Bar className="mt-3 h-2.5 w-40 max-w-full" />
+            <div className="flex items-center gap-2.5">
+              <Bar className="size-8 rounded-lg" />
+              <Bar className="h-2.5 w-28" />
+            </div>
+            <Bar className="mt-4 h-8 w-16" />
+            <Bar className="mt-4 h-2.5 w-40 max-w-full" />
           </div>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-border bg-surface">
+        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+          <Bar className="size-9 rounded-lg" />
+          <div>
+            <Bar className="h-5 w-64 max-w-full" />
+            <Bar className="mt-2 h-2.5 w-72 max-w-full" />
+          </div>
+        </div>
+        <div className="space-y-3 p-5">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Bar key={i} className="h-12 w-full" />
+          ))}
+        </div>
       </div>
 
       <div>
