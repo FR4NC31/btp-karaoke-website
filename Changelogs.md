@@ -50,6 +50,7 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+- fix(membership): address Cubic review (expiry, amountDue, race, cache, validation) (4f15030)
 - fix(lint): suppress set-state-in-effect in AccountTab crop effect (7e7304d)
 - fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
 - fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
@@ -119,6 +120,7 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge pull request #57 from FR4NC31/feat/membership-tier (1bf7541)
 - Merge pull request #56 from FR4NC31/fix/lint-accounttab (915d136)
 - Merge pull request #54 from FR4NC31/refactor/backend-modules-and-profile-image-crop (048b958)
 - refactor: reorganize backend modules and add circular profile image crop (2e0bba8)

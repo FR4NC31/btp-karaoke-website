@@ -81,7 +81,9 @@ export const user = pgTable('user', {
    */
   membershipTier: text('membership_tier').notNull().default('free'),
   membershipExpiresAt: timestamp('membership_expires_at', { withTimezone: true }),
-})
+}, (t) => [
+  check('user_membership_tier_check', sql`"membership_tier" in ('free', 'subscriber', 'vip')`),
+])
 
 /**
  * Bookable catalog. Rows mirror the priced services on /services.

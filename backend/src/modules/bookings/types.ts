@@ -22,6 +22,10 @@ export interface Booking {
   serviceName: string
   serviceUnit: string
   pricePhp: number
+  /** Final amount due after membership discount (falls back to pricePhp). */
+  amountDuePhp: number
+  /** Percent off the listed price granted by the customer's membership tier. */
+  discountPercent: number
   /** Whole day, `YYYY-MM-DD`. */
   bookingDate: string
   /** Optional time slot `HH:MM:SS` for per-hour services. NULL = per-day booking. */

@@ -13,6 +13,7 @@ export const authClient = createAuthClient({
         barangay: { type: 'string', required: false },
         role: { type: 'string', required: false },
         membershipTier: { type: 'string', required: false },
+        membershipExpiresAt: { type: 'date', required: false },
       },
     }),
   ],

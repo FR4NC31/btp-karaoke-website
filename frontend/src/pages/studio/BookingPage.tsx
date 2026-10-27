@@ -52,7 +52,11 @@ function byNewest(a: Booking, b: Booking): number {
 
 export default function BookingPage() {
   const { data: session } = useSession()
-  const isVip = session?.user?.membershipTier === 'vip'
+  const membershipTier = session?.user?.membershipTier
+  const membershipExpiresAt = session?.user?.membershipExpiresAt
+  const isVip =
+    membershipTier === 'vip' &&
+    (!membershipExpiresAt || String(membershipExpiresAt).slice(0, 10) >= new Date().toISOString().slice(0, 10))
   const [services, setServices] = useState<Service[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [blockouts, setBlockouts] = useState<PublicBlockout[]>([])
