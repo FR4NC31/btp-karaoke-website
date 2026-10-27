@@ -6,6 +6,7 @@ Last updated: October 27, 2026
 
 ### Features
 
+- feat(payment): payment method modal (filler/gcash), receipt upload, 5-min hold + abuse suspension, admin approve/reject (e8aeeb2)
 - feat(membership): user tier (free/subscriber/vip) with VIP booking discount + admin grant UI (6f78b32)
 - feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
 - feat: client-side cache for catalogs/closures + backend cache headers (2c1d8cb)
@@ -119,6 +120,7 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge pull request #57 from FR4NC31/feat/membership-tier (1bf7541)
 - Merge pull request #56 from FR4NC31/fix/lint-accounttab (915d136)
 - Merge pull request #54 from FR4NC31/refactor/backend-modules-and-profile-image-crop (048b958)
 - refactor: reorganize backend modules and add circular profile image crop (2e0bba8)
