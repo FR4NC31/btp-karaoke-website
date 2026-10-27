@@ -391,9 +391,12 @@ export default function StudioPlayer({
 
   const handleEnterPip = useCallback(() => {
     enterPip()
-    if (onToggleQueue) onToggleQueue()
-    else navigate('/studio')
-  }, [enterPip, onToggleQueue, navigate])
+    if (location.pathname.startsWith('/studio/player-queue')) {
+      navigate('/studio')
+    } else if (onToggleQueue) {
+      onToggleQueue()
+    }
+  }, [enterPip, location.pathname, navigate, onToggleQueue])
 
   const handleExpand = useCallback(() => {
     if (onToggleQueue) onToggleQueue()
