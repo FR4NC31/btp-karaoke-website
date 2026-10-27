@@ -81,7 +81,12 @@ export const user = pgTable('user', {
    */
   membershipTier: text('membership_tier').notNull().default('free'),
   membershipExpiresAt: timestamp('membership_expires_at', { withTimezone: true }),
-})
+  /** Booking abuse tracking: suspended until this time after repeated unpaid holds. */
+  bookingSuspendedUntil: timestamp('booking_suspended_until', { withTimezone: true }),
+  bookingFailureCount: integer('booking_failure_count').notNull().default(0),
+}, (t) => [
+  check('user_membership_tier_check', sql`"membership_tier" in ('free', 'subscriber', 'vip')`),
+])
 
 /**
  * Bookable catalog. Rows mirror the priced services on /services.
@@ -221,6 +226,12 @@ export const booking = pgTable(
      */
     status: text('status').$type<BookingStatus>().notNull().default('pending'),
     notes: text('notes'),
+    /** Payment method chosen: 'filler' (cash/bank) or 'gcash'. */
+    paymentMethod: text('payment_method'),
+    /** Uploaded receipt image URL (GCash screenshot). */
+    receiptUrl: text('receipt_url'),
+    /** Deadline for completing payment; expired holds are auto-cancelled. */
+    paymentDeadline: timestamp('payment_deadline', { withTimezone: true }),
     /** Percent off the listed price granted by the customer's membership tier. */
     discountPercent: integer('discount_percent').notNull().default(0),
     /** Final amount due after the discount (defaults to the listed price). */
@@ -288,3 +299,12 @@ export const bookingBlockout = pgTable(
     ),
   ],
 )
+
+/**
+ * Simple key/value store for site-wide settings (e.g. the GCash QR image URL).
+ */
+export const siteSetting = pgTable('site_setting', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
+})

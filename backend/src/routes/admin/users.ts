@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
+import { clearUserSuspension } from '../../modules/bookings/payment-holds.ts'
 import { listUsersForTagging } from '../../modules/bookings/index.ts'
 import {
   BookingError,
@@ -59,6 +59,11 @@ adminUsers.post('/:id/membership', async (c) => {
     }
     throw err
   }
+})
+
+adminUsers.post('/:id/clear-suspension', async (c) => {
+  await clearUserSuspension(c.req.param('id'))
+  return c.json({ ok: true })
 })
 
 export default adminUsers

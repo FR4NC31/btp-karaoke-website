@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
 import app from './src/app.ts'
+import { releaseExpiredPaymentHolds } from './src/modules/bookings/payment-holds.ts'
 
 const configuredPort = Number(process.env.PORT)
 const port = Number.isInteger(configuredPort) && configuredPort >= 1 && configuredPort <= 65535
@@ -10,3 +11,8 @@ serve({
   fetch: app.fetch,
   port
 })
+
+// Periodically release expired payment holds so slots become available again.
+setInterval(() => {
+  releaseExpiredPaymentHolds().catch((err) => console.error('[payment-holds]', err))
+}, 60 * 1000)
