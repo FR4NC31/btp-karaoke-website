@@ -6,6 +6,7 @@ Last updated: October 27, 2026
 
 ### Features
 
+- feat(admin): convert cancel and mark-completed actions to icon buttons (4779dc0)
 - feat(admin): show booking details and uploaded GCash receipt for verification (a3c7480)
 - feat(payment): payment method modal (filler/gcash), receipt upload, 5-min hold + abuse suspension, admin approve/reject (e8aeeb2)
 - feat(membership): user tier (free/subscriber/vip) with VIP booking discount + admin grant UI (6f78b32)
@@ -127,6 +128,7 @@ Last updated: October 27, 2026
 
 ### Other Changes
 
+- Merge pull request #60 from FR4NC31/fix/gcash-payment-receipt-upload-ui (20bd72a)
 - Merge pull request #55 from FR4NC31/fix/discovery-tests (6cb64de)
 - Merge branch 'develop' into fix/discovery-tests (ea97f58)
 - Merge pull request #59 from FR4NC31/feat/payment-method (adfc651)
