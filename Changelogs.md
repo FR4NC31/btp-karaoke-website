@@ -49,7 +49,11 @@ Last updated: October 27, 2026
 
 ### Bug Fixes
 
+<<<<<<< HEAD
 - fix(player): navigate to /studio on PiP when opened via route (ce32362)
+=======
+- fix(lint): suppress set-state-in-effect in AccountTab crop effect (7e7304d)
+>>>>>>> origin/develop
 - fix(cache): stop Redis retry storms and disconnect on auth failure (44dc910)
 - fix(player): remember origin on route-based queue open so minimize returns correctly (1c34009)
 - fix(player): allow minimizing overlay-opened queue; remove queue from sidebar (b0c8fd4)
