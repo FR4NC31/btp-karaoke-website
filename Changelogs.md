@@ -6,6 +6,7 @@ Last updated: October 27, 2026
 
 ### Features
 
+- feat(admin): show booking details and uploaded GCash receipt for verification (a3c7480)
 - feat(payment): payment method modal (filler/gcash), receipt upload, 5-min hold + abuse suspension, admin approve/reject (e8aeeb2)
 - feat(membership): user tier (free/subscriber/vip) with VIP booking discount + admin grant UI (6f78b32)
 - feat(cache): add Redis-backed cache with in-memory fallback (d4eef09)
