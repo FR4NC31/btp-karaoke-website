@@ -42,6 +42,10 @@ export async function setUserMembership(
   if (parsedExpiry && Number.isNaN(parsedExpiry.getTime())) {
     throw new BookingError('That expiry date is not valid.', 400)
   }
+  // Guard against Date normalizing invalid calendar dates (e.g. Feb 30).
+  if (parsedExpiry && parsedExpiry.toISOString().slice(0, 10) !== expiresAt!.slice(0, 10)) {
+    throw new BookingError('That expiry date is not valid.', 400)
+  }
 
   const updated = await db
     .update(user)
@@ -66,6 +70,9 @@ export async function membershipDiscountPercent(userId: string | null): Promise<
   if (!userId) return 0
   const m = await getUserMembership(userId)
   if (m.tier !== 'vip') return 0
-  if (m.expiresAt && new Date(m.expiresAt) < new Date()) return 0
+  if (m.expiresAt) {
+    const expiryDay = new Date(m.expiresAt).toISOString().slice(0, 10)
+    if (expiryDay < new Date().toISOString().slice(0, 10)) return 0
+  }
   return VIP_DISCOUNT_PERCENT
 }

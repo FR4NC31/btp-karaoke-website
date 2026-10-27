@@ -59,7 +59,7 @@ export default function AdminBookingRow({ booking, busy, onAction }: AdminBookin
           )}
         </div>
         <p className="mt-1.5 text-sm text-text-secondary">
-          {booking.serviceName} · {formatDay(booking.bookingDate)} · {peso.format(booking.pricePhp)}
+          {booking.serviceName} · {formatDay(booking.bookingDate)} · {peso.format(booking.amountDuePhp ?? booking.pricePhp)}
         </p>
         <p className="mt-1 text-[11px] tracking-widest text-text-muted uppercase">
           {booking.referenceCode}

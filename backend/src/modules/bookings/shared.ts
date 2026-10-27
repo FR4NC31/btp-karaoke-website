@@ -39,6 +39,8 @@ export const bookingColumns = {
   bookingTime: booking.bookingTime,
   status: booking.status,
   notes: booking.notes,
+  discountPercent: booking.discountPercent,
+  amountDuePhp: booking.amountDuePhp,
   createdAt: booking.createdAt,
   serviceCode: service.code,
   serviceName: service.name,
@@ -54,6 +56,8 @@ export type BookingRow = {
   bookingTime: string | null
   status: BookingStatus
   notes: string | null
+  discountPercent: number
+  amountDuePhp: string | null
   createdAt: Date
   serviceCode: string
   serviceName: string
@@ -67,6 +71,8 @@ export function toBooking(row: BookingRow): Booking {
   return {
     ...row,
     pricePhp: Number(row.pricePhp),
+    amountDuePhp: row.amountDuePhp ? Number(row.amountDuePhp) : Number(row.pricePhp),
+    discountPercent: Number(row.discountPercent ?? 0),
     createdAt: row.createdAt.toISOString(),
   }
 }

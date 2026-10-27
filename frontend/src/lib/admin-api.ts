@@ -85,17 +85,19 @@ export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
   return request(`/api/admin/users${q ? `?query=${encodeURIComponent(q)}` : ''}`)
 }
 
+export type MembershipTier = 'free' | 'subscriber' | 'vip'
+
 export function fetchUserMembership(
   userId: string,
-): Promise<{ membership: { tier: string; expiresAt: string | null } }> {
+): Promise<{ membership: { tier: MembershipTier; expiresAt: string | null } }> {
   return request(`/api/admin/users/${encodeURIComponent(userId)}/membership`)
 }
 
 export function setUserMembership(
   userId: string,
-  tier: string,
+  tier: MembershipTier,
   expiresAt: string | null,
-): Promise<{ membership: { tier: string; expiresAt: string | null } }> {
+): Promise<{ membership: { tier: MembershipTier; expiresAt: string | null } }> {
   return request(`/api/admin/users/${encodeURIComponent(userId)}/membership`, {
     method: 'POST',
     body: JSON.stringify({ tier, expiresAt }),

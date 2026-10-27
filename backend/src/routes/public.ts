@@ -34,6 +34,7 @@ publicApi.get('/media', async (c) => {
 
 // Signed-in: the caller's own membership tier + expiry.
 publicApi.get('/me/membership', requireSession, async (c) => {
+  c.header('Cache-Control', 'private, no-store')
   const session = c.get('session')
   if (!session) throw new HTTPException(401)
   const membership = await getUserMembership(session.user.id)
