@@ -7,6 +7,7 @@ import {
   createBooking,
   listBookingsForUser,
   listPublicBlockouts,
+  setBookingPaymentMethod,
   studioToday,
 } from '../modules/bookings/index.ts'
 import { requireSession } from '../middleware/session.ts'
@@ -120,6 +121,36 @@ bookingApi.post('/:id/receipt', requireSession, async (c) => {
   } catch (err) {
     if (err instanceof BookingError || err instanceof UploadError) {
       return c.json({ error: err.message }, ((err as { status?: number }).status ?? 400) as any)
+    }
+    throw err
+  }
+})
+
+bookingApi.post('/:id/payment-method', requireSession, async (c) => {
+  const session = c.get('session')
+  if (!session) throw new HTTPException(401)
+
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+  const { paymentMethod } = (body ?? {}) as Record<string, unknown>
+  if (paymentMethod !== 'filler' && paymentMethod !== 'gcash') {
+    return c.json({ error: 'paymentMethod must be "filler" or "gcash".' }, 400)
+  }
+
+  try {
+    const booking = await setBookingPaymentMethod(
+      c.req.param('id'),
+      session.user.id,
+      paymentMethod,
+    )
+    return c.json({ booking })
+  } catch (err) {
+    if (err instanceof BookingError) {
+      return c.json({ error: err.message }, err.status)
     }
     throw err
   }

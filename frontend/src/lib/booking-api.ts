@@ -73,7 +73,8 @@ export function describeBookingError(err: unknown, fallback: string): string {
       return 'Your session has expired. Sign in again to continue.'
     }
     if (err.status === 403) {
-      return 'You do not have access to that.'
+      // Backend uses 403 for booking suspensions too, so keep its message.
+      return err.message || 'You do not have access to that.'
     }
     return err.message
   }
@@ -164,6 +165,17 @@ export function createBooking(input: {
 
 export function cancelBooking(id: string): Promise<{ booking: Booking }> {
   return request(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
+}
+
+/** Locks in the payment method for a held slot (filler = cash, gcash = hold). */
+export function setBookingPaymentMethod(
+  id: string,
+  paymentMethod: 'filler' | 'gcash',
+): Promise<{ booking: Booking }> {
+  return request(`/api/bookings/${encodeURIComponent(id)}/payment-method`, {
+    method: 'POST',
+    body: JSON.stringify({ paymentMethod }),
+  })
 }
 
 /** True when the service is billed per hour or minute (needs a time slot),

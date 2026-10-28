@@ -5,6 +5,7 @@ import {
   Cancel01Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
+  EyeIcon,
   RefreshIcon,
 } from '@hugeicons/core-free-icons'
 import type { AdminBooking } from '../../../../lib/admin-api'
@@ -15,6 +16,7 @@ type PendingApprovalsProps = {
   actingId: string
   actingAction: 'confirm' | 'reject' | null
   onAction: (booking: AdminBooking, action: 'confirm' | 'reject') => void
+  onOpen: (booking: AdminBooking) => void
 }
 
 /**
@@ -27,6 +29,7 @@ export default function PendingApprovals({
   actingId,
   actingAction,
   onAction,
+  onOpen,
 }: PendingApprovalsProps) {
   const empty = pending.length === 0
 
@@ -156,6 +159,15 @@ export default function PendingApprovals({
                   </td>
                   <td className="w-12 px-3 py-3.5 text-right align-middle">
                     <div className="ml-auto flex w-8 flex-col items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onOpen(booking)}
+                        aria-label={`View ${booking.referenceCode}`}
+                        title="View details & receipt"
+                        className="grid size-8 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/50 hover:text-text-primary"
+                      >
+                        <HugeiconsIcon icon={EyeIcon} size={14} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => onAction(booking, 'confirm')}

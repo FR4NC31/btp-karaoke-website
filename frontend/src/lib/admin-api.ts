@@ -67,6 +67,20 @@ export function adminBookingAction(
   })
 }
 
+/**
+ * Payment decision for a pending booking. Unlike the generic confirm/reject,
+ * this resets the customer's failure streak on approval and escalates the
+ * booking suspension on rejection.
+ */
+export function adminPaymentAction(
+  id: string,
+  action: 'approve' | 'reject',
+): Promise<{ booking: AdminBooking }> {
+  return request(`/api/admin/bookings/${encodeURIComponent(id)}/${action}-payment`, {
+    method: 'POST',
+  })
+}
+
 export function fetchGcashQr(): Promise<{ url: string | null }> {
   return request('/api/settings/gcash-qr')
 }
@@ -87,8 +101,22 @@ export function searchUsers(query: string): Promise<{ users: TagUser[] }> {
 
 export function fetchUserMembership(
   userId: string,
-): Promise<{ membership: { tier: MembershipTier; expiresAt: string | null } }> {
+): Promise<{
+  membership: {
+    tier: MembershipTier
+    expiresAt: string | null
+    suspendedUntil: string | null
+    failureCount: number
+  }
+}> {
   return request(`/api/admin/users/${encodeURIComponent(userId)}/membership`)
+}
+
+/** Admin reset for a customer's booking ban. */
+export function clearUserBookingSuspension(userId: string): Promise<{ ok: boolean }> {
+  return request(`/api/admin/users/${encodeURIComponent(userId)}/clear-suspension`, {
+    method: 'POST',
+  })
 }
 
 export function setUserMembership(

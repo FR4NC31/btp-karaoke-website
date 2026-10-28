@@ -13,7 +13,7 @@ import {
 import { validateBookingDay, validateBookingTime, validateNotes } from './validation.ts'
 import { BookingError, type Booking, type CreateBookingInput } from './types.ts'
 import { membershipDiscountPercent } from '../membership/index.ts'
-import { getUserSuspension, recordPaymentSuccess, releaseExpiredPaymentHolds } from './payment-holds.ts'
+import { getUserSuspension, releaseExpiredPaymentHolds } from './payment-holds.ts'
 
 /**
  * The signed-in user's own bookings, newest day first.
@@ -76,7 +76,10 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   const discountPercent = await membershipDiscountPercent(input.userId)
   const amountDuePhp = pricePhp * (1 - discountPercent / 100)
 
-  const paymentDeadline = new Date(Date.now() + 5 * 60 * 1000)
+  // Cash bookings need no hold. A hold (no method yet) or a GCash booking
+  // reserves the slot for five minutes while the customer pays.
+  const paymentDeadline =
+    input.paymentMethod === 'filler' ? null : new Date(Date.now() + 5 * 60 * 1000)
 
   try {
     const bookingId = await insertBookingRow({
@@ -99,7 +102,6 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       // caller's — a plain Error surfaces as a 500.
       throw new Error('The booking could not be read back after saving.')
     }
-    await recordPaymentSuccess(input.userId)
     return created
   } catch (err) {
     // Handle both day-wide and time-slot unique constraint violations
@@ -129,7 +131,40 @@ export async function attachReceipt(bookingId: string, userId: string, receiptUr
   if (existing.status !== 'pending') {
     throw new BookingError('Receipts can only be attached to pending bookings.', 409)
   }
-  await db.update(booking).set({ receiptUrl, paymentDeadline: new Date(Date.now() + 5 * 60 * 1000), updatedAt: new Date() }).where(eq(booking.id, bookingId))
+  await db
+    .update(booking)
+    .set({
+      paymentMethod: 'gcash',
+      receiptUrl,
+      paymentDeadline: new Date(Date.now() + 5 * 60 * 1000),
+      updatedAt: new Date(),
+    })
+    .where(eq(booking.id, bookingId))
+  const updated = await findBookingForUser(bookingId, userId)
+  if (!updated) throw new Error('The booking could not be read back after updating.')
+  return updated
+}
+
+/** Locks in the chosen payment method after a slot hold was created. */
+export async function setBookingPaymentMethod(
+  bookingId: string,
+  userId: string,
+  method: 'filler' | 'gcash',
+): Promise<Booking> {
+  const existing = await findBookingForUser(bookingId, userId)
+  if (!existing) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.status !== 'pending') {
+    throw new BookingError('Payment can only be set on pending bookings.', 409)
+  }
+  await db
+    .update(booking)
+    .set({
+      paymentMethod: method,
+      // Cash needs no payment window; GCash keeps the five-minute hold.
+      paymentDeadline: method === 'filler' ? null : new Date(Date.now() + 5 * 60 * 1000),
+      updatedAt: new Date(),
+    })
+    .where(eq(booking.id, bookingId))
   const updated = await findBookingForUser(bookingId, userId)
   if (!updated) throw new Error('The booking could not be read back after updating.')
   return updated

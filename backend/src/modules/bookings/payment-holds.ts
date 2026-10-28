@@ -1,4 +1,4 @@
-import { and, eq, lt } from 'drizzle-orm'
+import { and, eq, isNull, lt, or } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, user } from '../../db/schema.ts'
 import { BookingError } from './types.ts'
@@ -41,29 +41,35 @@ export async function recordPaymentFailure(userId: string): Promise<Date> {
   return until
 }
 
-/** Release expired payment holds: cancel bookings whose deadline passed without a receipt. */
+/**
+ * Release expired payment holds: cancel pending GCash/hold bookings whose
+ * deadline passed without a receipt, and apply the escalating suspension.
+ * Cash bookings carry no deadline and are never released here.
+ */
 export async function releaseExpiredPaymentHolds(): Promise<number> {
   const now = new Date()
   const expired = await db
     .select({ id: booking.id, userId: booking.userId })
     .from(booking)
-    .where(and(eq(booking.status, 'pending'), lt(booking.paymentDeadline, now)))
+    .where(
+      and(
+        eq(booking.status, 'pending'),
+        lt(booking.paymentDeadline, now),
+        isNull(booking.receiptUrl),
+        or(isNull(booking.paymentMethod), eq(booking.paymentMethod, 'gcash')),
+      ),
+    )
 
-  // Only cancel those without a submitted receipt (receiptUrl null).
   let cancelled = 0
   for (const row of expired) {
-    // Re-check receiptUrl
-    const full = await db
-      .select({ receiptUrl: booking.receiptUrl, userId: booking.userId })
-      .from(booking)
-      .where(eq(booking.id, row.id))
-      .limit(1)
-    const r = full[0]
-    if (!r) continue
-    if (r.receiptUrl) continue // has receipt, leave for admin review
-    await db.update(booking).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(booking.id, row.id))
+    const updated = await db
+      .update(booking)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(and(eq(booking.id, row.id), eq(booking.status, 'pending')))
+      .returning({ id: booking.id })
+    if (updated.length === 0) continue
     cancelled++
-    if (r.userId) await recordPaymentFailure(r.userId)
+    if (row.userId) await recordPaymentFailure(row.userId)
   }
   return cancelled
 }

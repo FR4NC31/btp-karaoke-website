@@ -10,13 +10,22 @@ export type MembershipTier = (typeof MEMBERSHIP_TIERS)[number]
 
 export const VIP_DISCOUNT_PERCENT = 20
 
-/** Returns the user's membership tier and expiry (null = no expiry). */
+/** Returns the user's membership tier, expiry and booking-suspension state. */
 export async function getUserMembership(userId: string): Promise<{
   tier: MembershipTier
   expiresAt: string | null
+  /** Booking ban end time, or null when the account is in good standing. */
+  suspendedUntil: string | null
+  /** Count of consecutive failed/expired payment holds. */
+  failureCount: number
 }> {
   const rows = await db
-    .select({ tier: user.membershipTier, expiresAt: user.membershipExpiresAt })
+    .select({
+      tier: user.membershipTier,
+      expiresAt: user.membershipExpiresAt,
+      suspendedUntil: user.bookingSuspendedUntil,
+      failureCount: user.bookingFailureCount,
+    })
     .from(user)
     .where(eq(user.id, userId))
     .limit(1)
@@ -26,6 +35,8 @@ export async function getUserMembership(userId: string): Promise<{
   return {
     tier: (row.tier as MembershipTier) ?? 'free',
     expiresAt: row.expiresAt ? row.expiresAt.toISOString() : null,
+    suspendedUntil: row.suspendedUntil ? row.suspendedUntil.toISOString() : null,
+    failureCount: row.failureCount ?? 0,
   }
 }
 

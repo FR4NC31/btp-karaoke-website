@@ -12,6 +12,7 @@ import {
   fetchGcashQr,
   fetchServices,
   isTimeBasedService,
+  setBookingPaymentMethod,
   uploadReceipt,
   type Booking,
   type PublicBlockout,
@@ -72,7 +73,7 @@ export default function BookingPage() {
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
   const [notes, setNotes] = useState('')
-  const [submitting] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [cancellingId, setCancellingId] = useState('')
@@ -99,6 +100,8 @@ export default function BookingPage() {
   }, [paymentReceipt])
   const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null)
   const [paymentSubmitting, setPaymentSubmitting] = useState(false)
+  /** The pending row that reserves the slot while the payment modal is open. */
+  const [holdBooking, setHoldBooking] = useState<Booking | null>(null)
   const [pendingBooking, setPendingBooking] = useState<{
     service: Service
     bookingDate: string
@@ -242,24 +245,59 @@ export default function BookingPage() {
     // Time-based services require a time slot; per-day services omit it.
     const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
 
-    setPendingBooking({
-      service: selected,
-      bookingDate,
-      bookingTime: timePayload,
-      notes: notes.trim() || undefined,
-    })
-    setPaymentMethod('filler')
+    // Reserve the slot immediately (5-minute hold) so nobody else can take it
+    // while the customer is choosing a payment method and uploading a receipt.
+    bookingGeneration.current += 1
+    setSubmitting(true)
+    setFormError('')
+    setLoadError('')
+    try {
+      const { booking } = await createBooking({
+        serviceId: selected.id,
+        bookingDate,
+        bookingTime: timePayload,
+        notes: notes.trim() || undefined,
+      })
+      setHoldBooking(booking)
+      setPendingBooking({
+        service: selected,
+        bookingDate,
+        bookingTime: timePayload,
+        notes: notes.trim() || undefined,
+      })
+      setPaymentMethod('filler')
+      setPaymentReceipt(null)
+      setPaymentOpen(true)
+      void fetchGcashQr()
+        .then((r: { url: string | null }) => setGcashQrUrl(r.url))
+        .catch(() => setGcashQrUrl(null))
+    } catch (err) {
+      setFormError(describeBookingError(err, 'The slot could not be held.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  /** Cancels the hold when the customer backs out of the payment modal. */
+  async function closePaymentModal() {
+    const held = holdBooking
+    setPaymentOpen(false)
+    setPendingBooking(null)
     setPaymentReceipt(null)
-    setPaymentOpen(true)
-    void fetchGcashQr()
-      .then((r: { url: string | null }) => setGcashQrUrl(r.url))
-      .catch(() => setGcashQrUrl(null))
-    return
+    setHoldBooking(null)
+    setFormError('')
+    if (held) {
+      try {
+        await cancelBooking(held.id)
+      } catch {
+        // The 5-minute expiry will release it anyway.
+      }
+    }
   }
 
   async function handlePaymentSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!pendingBooking || paymentSubmitting) return
+    if (!pendingBooking || !holdBooking || paymentSubmitting) return
     if (paymentMethod === 'gcash' && !paymentReceipt) {
       setFormError('Please upload your GCash receipt screenshot.')
       return
@@ -270,21 +308,20 @@ export default function BookingPage() {
     setFormError('')
     setLoadError('')
     try {
-      const { booking } = await createBooking({
-        serviceId: pendingBooking.service.id,
-        bookingDate: pendingBooking.bookingDate,
-        bookingTime: pendingBooking.bookingTime,
-        notes: pendingBooking.notes,
-        paymentMethod,
-      })
+      let booking = holdBooking
       if (paymentMethod === 'gcash' && paymentReceipt) {
-        await uploadReceipt(booking.id, paymentReceipt)
+        const result = await uploadReceipt(holdBooking.id, paymentReceipt)
+        booking = result.booking
       }
+      const locked = await setBookingPaymentMethod(holdBooking.id, paymentMethod)
+      booking = locked.booking
+
       setBookings((prev) => [booking, ...prev].sort(byNewest))
       setSelected(null)
       setPendingBooking(null)
       setPaymentOpen(false)
       setPaymentReceipt(null)
+      setHoldBooking(null)
       try {
         window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
       } catch {
@@ -493,6 +530,9 @@ export default function BookingPage() {
             <p className="text-xs text-text-muted">
               {pendingBooking.service.name} · {formatDay(pendingBooking.bookingDate)}
             </p>
+            <p className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] font-semibold text-warning">
+              Slot held for 5 minutes. Finish payment before it expires or the slot reopens.
+            </p>
 
             <div className="flex gap-2">
               <button
@@ -626,13 +666,7 @@ export default function BookingPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setPaymentOpen(false)
-                  setPendingBooking(null)
-                  setPaymentReceipt(null)
-                  setPaymentReceiptPreview((prev) => {
-                    if (prev) URL.revokeObjectURL(prev)
-                    return null
-                  })
+                  void closePaymentModal()
                 }}
                 className="rounded-lg border border-border px-4 py-2.5 text-sm text-text-secondary transition hover:text-text-primary"
               >
