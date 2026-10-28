@@ -46,7 +46,8 @@ export default function BookingForm({
   const hourly = isHourlyService(service)
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 rounded-xl border border-primary/40 bg-primary-soft/30 p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <form onSubmit={onSubmit} className="w-full max-w-lg space-y-5 rounded-xl border border-border bg-surface p-6 shadow-2xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold tracking-widest text-primary uppercase">New booking</p>
@@ -61,7 +62,7 @@ export default function BookingForm({
           type="button"
           onClick={onClose}
           aria-label="Close booking form"
-          className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface hover:text-text-primary"
+          className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
         >
           <HugeiconsIcon icon={Cancel01Icon} size={16} />
         </button>
@@ -144,7 +145,7 @@ export default function BookingForm({
           </div>
         )}
 
-        <div>
+        <div className="sm:col-span-2">
           <label
             htmlFor="booking-notes"
             className="block text-[11px] font-bold tracking-widest text-text-secondary uppercase"
@@ -182,5 +183,6 @@ export default function BookingForm({
         </p>
       </div>
     </form>
+    </div>
   )
 }
