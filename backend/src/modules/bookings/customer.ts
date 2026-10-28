@@ -57,14 +57,15 @@ async function findBookingForUser(bookingId: string, userId: string): Promise<Bo
  * surfacing it as a friendly 409 rather than a raw constraint error.
  */
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
+  // Release any expired holds first: that sweep may just have suspended this
+  // customer, so the suspension check must run after it.
+  await releaseExpiredPaymentHolds()
+
   // Enforce abuse suspension.
   const susp = await getUserSuspension(input.userId)
   if (susp && susp > new Date()) {
     throw new BookingError(`Booking temporarily suspended until ${susp.toISOString()}.`, 403)
   }
-
-  // Release any expired holds before attempting a new one.
-  await releaseExpiredPaymentHolds()
 
   const bookingDate = validateBookingDay(input.bookingDate)
   const { unit, pricePhp } = await assertServiceAvailable(input.serviceId)
