@@ -6,6 +6,8 @@ Last updated: October 28, 2026
 
 ### Features
 
+- feat: admin bookings, membership tiers and booking system updates (12a129c)
+- feat: turn user booking form into modal dialog and fix notes text input span (f6f4f76)
 - feat(booking): 5-minute slot hold at payment stage + working escalating suspension (b692d8b)
 - feat(admin): Polished All Admin Design(not yet) (e7e2fe8)
 - feat(admin): convert cancel and mark-completed actions to icon buttons (4779dc0)
@@ -55,6 +57,8 @@ Last updated: October 28, 2026
 
 ### Bug Fixes
 
+- fix(admin): resolve action type mismatch for booking details dialog actions (dd71ecd)
+- fix(admin): Fixed bug changes (bd4b93a)
 - fix(booking): check suspension after releasing expired holds (50101d1)
 - fix(booking): suppress set-state-in-effect lint for receipt preview (db54ccd)
 - fix(booking): manage receipt preview blob URL lifecycle via effect (702d5db)
