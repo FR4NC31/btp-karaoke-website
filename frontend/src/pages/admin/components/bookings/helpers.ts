@@ -18,8 +18,8 @@ export const STATUS_FILTERS: Array<{ value: BookingStatus | 'all'; label: string
 
 export const ROW_ACTIONS: Record<string, BookingRowAction[]> = {
   pending: [
-    { action: 'confirm', label: 'Confirm', kind: 'primary' },
-    { action: 'reject', label: 'Reject', kind: 'danger' },
+    { action: 'confirm', label: 'Approve booking', kind: 'primary' },
+    { action: 'reject', label: 'Reject booking', kind: 'danger' },
   ],
   confirmed: [
     { action: 'complete', label: 'Mark completed', kind: 'primary' },

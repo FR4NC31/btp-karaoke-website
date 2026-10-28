@@ -15,6 +15,7 @@ import {
 import { describeBookingError } from '../../lib/booking-api'
 import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
 import { OverviewSkeleton } from './AdminSkeletons'
+import BookingDetailsDialog from './components/bookings/BookingDetailsDialog'
 import OverviewSummary, { type OverviewStat } from './components/overview/OverviewSummary'
 import PendingApprovals from './components/overview/PendingApprovals'
 import TodayAtStudio from './components/overview/TodayAtStudio'
@@ -44,6 +45,7 @@ export default function AdminOverview() {
   const [actingId, setActingId] = useState('')
   /** Which action the acting row is running, so only that button says Working. */
   const [actingAction, setActingAction] = useState<'confirm' | 'reject' | null>(null)
+  const [selected, setSelected] = useState<AdminBooking | null>(null)
   // Bumped whenever the shell's revision starts a new load. Action refreshes
   // capture it so a slower response cannot overwrite a newer snapshot.
   const loadGeneration = useRef(0)
@@ -109,6 +111,7 @@ export default function AdminOverview() {
         setFlash(
           `${updated.referenceCode} ${updated.status} — ${updated.customerName}, ${updated.serviceName}.`,
         )
+        setSelected(null)
       }
     } catch (err) {
       if (generation === loadGeneration.current) {
@@ -252,8 +255,20 @@ export default function AdminOverview() {
           actingId={actingId}
           actingAction={actingAction}
           onAction={handleAction}
+          onOpen={setSelected}
         />
       </div>
+
+      <BookingDetailsDialog
+        booking={selected}
+        busy={Boolean(selected && actingId === selected.id)}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null)
+        }}
+        onAction={(booking, action) => {
+          if (action === 'confirm' || action === 'reject') void handleAction(booking, action)
+        }}
+      />
 
       <TodayAtStudio today={today} />
     </div>

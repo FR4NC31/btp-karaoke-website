@@ -2,8 +2,10 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
   CheckmarkCircle02Icon,
+  Image01Icon,
   RefreshIcon,
   TaskDone01Icon,
+  ZoomInIcon,
 } from '@hugeicons/core-free-icons'
 import {
   Dialog,
@@ -38,6 +40,11 @@ function actionIcon(action: AdminBookingAction) {
   return CheckmarkCircle02Icon
 }
 
+function paymentLabel(booking: AdminBooking) {
+  if (!booking.paymentMethod) return 'Not set'
+  return booking.paymentMethod === 'gcash' ? 'GCash' : 'Cash on arrival'
+}
+
 export default function BookingDetailsDialog({
   booking,
   busy,
@@ -45,6 +52,7 @@ export default function BookingDetailsDialog({
   onAction,
 }: BookingDetailsDialogProps) {
   const actions = booking ? (ROW_ACTIONS[booking.status] ?? []) : []
+  const amount = booking ? (booking.amountDuePhp ?? booking.pricePhp) : 0
 
   return (
     <Dialog
@@ -54,7 +62,7 @@ export default function BookingDetailsDialog({
         onOpenChange(next)
       }}
     >
-      <DialogContent className="border border-border bg-surface p-0 text-text-primary sm:max-w-xl">
+      <DialogContent className="border border-border bg-surface p-0 text-text-primary sm:max-w-2xl">
         {booking && (
           <div className="flex flex-col">
             <DialogHeader className="gap-2 border-b border-border px-6 py-5">
@@ -89,19 +97,10 @@ export default function BookingDetailsDialog({
                   }`}
                 />
                 <Detail
-                  label="Amount due"
-                  value={peso.format(booking.amountDuePhp ?? booking.pricePhp)}
+                  label={booking.discountPercent > 0 ? `Amount due (${booking.discountPercent}% off)` : 'Amount due'}
+                  value={peso.format(amount)}
                 />
-                <Detail
-                  label="Payment"
-                  value={
-                    booking.paymentMethod
-                      ? booking.paymentMethod === 'gcash'
-                        ? 'GCash'
-                        : 'Cash on arrival'
-                      : 'Not set'
-                  }
-                />
+                <Detail label="Payment" value={paymentLabel(booking)} />
                 <Detail label="Email" value={booking.customerEmail || '—'} />
                 <Detail label="Contact" value={booking.customerContact || '—'} />
               </dl>
@@ -117,25 +116,46 @@ export default function BookingDetailsDialog({
                 </div>
               )}
 
-              {booking.receiptUrl && (
-                <div>
+              <div>
+                <div className="flex items-center justify-between gap-2">
                   <p className="text-[9px] font-bold tracking-[0.18em] text-text-muted uppercase">
-                    GCash receipt
+                    Uploaded receipt
                   </p>
+                  {booking.receiptUrl && (
+                    <a
+                      href={booking.receiptUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold tracking-widest text-primary uppercase hover:underline"
+                    >
+                      <HugeiconsIcon icon={ZoomInIcon} size={12} />
+                      Open full size
+                    </a>
+                  )}
+                </div>
+
+                {booking.receiptUrl ? (
                   <a
                     href={booking.receiptUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1.5 inline-block"
+                    className="mt-2 block overflow-hidden rounded-xl border border-border bg-surface-elevated"
                   >
                     <img
                       src={booking.receiptUrl}
-                      alt="GCash receipt"
-                      className="h-24 w-24 rounded-lg border border-border object-cover"
+                      alt={`Payment receipt for ${booking.referenceCode}`}
+                      className="mx-auto max-h-80 w-full object-contain"
                     />
                   </a>
-                </div>
-              )}
+                ) : (
+                  <div className="mt-2 flex items-center gap-2 rounded-lg border border-dashed border-border bg-surface-elevated/50 px-3 py-4 text-xs text-text-muted">
+                    <HugeiconsIcon icon={Image01Icon} size={16} className="shrink-0" />
+                    {booking.paymentMethod === 'gcash'
+                      ? 'No receipt uploaded yet — check back before approving.'
+                      : 'No receipt needed for cash on arrival.'}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-4">
