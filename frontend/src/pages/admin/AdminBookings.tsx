@@ -3,6 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import {
   adminBookingAction,
+  adminPaymentAction,
   fetchAdminBookings,
   type AdminBooking,
   type AdminBookingAction,
@@ -72,7 +73,11 @@ export default function AdminBookings() {
     setFlash('')
     setLoadError('')
     try {
-      const { booking: updated } = await adminBookingAction(booking.id, action)
+      const result =
+        booking.status === 'pending' && (action === 'confirm' || action === 'reject')
+          ? await adminPaymentAction(booking.id, action === 'confirm' ? 'approve' : 'reject')
+          : await adminBookingAction(booking.id, action)
+      const { booking: updated } = result
       setBookings((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),
       )

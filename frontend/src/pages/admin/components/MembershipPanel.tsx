@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import type { FormEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
-import { fetchUserMembership, searchUsers, setUserMembership, type TagUser } from '../../../lib/admin-api'
+import { fetchUserMembership, clearUserBookingSuspension, searchUsers, setUserMembership, type TagUser } from '../../../lib/admin-api'
 import { describeBookingError } from '../../../lib/booking-api'
 import { formatDay } from '../../../lib/booking-format'
 
@@ -14,7 +14,12 @@ export default function MembershipPanel() {
   const [selected, setSelected] = useState<TagUser | null>(null)
   const [tier, setTier] = useState<(typeof TIERS)[number]>('free')
   const [expiresAt, setExpiresAt] = useState('')
-  const [current, setCurrent] = useState<{ tier: string; expiresAt: string | null } | null>(null)
+  const [current, setCurrent] = useState<{
+    tier: string
+    expiresAt: string | null
+    suspendedUntil: string | null
+    failureCount: number
+  } | null>(null)
   const [loadingMembership, setLoadingMembership] = useState(false)
   const pickRequestId = useRef(0)
   const [busy, setBusy] = useState(false)
@@ -73,10 +78,33 @@ export default function MembershipPanel() {
         tier,
         expiresAt ? new Date(expiresAt).toISOString() : null,
       )
-      setCurrent(membership)
+      setCurrent((prev) => ({
+        tier: membership.tier,
+        expiresAt: membership.expiresAt,
+        suspendedUntil: prev?.suspendedUntil ?? null,
+        failureCount: prev?.failureCount ?? 0,
+      }))
       setFlash(`Updated ${selected.name} to ${membership.tier}.`)
     } catch (err) {
       setError(describeBookingError(err, 'Could not update membership.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleClearSuspension() {
+    if (!selected) return
+    setBusy(true)
+    setError('')
+    setFlash('')
+    try {
+      await clearUserBookingSuspension(selected.id)
+      setCurrent((prev) =>
+        prev ? { ...prev, suspendedUntil: null, failureCount: 0 } : prev,
+      )
+      setFlash(`Cleared the booking suspension for ${selected.name}.`)
+    } catch (err) {
+      setError(describeBookingError(err, 'Could not clear the suspension.'))
     } finally {
       setBusy(false)
     }
@@ -139,6 +167,28 @@ export default function MembershipPanel() {
               Current: {current.tier}
               {current.expiresAt ? ` (expires ${formatDay(current.expiresAt.slice(0, 10))})` : ''}
             </p>
+          )}
+          {current && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+              <p className="min-w-0 flex-1 text-xs text-text-muted">
+                {current.suspendedUntil && new Date(current.suspendedUntil) > new Date()
+                  ? `Booking suspended until ${new Date(current.suspendedUntil).toLocaleString()}`
+                  : 'Booking in good standing'}
+                {current.failureCount > 0 ? ` · ${current.failureCount} failed payment(s)` : ''}
+              </p>
+              {current.suspendedUntil && new Date(current.suspendedUntil) > new Date() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleClearSuspension()
+                  }}
+                  disabled={busy}
+                  className="rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-[11px] font-bold tracking-widest text-text-secondary uppercase transition hover:border-primary/50 hover:text-primary disabled:opacity-60"
+                >
+                  Clear suspension
+                </button>
+              )}
+            </div>
           )}
           <div className="flex flex-wrap items-end gap-3">
             <div>

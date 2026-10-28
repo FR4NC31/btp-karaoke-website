@@ -38,7 +38,7 @@ export {
   listBlockouts,
   listPublicBlockouts,
 } from './blockouts.ts'
-export { cancelBooking, createBooking, listBookingsForUser, attachReceipt } from './customer.ts'
+export { cancelBooking, createBooking, listBookingsForUser, attachReceipt, setBookingPaymentMethod } from './customer.ts'
 export {
   adminSetBookingStatus,
   approvePayment,
