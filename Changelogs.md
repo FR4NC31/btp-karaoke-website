@@ -55,6 +55,7 @@ Last updated: October 28, 2026
 
 ### Bug Fixes
 
+- fix(booking): check suspension after releasing expired holds (50101d1)
 - fix(booking): suppress set-state-in-effect lint for receipt preview (db54ccd)
 - fix(booking): manage receipt preview blob URL lifecycle via effect (702d5db)
 - fix(booking): replace native file input with empty-state upload UI for GCash receipt (76a83d7)
