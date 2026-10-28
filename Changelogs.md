@@ -131,6 +131,7 @@ Last updated: October 28, 2026
 
 ### Other Changes
 
+- Merge pull request #64 from FR4NC31/feat/booking-hold-suspension (48a4041)
 - Merge pull request #62 from FR4NC31/feat/admin-booking-icon-actions (302e744)
 - Merge branch 'feat/admin-booking-icon-actions' of https://github.com/FR4NC31/btp-karaoke-website into feat/admin-booking-icon-actions (f6e6b79)
 - Merge pull request #60 from FR4NC31/fix/gcash-payment-receipt-upload-ui (20bd72a)

@@ -12,6 +12,7 @@ import {
   adminPaymentAction,
   fetchAdminBookings,
   type AdminBooking,
+  type AdminBookingAction,
 } from '../../lib/admin-api'
 import { describeBookingError } from '../../lib/booking-api'
 import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
@@ -93,7 +94,7 @@ export default function AdminOverview() {
     }
   }
 
-  async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
+  async function handleAction(booking: AdminBooking, action: AdminBookingAction) {
     if (actingId) return
     const generation = loadGeneration.current
     setActingId(booking.id)
@@ -101,7 +102,7 @@ export default function AdminOverview() {
     setLoadError('')
     try {
       const result =
-        booking.status === 'pending'
+        booking.status === 'pending' && (action === 'confirm' || action === 'reject')
           ? await adminPaymentAction(booking.id, action === 'confirm' ? 'approve' : 'reject')
           : await adminBookingAction(booking.id, action)
       const { booking: updated } = result
