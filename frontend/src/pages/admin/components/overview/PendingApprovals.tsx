@@ -105,6 +105,7 @@ export default function PendingApprovals({
             <button
               type="button"
               onClick={() => setActiveTab('pending')}
+              aria-pressed={activeTab === 'pending'}
               className={`rounded-md px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase transition ${
                 activeTab === 'pending'
                   ? 'bg-primary text-text-primary'
@@ -116,6 +117,7 @@ export default function PendingApprovals({
             <button
               type="button"
               onClick={() => setActiveTab('today')}
+              aria-pressed={activeTab === 'today'}
               className={`rounded-md px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase transition ${
                 activeTab === 'today'
                   ? 'bg-primary text-text-primary'
@@ -198,7 +200,7 @@ export default function PendingApprovals({
                       </p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-text-muted @5xl:hidden">
                         <span className="truncate">{entry.user}</span>
-                        <span className="truncate">{entry.timestamp}</span>
+                        <span className="truncate">{entry.schedule}</span>
                       </p>
                     </td>
                     <td className="hidden px-4 py-3.5 align-middle @5xl:table-cell">

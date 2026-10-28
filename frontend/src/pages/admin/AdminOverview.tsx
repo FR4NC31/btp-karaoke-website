@@ -264,7 +264,7 @@ export default function AdminOverview() {
           if (!open) setSelected(null)
         }}
         onAction={(booking, action) => {
-          if (action === 'confirm' || action === 'reject') void handleAction(booking, action)
+          void handleAction(booking, action)
         }}
       />
     </div>
