@@ -6,6 +6,7 @@ Last updated: October 28, 2026
 
 ### Features
 
+- feat(admin): review booking details and receipt before approve/reject (f6357b5)
 - feat(admin): Polished All Admin Design(not yet) (e7e2fe8)
 - feat(admin): convert cancel and mark-completed actions to icon buttons (4779dc0)
 - feat(admin): show booking details and uploaded GCash receipt for verification (a3c7480)
@@ -129,6 +130,7 @@ Last updated: October 28, 2026
 
 ### Other Changes
 
+- Merge pull request #62 from FR4NC31/feat/admin-booking-icon-actions (302e744)
 - Merge branch 'feat/admin-booking-icon-actions' of https://github.com/FR4NC31/btp-karaoke-website into feat/admin-booking-icon-actions (f6e6b79)
 - Merge pull request #60 from FR4NC31/fix/gcash-payment-receipt-upload-ui (20bd72a)
 - Merge pull request #55 from FR4NC31/fix/discovery-tests (6cb64de)
