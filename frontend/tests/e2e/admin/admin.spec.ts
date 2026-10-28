@@ -103,8 +103,12 @@ test.describe('reservation queue', () => {
     const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
     await expect(row).toBeVisible()
 
-    await row.getByRole('button', { name: 'Confirm' }).click()
+    await row.getByRole('button', { name: `View ${referenceCode}` }).click()
+    const detailsDialog = page.getByRole('dialog')
+    await expect(detailsDialog).toBeVisible()
+    await detailsDialog.getByRole('button', { name: 'Confirm' }).click()
     await expect(flashWith(page, `${referenceCode} confirmed`)).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(row).toBeHidden()
 
     await page.goto('/admin/bookings')
@@ -128,8 +132,12 @@ test.describe('reservation queue', () => {
     const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
     await expect(row).toBeVisible()
 
-    await row.getByRole('button', { name: 'Reject' }).click()
+    await row.getByRole('button', { name: `View ${referenceCode}` }).click()
+    const detailsDialog = page.getByRole('dialog')
+    await expect(detailsDialog).toBeVisible()
+    await detailsDialog.getByRole('button', { name: 'Reject' }).click()
     await expect(flashWith(page, `${referenceCode} rejected`)).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(row).toBeHidden()
 
     await page.goto('/admin/bookings')

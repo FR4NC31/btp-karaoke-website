@@ -12,6 +12,7 @@ import {
   adminPaymentAction,
   fetchAdminBookings,
   type AdminBooking,
+  type AdminBookingAction,
 } from '../../lib/admin-api'
 import { describeBookingError } from '../../lib/booking-api'
 import { useNewReservationDialog } from '../../lib/new-reservation-dialog'
@@ -19,7 +20,6 @@ import { OverviewSkeleton } from './AdminSkeletons'
 import BookingDetailsDialog from './components/bookings/BookingDetailsDialog'
 import OverviewSummary, { type OverviewStat } from './components/overview/OverviewSummary'
 import PendingApprovals from './components/overview/PendingApprovals'
-import TodayAtStudio from './components/overview/TodayAtStudio'
 import ActivityLog from './components/overview/ActivityLog'
 import { activityEntriesFrom } from './components/overview/activity-log-data'
 
@@ -44,8 +44,6 @@ export default function AdminOverview() {
   const [loadError, setLoadError] = useState('')
   const [flash, setFlash] = useState('')
   const [actingId, setActingId] = useState('')
-  /** Which action the acting row is running, so only that button says Working. */
-  const [actingAction, setActingAction] = useState<'confirm' | 'reject' | null>(null)
   const [selected, setSelected] = useState<AdminBooking | null>(null)
   // Bumped whenever the shell's revision starts a new load. Action refreshes
   // capture it so a slower response cannot overwrite a newer snapshot.
@@ -96,16 +94,15 @@ export default function AdminOverview() {
     }
   }
 
-  async function handleAction(booking: AdminBooking, action: 'confirm' | 'reject') {
+  async function handleAction(booking: AdminBooking, action: AdminBookingAction) {
     if (actingId) return
     const generation = loadGeneration.current
     setActingId(booking.id)
-    setActingAction(action)
     setFlash('')
     setLoadError('')
     try {
       const result =
-        booking.status === 'pending'
+        booking.status === 'pending' && (action === 'confirm' || action === 'reject')
           ? await adminPaymentAction(booking.id, action === 'confirm' ? 'approve' : 'reject')
           : await adminBookingAction(booking.id, action)
       const { booking: updated } = result
@@ -131,7 +128,6 @@ export default function AdminOverview() {
       }
     } finally {
       setActingId('')
-      setActingAction(null)
     }
   }
 
@@ -257,9 +253,7 @@ export default function AdminOverview() {
 
         <PendingApprovals
           pending={pending}
-          actingId={actingId}
-          actingAction={actingAction}
-          onAction={handleAction}
+          today={today}
           onOpen={setSelected}
         />
       </div>
@@ -271,11 +265,9 @@ export default function AdminOverview() {
           if (!open) setSelected(null)
         }}
         onAction={(booking, action) => {
-          if (action === 'confirm' || action === 'reject') void handleAction(booking, action)
+          void handleAction(booking, action)
         }}
       />
-
-      <TodayAtStudio today={today} />
     </div>
   )
 }
