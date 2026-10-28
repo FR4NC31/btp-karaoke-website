@@ -24,6 +24,7 @@ export type ActivityLogEntry = {
   schedule: string
   status: string
   statusTone: ActivityTone
+  booking: AdminBooking
 }
 
 type StatusPresentation = {
@@ -131,6 +132,7 @@ export function activityEntriesFrom(
         schedule: scheduleFor(booking),
         status: presentation.via,
         statusTone: presentation.tone,
+        booking,
       }
     })
 }
