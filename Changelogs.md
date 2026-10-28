@@ -6,6 +6,8 @@ Last updated: October 28, 2026
 
 ### Features
 
+- feat: admin bookings, membership tiers and booking system updates (12a129c)
+- feat: turn user booking form into modal dialog and fix notes text input span (f6f4f76)
 - feat(booking): 5-minute slot hold at payment stage + working escalating suspension (b692d8b)
 - feat(admin): Polished All Admin Design(not yet) (e7e2fe8)
 - feat(admin): convert cancel and mark-completed actions to icon buttons (4779dc0)
@@ -131,6 +133,7 @@ Last updated: October 28, 2026
 
 ### Other Changes
 
+- Merge pull request #64 from FR4NC31/feat/booking-hold-suspension (48a4041)
 - Merge pull request #62 from FR4NC31/feat/admin-booking-icon-actions (302e744)
 - Merge branch 'feat/admin-booking-icon-actions' of https://github.com/FR4NC31/btp-karaoke-website into feat/admin-booking-icon-actions (f6e6b79)
 - Merge pull request #60 from FR4NC31/fix/gcash-payment-receipt-upload-ui (20bd72a)
