@@ -137,4 +137,3 @@ adminBookings.post('/:id/:action', async (c) => {
 })
 
 export default adminBookings
-
