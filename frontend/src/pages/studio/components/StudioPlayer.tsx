@@ -52,10 +52,30 @@ export default function StudioPlayer({
 
   const {
     items: queueRows,
+    prepend: prependRow,
     remove: removeRow,
     clear: clearQueue,
     move: moveRow,
   } = useLoungeQueue()
+
+  const lastPrependedItemIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!item) return
+    const identifier = item.id + (item.sourceUrl ?? '')
+    if (identifier === lastPrependedItemIdRef.current) return
+    lastPrependedItemIdRef.current = identifier
+
+    prependRow({
+      title: item.title,
+      artist: item.artist ?? item.subtitle ?? '',
+      len: item.duration ?? undefined,
+      coverUrl: item.coverUrl,
+      src: item.sourceUrl,
+      kind: item.section === 'music' ? 'music' : 'video',
+      mediaId: item.id,
+      tags: [{ label: 'Playing', solid: true }],
+    })
+  }, [item, prependRow])
 
   // A card navigation is a new history entry. Queue selections are tied to the
   // item navigation they were made from, so clicking another card starts that
@@ -466,6 +486,7 @@ export default function StudioPlayer({
             onRemove={handleRemoveRow}
             onClear={handleClearQueue}
             onMove={handleMoveRow}
+            onPlay={goToRow}
           />
         )}
       </div>

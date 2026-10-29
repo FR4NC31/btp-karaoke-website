@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Delete02Icon, GripVerticalIcon } from '@hugeicons/core-free-icons'
+import { Delete02Icon, GripVerticalIcon, PlayIcon } from '@hugeicons/core-free-icons'
 import placeholderAlbum from '../../../assets/placeholder-album.svg'
 import type { QueueItem } from '../../../lib/lounge-queue'
 
@@ -15,6 +15,7 @@ type QueueRowProps = {
   onDrop: (event: DragEvent<HTMLLIElement>) => void
   onDragEnd: () => void
   onRemove: () => void
+  onPlay: () => void
 }
 
 export default function QueueRow({
@@ -28,6 +29,7 @@ export default function QueueRow({
   onDrop,
   onDragEnd,
   onRemove,
+  onPlay,
 }: QueueRowProps) {
   const meta = [row.artist, row.genre].filter(Boolean).join(' · ')
 
@@ -60,7 +62,18 @@ export default function QueueRow({
       <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary-soft text-[9px] font-bold text-primary tabular-nums">
         {String(index + 1).padStart(2, '0')}
       </span>
-      <img src={row.coverUrl ?? placeholderAlbum} alt="" className="size-9 shrink-0 rounded-md object-cover" />
+      <button
+        type="button"
+        onClick={onPlay}
+        aria-label={`Play ${row.title}`}
+        title={`Play ${row.title}`}
+        className="group/thumb relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-md transition hover:ring-2 hover:ring-primary focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <img src={row.coverUrl ?? placeholderAlbum} alt="" className="size-full object-cover" />
+        <span className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition group-hover/thumb:opacity-100">
+          <HugeiconsIcon icon={PlayIcon} size={14} className="text-white" />
+        </span>
+      </button>
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-semibold">{row.title}</p>
         <div className="mt-0.5 flex items-center gap-1.5">
