@@ -6,6 +6,7 @@ Last updated: October 29, 2026
 
 ### Features
 
+- feat(admin): redesign media hub with grid/list views (2fa7c6a)
 - feat(booking): add booking review dialog before holding slot (2b4807e)
 - feat: admin bookings, membership tiers and booking system updates (12a129c)
 - feat: turn user booking form into modal dialog and fix notes text input span (f6f4f76)
@@ -59,6 +60,7 @@ Last updated: October 29, 2026
 ### Bug Fixes
 
 - fix(booking): format booking time into 12-hour format in review dialog (f1ef2ae)
+- fix(admin): address media hub review findings (cc7e0c9)
 - fix(admin): resolve action type mismatch for booking details dialog actions (dd71ecd)
 - fix(admin): Fixed bug changes (bd4b93a)
 - fix(booking): check suspension after releasing expired holds (50101d1)

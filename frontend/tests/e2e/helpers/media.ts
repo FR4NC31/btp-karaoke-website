@@ -87,6 +87,22 @@ export async function deleteMediaItemsByTitleAsAdmin(
   })
 }
 
+/** Moves an item up/down its section order via the backend move route. */
+export async function moveMediaItemAsAdmin(
+  baseURL: string | undefined,
+  id: string,
+  direction: 'up' | 'down',
+): Promise<void> {
+  await withAdminApi(baseURL, async (api) => {
+    const response = await api.post(`/api/admin/media/${encodeURIComponent(id)}/move`, {
+      data: { direction },
+    })
+    if (!response.ok()) {
+      throw new Error(`media move failed (${response.status()}): ${await response.text()}`)
+    }
+  })
+}
+
 export async function getMediaItemAsAdmin(
   baseURL: string | undefined,
   id: string,

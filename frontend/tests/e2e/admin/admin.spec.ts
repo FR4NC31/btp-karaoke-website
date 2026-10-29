@@ -11,6 +11,7 @@ import {
   createMediaItemAsAdmin,
   deleteMediaItemAsAdmin,
   deleteMediaItemsByTitleAsAdmin,
+  moveMediaItemAsAdmin,
   uploadMediaFileAsAdmin,
 } from '../helpers/media'
 
@@ -328,9 +329,13 @@ test.describe('media hub catalog', () => {
       await expect(flashWith(page, `${beta} is now live.`)).toBeVisible()
       await expect(shownRow).toContainText('Live')
 
+      // Reordering no longer has hub buttons (the up/down arrows were removed
+      // with the redesign) — drive the same move API the old buttons called,
+      // then prove the new order renders.
       const before = await rowIndexOf(beta)
-      await shownRow.getByRole('button', { name: `Move ${beta} earlier` }).click()
-      await expect(flashWith(page, `${beta} moved earlier.`)).toBeVisible()
+      await moveMediaItemAsAdmin(baseURL, betaItem.id, 'up')
+      await page.reload()
+      await expect(page.locator('main li').filter({ hasText: beta })).toBeVisible()
       await expect.poll(() => rowIndexOf(beta)).toBeLessThan(before)
 
       await page.locator('main li').filter({ hasText: beta }).getByRole('link', { name: `Edit ${beta}` }).click()
@@ -610,6 +615,53 @@ test.describe('media hub catalog', () => {
         'href',
         `/admin/media/${item.id}`,
       )
+    } finally {
+      await deleteMediaItemAsAdmin(baseURL, item.id)
+    }
+  })
+
+  test('ADMIN-015: the hub switches between grid and list, and the tabs filter', { tag: '@p2' }, async ({ page, baseURL }) => {
+    const title = `E2E Layout ${Date.now()}`
+    const item = await createMediaItemAsAdmin(baseURL, { section: 'music', title, tag: 'TAPE' })
+
+    try {
+      await page.goto('/admin/media')
+      // Grid is the default: the cards render inside a <ul> list and the
+      // toggle reports it.
+      const gridToggle = page.getByRole('button', { name: 'Grid view' })
+      const listToggle = page.getByRole('button', { name: 'List view' })
+      await expect(gridToggle).toHaveAttribute('aria-pressed', 'true')
+      await expect(page.locator('main li').filter({ hasText: title })).toBeVisible()
+
+      // The switch transforms the same <li> items into compact rows.
+      await listToggle.click()
+      await expect(listToggle).toHaveAttribute('aria-pressed', 'true')
+      await expect(gridToggle).toHaveAttribute('aria-pressed', 'false')
+      const row = page.locator('main li').filter({ hasText: title })
+      await expect(row).toBeVisible()
+      await expect(row).toContainText('TAPE')
+      // The row keeps the shared action cluster (hide/show, edit, delete) —
+      // only the old up/down reorder arrows were removed.
+      await expect(row.getByRole('button', { name: `Hide ${title}` })).toBeVisible()
+
+      // The choice survives a reload.
+      await page.reload()
+      await expect(page.getByRole('button', { name: 'List view' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+
+      // Section tabs narrow the catalog, "All items" brings it back.
+      await page.getByRole('button', { name: 'Video songs' }).click()
+      await expect(page.locator('main li').filter({ hasText: title })).toHaveCount(0)
+      await page.getByRole('button', { name: 'All items' }).click()
+      await expect(page.locator('main li').filter({ hasText: title })).toBeVisible()
+
+      // The search box narrows by title.
+      await page.getByLabel('Filter media tracks').fill(title)
+      await expect(page.locator('main li').filter({ hasText: title })).toBeVisible()
+      await page.getByLabel('Filter media tracks').fill(`no-such-media-${Date.now()}`)
+      await expect(page.getByText(/No items match/)).toBeVisible()
     } finally {
       await deleteMediaItemAsAdmin(baseURL, item.id)
     }

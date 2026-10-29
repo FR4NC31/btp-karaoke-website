@@ -252,19 +252,6 @@ export function adminMediaVisibility(
   })
 }
 
-export function adminMediaMove(
-  id: string,
-  direction: 'up' | 'down',
-): Promise<{ item: AdminMediaItem }> {
-  return request<{ item: AdminMediaItem }>(`/api/admin/media/${encodeURIComponent(id)}/move`, {
-    method: 'POST',
-    body: JSON.stringify({ direction }),
-  }).then((result) => {
-    invalidate('media')
-    return result
-  })
-}
-
 export function deleteAdminMediaItem(id: string): Promise<{ item: AdminMediaItem }> {
   return request<{ item: AdminMediaItem }>(`/api/admin/media/${encodeURIComponent(id)}/delete`, {
     method: 'POST',
