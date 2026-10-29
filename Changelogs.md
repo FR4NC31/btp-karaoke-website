@@ -58,6 +58,7 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(booking): format booking time into 12-hour format in review dialog (f1ef2ae)
 - fix(admin): resolve action type mismatch for booking details dialog actions (dd71ecd)
 - fix(admin): Fixed bug changes (bd4b93a)
 - fix(booking): check suspension after releasing expired holds (50101d1)
@@ -136,6 +137,7 @@ Last updated: October 29, 2026
 
 ### Other Changes
 
+- Merge pull request #66 from FR4NC31/feat/booking-review-dialog (276fe33)
 - Merge pull request #65 from FR4NC31/feat/admin-and-booking-updates (73a4a5b)
 - Merge pull request #64 from FR4NC31/feat/booking-hold-suspension (48a4041)
 - Merge pull request #62 from FR4NC31/feat/admin-booking-icon-actions (302e744)
