@@ -220,6 +220,8 @@ export default function AdminMedia() {
                   </span>
                 </div>
 
+                {/* One flight at a time: runAction's actingId guard rejects
+                    every concurrent click, so every cluster shows busy. */}
                 {sectionItems.length > 0 ? (
                   <ul
                     key={mediaView}
@@ -234,7 +236,7 @@ export default function AdminMedia() {
                         <AdminMediaCard
                           key={item.id}
                           item={item}
-                          busy={actingId === item.id}
+                          busy={actingId !== ''}
                           confirmingDelete={confirmingId === item.id}
                           onVisibility={handleVisibility}
                           onArmDelete={setConfirmingId}
@@ -245,7 +247,7 @@ export default function AdminMedia() {
                         <AdminMediaRow
                           key={item.id}
                           item={item}
-                          busy={actingId === item.id}
+                          busy={actingId !== ''}
                           confirmingDelete={confirmingId === item.id}
                           onVisibility={handleVisibility}
                           onArmDelete={setConfirmingId}
@@ -257,7 +259,7 @@ export default function AdminMedia() {
                   </ul>
                 ) : (
                   !loadFailed &&
-                  tab === 'all' && (
+                  trimmedQuery === '' && (
                     <p className="text-sm text-text-muted">No items in this section yet.</p>
                   )
                 )}

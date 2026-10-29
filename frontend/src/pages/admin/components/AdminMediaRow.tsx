@@ -28,10 +28,10 @@ type AdminMediaRowProps = {
 
 /**
  * List layout row for the admin media hub: cover thumbnail when the item has
- * one (the thumb itself is the play link, hover reveals the icon), otherwise
- * the plain square play button or a section-icon spacer; then title/meta
- * stack, badges, and the same action cluster as the grid card. Still an
- * `<li>` so the E2E `main li` pins hold in both views.
+ * one — a play link with hover icon when the item is playable, a plain image
+ * otherwise — else the square play button or a section-icon spacer; then
+ * title/meta stack, badges, and the same action cluster as the grid card.
+ * Still an `<li>` so the E2E `main li` pins hold in both views.
  */
 export default function AdminMediaRow({
   item,
@@ -49,6 +49,16 @@ export default function AdminMediaRow({
   // plain play button instead of a dead <img>.
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
   const showThumb = item.coverUrl !== null && item.coverUrl !== failedCoverUrl
+  const thumbImg = (
+    <img
+      src={item.coverUrl!}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailedCoverUrl(item.coverUrl)}
+      className="h-full w-full object-cover"
+    />
+  )
 
   return (
     <li
@@ -59,29 +69,28 @@ export default function AdminMediaRow({
       }`}
     >
       {showThumb ? (
-        <Link
-          to="/studio/player-queue"
-          state={{ autoplay: true, item }}
-          aria-label={`Play ${item.title}`}
-          title={`Play ${item.title}`}
-          className="group/thumb relative size-9 shrink-0 overflow-hidden rounded-lg border border-border"
-        >
-          <img
-            src={item.coverUrl!}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onError={() => setFailedCoverUrl(item.coverUrl)}
-            className="h-full w-full object-cover"
-          />
-          <span className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover/thumb:bg-black/45">
-            <HugeiconsIcon
-              icon={PlayIcon}
-              size={12}
-              className="text-text-primary opacity-0 transition group-hover/thumb:opacity-100"
-            />
+        previewable ? (
+          <Link
+            to="/studio/player-queue"
+            state={{ autoplay: true, item }}
+            aria-label={`Play ${item.title}`}
+            title={`Play ${item.title}`}
+            className="group/thumb relative size-9 shrink-0 overflow-hidden rounded-lg border border-border"
+          >
+            {thumbImg}
+            <span className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover/thumb:bg-black/45">
+              <HugeiconsIcon
+                icon={PlayIcon}
+                size={12}
+                className="text-text-primary opacity-0 transition group-hover/thumb:opacity-100"
+              />
+            </span>
+          </Link>
+        ) : (
+          <span className="relative block size-9 shrink-0 overflow-hidden rounded-lg border border-border">
+            {thumbImg}
           </span>
-        </Link>
+        )
       ) : previewable ? (
         <Link
           to="/studio/player-queue"

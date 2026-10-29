@@ -49,7 +49,11 @@ export function metaParts(item: AdminMediaItem): string[] {
   return parts
 }
 
-/** Play is only offered where a real file backs the row. */
+/**
+ * Play is offered wherever a playback source exists: video falls back to the
+ * bundled master even without an uploaded file, music needs its own sourceUrl,
+ * and radio rows never expose play here.
+ */
 export function canPreview(item: AdminMediaItem): boolean {
   return item.section === 'video' || (item.section === 'music' && item.sourceUrl !== null)
 }

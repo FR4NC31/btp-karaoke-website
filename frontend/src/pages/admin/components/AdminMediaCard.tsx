@@ -47,7 +47,8 @@ export default function AdminMediaCard({
   onDelete,
 }: AdminMediaCardProps) {
   const SectionIcon = SECTION_ICONS[item.section]
-  const parts = metaParts(item)
+  // The cover badge already carries the duration — one place only.
+  const parts = metaParts(item).filter((part) => part !== item.duration)
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null)
   const showCover = item.coverUrl !== null && item.coverUrl !== failedCoverUrl
   const previewable = canPreview(item)

@@ -105,7 +105,12 @@ export default function MediaItemActions({
         to={`/admin/media/${item.id}`}
         aria-label={`Edit ${item.title}`}
         title={`Edit ${item.title}`}
-        className="grid size-8 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/50 hover:text-text-primary"
+        aria-disabled={busy || undefined}
+        className={`grid size-7 place-items-center rounded-md border border-border bg-surface-elevated text-text-secondary transition ${
+          busy
+            ? 'pointer-events-none opacity-40'
+            : 'hover:border-primary/50 hover:text-text-primary'
+        }`}
       >
         <HugeiconsIcon icon={PencilEdit01Icon} size={13} />
       </Link>
