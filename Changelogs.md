@@ -58,6 +58,7 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(booking): format booking time into 12-hour format in review dialog (c0a9793)
 - fix(admin): resolve action type mismatch for booking details dialog actions (dd71ecd)
 - fix(admin): Fixed bug changes (bd4b93a)
 - fix(booking): check suspension after releasing expired holds (50101d1)
