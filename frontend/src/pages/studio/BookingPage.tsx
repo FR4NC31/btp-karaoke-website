@@ -21,6 +21,7 @@ import {
 import { WING_LABELS } from './components/booking/constants'
 import { formatDay, nextOpenDay } from '../../lib/booking-format'
 import BookingForm from './components/booking/BookingForm'
+import BookingReviewDialog from './components/booking/BookingReviewDialog'
 import BookingServiceCard from './components/booking/BookingServiceCard'
 import BookingsPanel from './components/booking/BookingsPanel'
 import { useSession } from '../../lib/auth-client'
@@ -70,6 +71,7 @@ export default function BookingPage() {
 
   // Booking form — `selected` doubles as "the form is open".
   const [selected, setSelected] = useState<Service | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
   const [notes, setNotes] = useState('')
@@ -187,6 +189,7 @@ export default function BookingPage() {
 
   function startBooking(service: Service) {
     setSelected(service)
+    setReviewOpen(false)
     // Pre-fill with the first open day so a closed "today" does not greet the
     // customer with an error the moment the form opens.
     setBookingDate(
@@ -242,11 +245,18 @@ export default function BookingPage() {
       return
     }
 
-    // Time-based services require a time slot; per-day services omit it.
+    // Show the customer what they are about to book before reserving anything.
+    // The 5-minute hold starts only after they confirm this review step.
+    setFormError('')
+    setReviewOpen(true)
+  }
+
+  /** Creates the 5-minute hold after the customer confirms the review modal. */
+  async function handleConfirmHold() {
+    if (!selected || submitting) return
+
     const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
 
-    // Reserve the slot immediately (5-minute hold) so nobody else can take it
-    // while the customer is choosing a payment method and uploading a receipt.
     bookingGeneration.current += 1
     setSubmitting(true)
     setFormError('')
@@ -265,6 +275,7 @@ export default function BookingPage() {
         bookingTime: timePayload,
         notes: notes.trim() || undefined,
       })
+      setReviewOpen(false)
       setPaymentMethod('filler')
       setPaymentReceipt(null)
       setPaymentOpen(true)
@@ -272,6 +283,7 @@ export default function BookingPage() {
         .then((r: { url: string | null }) => setGcashQrUrl(r.url))
         .catch(() => setGcashQrUrl(null))
     } catch (err) {
+      // Stay on the review modal so the customer can retry or go back.
       setFormError(describeBookingError(err, 'The slot could not be held.'))
     } finally {
       setSubmitting(false)
@@ -368,6 +380,16 @@ export default function BookingPage() {
   const activeBlockout = selected
     ? (blockouts.find((b) => b.bookingDate === bookingDate) ?? null)
     : null
+
+  const customerName =
+    [session?.user?.first_name, session?.user?.last_name].filter(Boolean).join(' ') ||
+    session?.user?.name ||
+    'Not set'
+  const customerContact = session?.user?.contact_num?.trim() || 'Not set'
+  const reviewDiscountPercent = isVip ? 20 : 0
+  const reviewAmountDue = selected
+    ? selected.pricePhp * (1 - reviewDiscountPercent / 100)
+    : 0
 
   if (loading) {
     return (
@@ -483,6 +505,7 @@ export default function BookingPage() {
             submitting={submitting}
             onClose={() => {
               setSelected(null)
+              setReviewOpen(false)
               setFormError('')
               try {
                 window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
@@ -491,6 +514,29 @@ export default function BookingPage() {
               }
             }}
             onSubmit={handleSubmit}
+          />
+        )}
+
+        {reviewOpen && selected && (
+          <BookingReviewDialog
+            service={selected}
+            bookingDate={bookingDate}
+            bookingTime={isTimeBasedService(selected) ? bookingTime : undefined}
+            customerName={customerName}
+            customerContact={customerContact}
+            amountDuePhp={reviewAmountDue}
+            discountPercent={reviewDiscountPercent}
+            notes={notes}
+            error={formError}
+            submitting={submitting}
+            onBack={() => {
+              if (submitting) return
+              setReviewOpen(false)
+              setFormError('')
+            }}
+            onConfirm={() => {
+              void handleConfirmHold()
+            }}
           />
         )}
 
