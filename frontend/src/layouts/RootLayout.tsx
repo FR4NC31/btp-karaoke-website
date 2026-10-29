@@ -5,7 +5,6 @@ import { Menu01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
 import BrandLogo from '../components/BrandLogo'
 import AuthDialog from '../components/AuthDialog'
 import SiteFooter from './SiteFooter'
-import { useSession } from '../lib/auth-client'
 import type { AuthMode } from '../lib/auth-dialog'
 
 const navItems: { label: string; to?: string; hash?: string }[] = [
@@ -20,7 +19,6 @@ const navItems: { label: string; to?: string; hash?: string }[] = [
 export default function RootLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
-  const { data: session, isPending } = useSession()
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
   const [currentHash, setCurrentHash] = useState(window.location.hash)
 
@@ -28,11 +26,23 @@ export default function RootLayout() {
     const onHashChange = () => setCurrentHash(window.location.hash)
     window.addEventListener('hashchange', onHashChange)
     window.addEventListener('popstate', onHashChange)
+
+    // Initial mount hash scroll
+    if (window.location.hash && location.pathname === '/') {
+      const targetId = window.location.hash.replace('#', '')
+      const el = document.getElementById(targetId)
+      if (el) {
+        requestAnimationFrame(() => {
+          el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+        })
+      }
+    }
+
     return () => {
       window.removeEventListener('hashchange', onHashChange)
       window.removeEventListener('popstate', onHashChange)
     }
-  }, [])
+  }, [location.pathname])
 
   const [settledPath, setSettledPath] = useState(location.pathname + currentHash)
   if (settledPath !== location.pathname + currentHash) {
@@ -42,44 +52,23 @@ export default function RootLayout() {
 
   const openAuth = (mode: AuthMode) => setAuthMode(mode)
 
-  const onContentPage =
-    location.pathname === '/about' || location.pathname === '/contact' || location.pathname === '/services'
-  const showHeaderAuth = !isPending && session == null && onContentPage
-  const headerAuthButtons = (onPick?: () => void) => (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={() => {
-          onPick?.()
-          openAuth('signin')
-        }}
-        className="rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:text-text-primary"
-      >
-        Sign In
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onPick?.()
-          openAuth('signup')
-        }}
-        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-text-primary transition hover:bg-primary-hover"
-      >
-        Sign Up
-      </button>
-    </div>
-  )
-
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, to?: string, hash?: string) => {
+    // Respect modified clicks for new tabs
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) {
+      return
+    }
+
     setMenuOpen(false)
     if (!to) return
 
     if (to === '/' && !hash) {
       e.preventDefault()
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      window.history.pushState(null, '', '/')
-      setCurrentHash('')
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+      if (window.location.pathname === '/' && window.location.hash) {
+        window.history.pushState(null, '', '/')
+        setCurrentHash('')
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
+      }
       return
     }
 
@@ -87,10 +76,14 @@ export default function RootLayout() {
       e.preventDefault()
       const element = document.getElementById(hash.replace('#', ''))
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' })
-        window.history.pushState(null, '', hash)
-        setCurrentHash(hash)
-        window.dispatchEvent(new HashChangeEvent('hashchange'))
+        requestAnimationFrame(() => {
+          element.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+        })
+        if (window.location.hash !== hash) {
+          window.history.pushState(null, '', hash)
+          setCurrentHash(hash)
+          window.dispatchEvent(new HashChangeEvent('hashchange'))
+        }
       }
     }
   }
@@ -111,6 +104,7 @@ export default function RootLayout() {
             to="/"
             onClick={(e) => handleNavClick(e, '/', '')}
             aria-label="BTP KARAOKE"
+            aria-current={isActiveLink('/', '') ? 'page' : undefined}
             className="flex shrink-0 items-center gap-2.5 cursor-pointer"
           >
             <BrandLogo className="size-9" />
@@ -130,6 +124,7 @@ export default function RootLayout() {
                     <a
                       href={item.to}
                       onClick={(e) => handleNavClick(e, item.to, item.hash)}
+                      aria-current={isActiveLink(item.to, item.hash) ? 'page' : undefined}
                       className={
                         isActiveLink(item.to, item.hash)
                           ? 'rounded-md px-3 py-1.5 font-bold text-primary transition cursor-pointer'
@@ -148,10 +143,6 @@ export default function RootLayout() {
                 ),
               )}
             </ul>
-
-            <div className="flex items-center gap-3">
-              {showHeaderAuth && headerAuthButtons()}
-            </div>
           </nav>
 
           <button
@@ -175,6 +166,7 @@ export default function RootLayout() {
                     <a
                       href={item.to}
                       onClick={(e) => handleNavClick(e, item.to, item.hash)}
+                      aria-current={isActiveLink(item.to, item.hash) ? 'page' : undefined}
                       className={
                         isActiveLink(item.to, item.hash)
                           ? 'block font-bold text-primary cursor-pointer'
@@ -193,7 +185,6 @@ export default function RootLayout() {
                 ),
               )}
             </ul>
-            {showHeaderAuth && headerAuthButtons(() => setMenuOpen(false))}
           </nav>
         )}
       </header>

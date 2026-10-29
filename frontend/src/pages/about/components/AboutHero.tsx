@@ -8,9 +8,9 @@ export default function AboutHero() {
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.5fr_1fr]">
         <div>
-          <h1 className="font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
+          <h2 className="font-heading text-4xl leading-none font-bold tracking-wide uppercase sm:text-5xl">
             Bawat Tibok ng Puso — Every Beat of the Heart
-          </h1>
+          </h2>
           <p className="mt-6 leading-relaxed text-text-secondary">
             BTP stands for <strong className="font-semibold text-text-primary">"Bawat Tibok ng Puso"</strong>,{' '}
             translated to <em className="font-semibold text-primary">"Every Beat of the Heart"</em>. We believe

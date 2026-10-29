@@ -59,7 +59,7 @@ export default function LandingPage() {
 
   useLayoutEffect(() => {
     const page = pageRef.current
-    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!page) return
 
     const sections = ['services', 'about', 'contact']
     const observer = new IntersectionObserver(
@@ -75,7 +75,7 @@ export default function LandingPage() {
           }
         })
       },
-      { threshold: 0.3 }
+      { rootMargin: '-20% 0px -60% 0px' }
     )
 
     sections.forEach((id) => {
@@ -95,9 +95,16 @@ export default function LandingPage() {
           }
         })
       },
-      { threshold: 0.5 }
+      { rootMargin: '-20% 0px -60% 0px' }
     )
     if (heroEl) heroObserver.observe(heroEl)
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return () => {
+        observer.disconnect()
+        heroObserver.disconnect()
+      }
+    }
 
     const animation = gsap.context(() => {
       const entrance = gsap.timeline({
