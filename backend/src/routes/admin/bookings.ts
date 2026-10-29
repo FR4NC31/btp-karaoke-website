@@ -86,27 +86,10 @@ adminBookings.post('/', async (c) => {
   }
 })
 
-// One endpoint for every admin status move; the legal from-states live in
-// ADMIN_ACTIONS (src/bookings/admin.ts) and are enforced in the UPDATE itself.
-adminBookings.post('/:id/:action', async (c) => {
-  const action = c.req.param('action')
-  // Same list the transition table is built from (src/bookings/admin.ts), so an action
-  // can never be routable here without a legal move defined for it.
-  if (!(ADMIN_ACTION_NAMES as readonly string[]).includes(action)) {
-    return c.json({ error: 'Unknown action.' }, 404)
-  }
-
-  try {
-    const booking = await adminSetBookingStatus(c.req.param('id'), action as AdminBookingAction)
-    return c.json({ booking })
-  } catch (err) {
-    if (err instanceof BookingError) {
-      return c.json({ error: err.message }, err.status)
-    }
-    throw err
-  }
-})
-
+// Payment decisions are registered BEFORE the generic /:id/:action route:
+// Hono matches in registration order, so a route registered after a param
+// route would never be reached ("approve-payment" would hit the generic
+// handler, fail the action-name check, and 404 as "Unknown action.").
 adminBookings.post('/:id/approve-payment', async (c) => {
   try {
     const booking = await approvePayment(c.req.param('id'))
@@ -122,6 +105,28 @@ adminBookings.post('/:id/approve-payment', async (c) => {
 adminBookings.post('/:id/reject-payment', async (c) => {
   try {
     const booking = await rejectPayment(c.req.param('id'))
+    return c.json({ booking })
+  } catch (err) {
+    if (err instanceof BookingError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// One endpoint for every admin status move; the legal from-states live in
+// ADMIN_ACTIONS (src/bookings/admin.ts) and are enforced in the UPDATE itself.
+// Must stay LAST among the /:id/... POST routes — see the ordering note above.
+adminBookings.post('/:id/:action', async (c) => {
+  const action = c.req.param('action')
+  // Same list the transition table is built from (src/bookings/admin.ts), so an action
+  // can never be routable here without a legal move defined for it.
+  if (!(ADMIN_ACTION_NAMES as readonly string[]).includes(action)) {
+    return c.json({ error: 'Unknown action.' }, 404)
+  }
+
+  try {
+    const booking = await adminSetBookingStatus(c.req.param('id'), action as AdminBookingAction)
     return c.json({ booking })
   } catch (err) {
     if (err instanceof BookingError) {
