@@ -59,6 +59,7 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(admin): address media hub review findings (cc7e0c9)
 - fix(admin): resolve action type mismatch for booking details dialog actions (dd71ecd)
 - fix(admin): Fixed bug changes (bd4b93a)
 - fix(booking): check suspension after releasing expired holds (50101d1)
