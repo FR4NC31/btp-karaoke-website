@@ -7,6 +7,8 @@ import {
   CalendarBlock01Icon,
   CalendarCheck01Icon,
   DashboardSquare01Icon,
+  GridViewIcon,
+  ListViewIcon,
   Logout01Icon,
   MusicNote01Icon,
   PlusSignIcon,
@@ -19,6 +21,11 @@ import NewReservationDialog from './NewReservationDialog'
 import BlockedDaysDialog from './components/reservation/BlockedDaysDialog'
 import MembershipDialog from './components/reservation/MembershipDialog'
 import { fetchAdminBlockouts, fetchAdminBookings } from '../../lib/admin-api'
+import {
+  readMediaHubView,
+  storeMediaHubView,
+  type MediaHubView,
+} from '../../lib/admin-media-view'
 import { signOut, useSession } from '../../lib/auth-client'
 import { markSessionExit } from '../../lib/session-exit'
 import { readableError, unexpectedError } from '../../lib/auth-errors'
@@ -29,7 +36,7 @@ import { readableError, unexpectedError } from '../../lib/auth-errors'
  * `requireAdmin`; nothing here checks roles.
  */
 
-type AdminAction = 'blocked' | 'memberships' | 'newReservation' | 'newMedia' | 'backMedia'
+type AdminAction = 'blocked' | 'memberships' | 'newReservation' | 'newMedia' | 'backMedia' | 'mediaView'
 
 type PageMeta = {
   title: string
@@ -90,7 +97,7 @@ function pageMeta(pathname: string): PageMeta {
     return {
       title: 'Media Hub',
       subtitle: 'Video songs, minus-one tracks and radio stations',
-      actions: ['newMedia'],
+      actions: ['mediaView', 'newMedia'],
     }
   }
 
@@ -150,12 +157,19 @@ export default function AdminShell() {
   const [membershipOpen, setMembershipOpen] = useState(false)
   // Incremented after a desk reservation is created so every page refetches.
   const [reservationsRevision, setReservationsRevision] = useState(0)
+  // Media hub layout (grid cards or compact list), remembered across visits.
+  const [mediaView, setMediaViewState] = useState<MediaHubView>(() => readMediaHubView())
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState('')
   const [counts, setCounts] = useState({ pending: 0, blocked: 0 })
   const location = useLocation()
   const navigate = useNavigate()
   const { data } = useSession()
+
+  function setMediaView(view: MediaHubView) {
+    setMediaViewState(view)
+    storeMediaHubView(view)
+  }
 
   const user = data?.user
   const name =
@@ -279,6 +293,42 @@ export default function AdminShell() {
               <HugeiconsIcon icon={PlusSignIcon} size={15} />
               <span className="hidden sm:inline">New reservation</span>
             </button>
+          )}
+          {meta.actions.includes('mediaView') && (
+            <div
+              role="group"
+              aria-label="Media layout"
+              className="flex h-9 items-center rounded-lg border border-border bg-surface-elevated p-1"
+            >
+              <button
+                type="button"
+                aria-label="Grid view"
+                aria-pressed={mediaView === 'grid'}
+                onClick={() => setMediaView('grid')}
+                className={`flex h-full items-center gap-1.5 rounded-md px-2.5 text-xs font-bold tracking-widest uppercase transition ${
+                  mediaView === 'grid'
+                    ? 'bg-primary text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <HugeiconsIcon icon={GridViewIcon} size={14} />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+              <button
+                type="button"
+                aria-label="List view"
+                aria-pressed={mediaView === 'list'}
+                onClick={() => setMediaView('list')}
+                className={`flex h-full items-center gap-1.5 rounded-md px-2.5 text-xs font-bold tracking-widest uppercase transition ${
+                  mediaView === 'list'
+                    ? 'bg-primary text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <HugeiconsIcon icon={ListViewIcon} size={14} />
+                <span className="hidden sm:inline">List</span>
+              </button>
+            </div>
           )}
           {meta.actions.includes('newMedia') && (
             <Link
@@ -449,6 +499,8 @@ export default function AdminShell() {
             context={{
               openNewReservation: () => setNewReservationOpen(true),
               reservationsRevision,
+              mediaView,
+              setMediaView,
             }}
           />
         </main>
