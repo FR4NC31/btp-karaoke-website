@@ -12,6 +12,7 @@ type LoungeQueueRailProps = {
   onRemove: (id: string) => void
   onClear: () => void
   onMove: (from: number, to: number) => void
+  onPlay: (id: string) => void
 }
 
 export default function LoungeQueueRail({
@@ -22,6 +23,7 @@ export default function LoungeQueueRail({
   onRemove,
   onClear,
   onMove,
+  onPlay,
 }: LoungeQueueRailProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
@@ -88,6 +90,7 @@ export default function LoungeQueueRail({
               }}
               onDragEnd={() => setDragIndex(null)}
               onRemove={() => onRemove(row.id)}
+              onPlay={() => onPlay(row.id)}
             />
           ))}
         </ul>

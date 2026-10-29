@@ -67,6 +67,7 @@ export function resolveQueueSource(row: QueueItem, catalog: MediaItem[]): QueueS
 export interface LoungeQueueApi {
   items: QueueItem[]
   add: (input: QueueInput) => void
+  prepend: (input: QueueInput) => void
   remove: (id: string) => void
   clear: () => void
   move: (from: number, to: number) => void
@@ -196,6 +197,31 @@ export function useLoungeQueueState(): LoungeQueueApi {
       ]),
     [],
   )
+  const prepend = useCallback(
+    (input: QueueInput) =>
+      setItems((rows) => {
+        const titleMatch = input.title.trim().toLowerCase()
+        const filtered = rows.filter((row) => {
+          if (input.mediaId && row.mediaId === input.mediaId) return false
+          if (row.title.trim().toLowerCase() === titleMatch) return false
+          return true
+        })
+        const newItem: QueueItem = {
+          id: crypto.randomUUID(),
+          title: input.title,
+          artist: input.artist ?? '',
+          genre: input.genre ?? '',
+          len: input.len ?? '',
+          tags: input.tags ?? [{ label: 'Playing', solid: true }],
+          coverUrl: input.coverUrl ?? null,
+          src: input.src ?? null,
+          kind: input.kind ?? 'video',
+          mediaId: input.mediaId ?? null,
+        }
+        return [newItem, ...filtered]
+      }),
+    [],
+  )
   const remove = useCallback(
     (id: string) => setItems((rows) => rows.filter((row) => row.id !== id)),
     [],
@@ -213,7 +239,7 @@ export function useLoungeQueueState(): LoungeQueueApi {
     [],
   )
 
-  return useMemo(() => ({ items, add, remove, clear, move }), [items, add, remove, clear, move])
+  return useMemo(() => ({ items, add, prepend, remove, clear, move }), [items, add, prepend, remove, clear, move])
 }
 
 const LoungeQueueContext = createContext<LoungeQueueApi | null>(null)
