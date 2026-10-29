@@ -290,39 +290,61 @@ export async function adminSetBookingStatus(
 }
 
 export async function approvePayment(bookingId: string): Promise<AdminBooking> {
-  const existing = await findBookingByIdForAdmin(bookingId)
-  if (!existing) throw new BookingError('That reservation does not exist.', 404)
-  if (existing.status !== 'pending') {
-    throw new BookingError(`A ${existing.status} reservation cannot be approved.`, 409)
-  }
-  const updated = await db
-    .update(booking)
-    .set({ status: 'confirmed', updatedAt: new Date() })
-    .where(eq(booking.id, bookingId))
-    .returning({ id: booking.id })
-  if (updated.length === 0) throw new BookingError('That reservation does not exist.', 404)
-  if (existing.userId) await recordPaymentSuccess(existing.userId)
-  const result = await findBookingByIdForAdmin(bookingId)
-  if (!result) throw new Error('The reservation could not be read back after updating.')
-  return result
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(booking)
+      .set({ status: 'confirmed', updatedAt: new Date() })
+      .where(and(eq(booking.id, bookingId), eq(booking.status, 'pending')))
+      .returning({ id: booking.id, userId: booking.userId })
+
+    if (updated.length === 0) {
+      const existing = await findBookingByIdForAdmin(bookingId, tx)
+      if (!existing) {
+        throw new BookingError('That reservation does not exist.', 404)
+      }
+      throw new BookingError(`A ${existing.status} reservation cannot be approved.`, 409)
+    }
+
+    const row = updated[0]
+    if (row.userId) {
+      await recordPaymentSuccess(row.userId)
+    }
+
+    const result = await findBookingByIdForAdmin(bookingId, tx)
+    if (!result) {
+      throw new Error('The reservation could not be read back after updating.')
+    }
+    return result
+  })
 }
 
 export async function rejectPayment(bookingId: string): Promise<AdminBooking> {
-  const existing = await findBookingByIdForAdmin(bookingId)
-  if (!existing) throw new BookingError('That reservation does not exist.', 404)
-  if (existing.status !== 'pending') {
-    throw new BookingError(`A ${existing.status} reservation cannot be rejected.`, 409)
-  }
-  const updated = await db
-    .update(booking)
-    .set({ status: 'rejected', updatedAt: new Date() })
-    .where(eq(booking.id, bookingId))
-    .returning({ id: booking.id })
-  if (updated.length === 0) throw new BookingError('That reservation does not exist.', 404)
-  if (existing.userId) await recordPaymentFailure(existing.userId)
-  const result = await findBookingByIdForAdmin(bookingId)
-  if (!result) throw new Error('The reservation could not be read back after updating.')
-  return result
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(booking)
+      .set({ status: 'rejected', updatedAt: new Date() })
+      .where(and(eq(booking.id, bookingId), eq(booking.status, 'pending')))
+      .returning({ id: booking.id, userId: booking.userId })
+
+    if (updated.length === 0) {
+      const existing = await findBookingByIdForAdmin(bookingId, tx)
+      if (!existing) {
+        throw new BookingError('That reservation does not exist.', 404)
+      }
+      throw new BookingError(`A ${existing.status} reservation cannot be rejected.`, 409)
+    }
+
+    const row = updated[0]
+    if (row.userId) {
+      await recordPaymentFailure(row.userId)
+    }
+
+    const result = await findBookingByIdForAdmin(bookingId, tx)
+    if (!result) {
+      throw new Error('The reservation could not be read back after updating.')
+    }
+    return result
+  })
 }
 export async function listUsersForTagging(query?: string): Promise<TagUser[]> {
   const q = query?.trim()

@@ -59,6 +59,8 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(admin): address code review findings on payment approval and line endings (0cc38aa)
+- fix(admin): resolve 404 unknown action error on booking payment approval (d528a70)
 - fix(admin): address media hub review findings (cc7e0c9)
 - fix(booking): format booking time into 12-hour format in review dialog (f1ef2ae)
 - fix(admin): resolve action type mismatch for booking details dialog actions (dd71ecd)
@@ -139,6 +141,8 @@ Last updated: October 29, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into fix/booking-approval-route-order (564a0dd)
+- Merge pull request #68 from FR4NC31/fix/booking-review-time-12h (ba25233)
 - Merge branch 'develop' into fix/booking-review-time-12h (481e706)
 - Merge pull request #67 from FR4NC31/feat/admin-media-redesign (2d10f2b)
 - Merge pull request #66 from FR4NC31/feat/booking-review-dialog (276fe33)
