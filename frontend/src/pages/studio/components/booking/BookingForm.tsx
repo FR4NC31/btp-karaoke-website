@@ -176,10 +176,10 @@ export default function BookingForm({
           disabled={submitting || Boolean(blockout)}
           className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? 'Booking…' : 'Confirm booking'}
+          {submitting ? 'Booking…' : 'Review booking'}
         </button>
         <p className="text-[11px] tracking-widest text-text-muted uppercase">
-          No payment taken — the studio confirms your slot
+          Next: review your details, then hold the slot
         </p>
       </div>
     </form>
