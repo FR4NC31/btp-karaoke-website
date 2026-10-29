@@ -6,6 +6,8 @@ Last updated: October 29, 2026
 
 ### Features
 
+- feat: redesign landing page into single-page layout with hash sections (15d7b50)
+- feat: auto-queue mediahub playback and enable direct queue thumbnail playback (38d8f2e)
 - feat(admin): redesign media hub with grid/list views (2fa7c6a)
 - feat(booking): add booking review dialog before holding slot (2b4807e)
 - feat: admin bookings, membership tiers and booking system updates (12a129c)
@@ -59,6 +61,7 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(landing): address PR review feedback on single-page layout, accessibility, and smooth scroll (d0c87b0)
 - fix(admin): address code review findings on payment approval and line endings (0cc38aa)
 - fix(admin): resolve 404 unknown action error on booking payment approval (d528a70)
 - fix(admin): address media hub review findings (cc7e0c9)
@@ -141,6 +144,8 @@ Last updated: October 29, 2026
 
 ### Other Changes
 
+- Merge pull request #70 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (f15e19e)
+- Merge pull request #69 from FR4NC31/fix/booking-approval-route-order (96db857)
 - Merge branch 'develop' into fix/booking-approval-route-order (564a0dd)
 - Merge pull request #68 from FR4NC31/fix/booking-review-time-12h (ba25233)
 - Merge branch 'develop' into fix/booking-review-time-12h (481e706)
