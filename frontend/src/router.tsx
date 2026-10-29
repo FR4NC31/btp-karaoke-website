@@ -6,9 +6,6 @@ import RequireAuth from "./components/RequireAuth"
 import RequireGuest from "./components/RequireGuest"
 import RouteError from "./components/RouteError"
 import LandingPage from "./pages/LandingPage"
-import About from "./pages/About"
-import Contact from "./pages/Contact"
-import Services from "./pages/Services"
 import NotFound from "./pages/NotFound"
 import SignIn from "./pages/auth/SignIn"
 import SignUp from "./pages/auth/SignUp"
@@ -38,21 +35,6 @@ export const router = createBrowserRouter([
                         path: "/",
                         handle: { title: 'Home' },
                         element: <LandingPage />,
-                    },
-                    {
-                        path: "/about",
-                        handle: { title: 'About' },
-                        element: <About />,
-                    },
-                    {
-                        path: "/contact",
-                        handle: { title: 'Contact' },
-                        element: <Contact />,
-                    },
-                    {
-                        path: "/services",
-                        handle: { title: 'Services' },
-                        element: <Services />,
                     },
                 ]
             },
