@@ -68,8 +68,9 @@ test.describe('studio closures', () => {
     const serviceId = await serviceIdByCode(page, 'KARAOKE-MV')
 
     try {
-      await page.goto('/admin/blocked-days')
-      await expect(page.getByRole('heading', { name: 'Blocked days' })).toBeVisible()
+      await page.goto('/admin')
+      await page.getByRole('button', { name: 'Blocked Days' }).click()
+      await expect(page.getByRole('heading', { name: 'Studio closures' })).toBeVisible()
 
       await page.locator('#blockout-date').fill(day)
       await page.locator('#blockout-reason').selectOption('maintenance')
@@ -96,7 +97,7 @@ test.describe('studio closures', () => {
       await expect(page.getByRole('alert')).toContainText(
         'The studio is unavailable on this day (Maintenance)',
       )
-      await expect(page.getByRole('button', { name: 'Confirm booking' })).toBeDisabled()
+      await expect(page.getByRole('button', { name: 'Review booking' })).toBeDisabled()
 
       // Server guard: bypass the disabled button with the same session cookie.
       const blocked = await page.request.post('/api/bookings', {
