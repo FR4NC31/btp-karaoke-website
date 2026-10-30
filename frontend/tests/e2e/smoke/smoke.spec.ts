@@ -15,7 +15,7 @@ test.describe('smoke', () => {
     test('SMOKE-002: main navigation works', { tag: '@p0' }, async ({ page }) => {
       await page.goto('/')
 
-      await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+      await page.getByRole('button', { name: 'Sign In to Studio', exact: true }).click()
       const dialog = page.getByRole('dialog')
       await expect(dialog.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
       await expect(page).toHaveURL('/')
@@ -24,8 +24,8 @@ test.describe('smoke', () => {
       await expect(dialog).toBeHidden()
 
       await page.getByRole('link', { name: 'Contact' }).first().click()
-      await expect(page).toHaveURL('/contact')
-      await expect(page.getByRole('heading', { level: 1, name: 'Direct Lines' })).toBeVisible()
+      await expect(page).toHaveURL('/#contact')
+      await expect(page.getByRole('heading', { level: 2, name: 'Get in Touch with BTP' })).toBeVisible()
     })
   })
 

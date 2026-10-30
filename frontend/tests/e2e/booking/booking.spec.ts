@@ -142,7 +142,7 @@ test.describe('booking desk', () => {
     const day = farFutureDay()
     const card = serviceCard(page, /musical arranging/i)
 
-    const reference = await bookService(page, card, day, 'E2E duplicate probe')
+    await bookService(page, card, day, 'E2E duplicate probe')
 
     await card.getByRole('button', { name: 'Book this service' }).click()
     await page.getByLabel('Session date').fill(day)
@@ -210,7 +210,7 @@ test.describe('booking desk', () => {
     // recording session while still exercising the time-slot index.
     const card = serviceCard(page, /audio editing and mastering/i)
 
-    const reference = await bookService(page, card, day, 'E2E slot duplicate probe', '09:00')
+    await bookService(page, card, day, 'E2E slot duplicate probe', '09:00')
 
     // Same service, same day, same slot → the time-slot unique index wins.
     await card.getByRole('button', { name: 'Book this service' }).click()

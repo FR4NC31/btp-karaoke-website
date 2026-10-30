@@ -63,19 +63,19 @@ export default function PendingApprovals({
       aria-labelledby="pending-approvals-heading"
       className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface"
     >
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 border-b border-border px-5 py-4">
-        <div className="flex items-start gap-3">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-warning/10 text-warning">
             <HugeiconsIcon
               icon={activeTab === 'pending' ? Clock01Icon : CalendarCheck01Icon}
               size={18}
             />
           </span>
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2
                 id="pending-approvals-heading"
-                className="font-heading text-xl font-bold tracking-wide uppercase"
+                className="truncate font-heading text-xl font-bold tracking-wide uppercase"
               >
                 {activeTab === 'pending' ? 'Pending Approvals' : 'Today at the Studio'}
               </h2>
@@ -92,7 +92,7 @@ export default function PendingApprovals({
                 {empty ? 'All clear' : `${currentList.length} items`}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-text-muted">
+            <p className="mt-1 truncate text-[11px] text-text-muted">
               {activeTab === 'pending'
                 ? 'Confirm or reject the reservations waiting on the desk.'
                 : 'Active and scheduled sessions for today at the studio.'}
@@ -153,7 +153,7 @@ export default function PendingApprovals({
         </div>
       ) : (
         <div className="no-scrollbar min-h-0 flex-1 overflow-auto">
-          <table className="w-full min-w-[520px] text-left">
+          <table className="w-full min-w-[520px] text-center">
             <thead>
               <tr className="border-b border-border bg-surface-elevated/40">
                 {[
@@ -165,7 +165,7 @@ export default function PendingApprovals({
                   <th
                     key={heading}
                     scope="col"
-                    className={`px-4 py-3 text-[9px] font-bold tracking-[0.16em] text-text-muted uppercase ${
+                    className={`px-4 py-3 text-center text-[9px] font-bold tracking-[0.16em] text-text-muted uppercase ${
                       heading === 'User / Engineer' || heading === 'Timestamp & Target'
                         ? 'hidden @5xl:table-cell'
                         : ''
@@ -191,29 +191,29 @@ export default function PendingApprovals({
                     key={entry.id}
                     className="group transition hover:bg-surface-elevated/40"
                   >
-                    <td className="max-w-64 px-4 py-3.5 align-middle">
+                    <td className="max-w-64 px-4 py-3.5 align-middle text-center">
                       <p className="truncate text-[13px] font-semibold text-text-primary">
                         {entry.title}
                       </p>
                       <p className="mt-0.5 truncate text-[11px] text-text-muted">
                         {entry.details}
                       </p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-text-muted @5xl:hidden">
+                      <p className="mt-0.5 flex flex-wrap items-center justify-center gap-x-2 text-[11px] text-text-muted @5xl:hidden">
                         <span className="truncate">{entry.user}</span>
                         <span className="truncate">{entry.schedule}</span>
                       </p>
                     </td>
-                    <td className="hidden px-4 py-3.5 align-middle @5xl:table-cell">
+                    <td className="hidden px-4 py-3.5 align-middle text-center @5xl:table-cell">
                       <p className="text-[13px] text-text-secondary">{entry.user}</p>
                       <p className="mt-0.5 truncate text-[11px] text-text-muted">
                         {entry.userMeta}
                       </p>
                     </td>
-                    <td className="hidden px-4 py-3.5 align-middle @5xl:table-cell">
+                    <td className="hidden px-4 py-3.5 align-middle text-center @5xl:table-cell">
                       <p className="text-[13px] text-text-secondary">{entry.timestamp}</p>
                       <p className="mt-0.5 text-[11px] text-text-muted">{entry.schedule}</p>
                     </td>
-                    <td className="px-4 py-3.5 align-middle">
+                    <td className="px-4 py-3.5 align-middle text-center">
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${statusTone.badge}`}
                       >

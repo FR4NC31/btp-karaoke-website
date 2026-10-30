@@ -494,15 +494,17 @@ export default function AdminShell() {
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
-          <Outlet
-            context={{
-              openNewReservation: () => setNewReservationOpen(true),
-              reservationsRevision,
-              mediaView,
-              setMediaView,
-            }}
-          />
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-screen-2xl p-4 sm:p-6">
+            <Outlet
+              context={{
+                openNewReservation: () => setNewReservationOpen(true),
+                reservationsRevision,
+                mediaView,
+                setMediaView,
+              }}
+            />
+          </div>
         </main>
       </div>
 

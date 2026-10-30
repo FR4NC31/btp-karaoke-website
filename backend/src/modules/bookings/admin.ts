@@ -306,6 +306,9 @@ export async function approvePayment(bookingId: string): Promise<AdminBooking> {
     }
 
     const row = updated[0]
+    if (!row) {
+      throw new Error('Updated reservation row not found.')
+    }
     if (row.userId) {
       await recordPaymentSuccess(row.userId)
     }
@@ -335,6 +338,9 @@ export async function rejectPayment(bookingId: string): Promise<AdminBooking> {
     }
 
     const row = updated[0]
+    if (!row) {
+      throw new Error('Updated reservation row not found.')
+    }
     if (row.userId) {
       await recordPaymentFailure(row.userId)
     }

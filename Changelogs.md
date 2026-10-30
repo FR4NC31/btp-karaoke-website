@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 29, 2026
+Last updated: October 30, 2026
 
 ### Features
 
@@ -61,6 +61,9 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(bookings): guard against missing updated reservation row (8bc878c)
+- fix(admin): address review feedback on activity log labels, heading wrap, and e2e tests (b5c48fe)
+- fix(admin): center overview tables and specify activity types (9ca37fb)
 - fix(landing): address PR review feedback on single-page layout, accessibility, and smooth scroll (d0c87b0)
 - fix(admin): address code review findings on payment approval and line endings (0cc38aa)
 - fix(admin): resolve 404 unknown action error on booking payment approval (d528a70)
@@ -136,6 +139,7 @@ Last updated: October 29, 2026
 
 ### Chores
 
+- chore: normalize line endings to LF for admin overview files (559bfd1)
 - chore(db): add the 0008 migration snapshot (5e57cda)
 - chore: update Aiven CA cert after service rotation (63d0527)
 - chore: exclude protected branches from changelog bot pushes (6fe9e6a)
@@ -144,6 +148,11 @@ Last updated: October 29, 2026
 
 ### Other Changes
 
+- test(smoke): align contact and sign-in selectors with landing page (9d1cdde)
+- Merge pull request #72 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (0083ee7)
+- test(e2e): align blockout admin navigation with modal shell (8bd6028)
+- test(e2e): update booking flow for review modal (2680de6)
+- Merge pull request #71 from FR4NC31/feat/single-page-landing-redesign (0ee74b5)
 - Merge pull request #70 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (f15e19e)
 - Merge pull request #69 from FR4NC31/fix/booking-approval-route-order (96db857)
 - Merge branch 'develop' into fix/booking-approval-route-order (564a0dd)

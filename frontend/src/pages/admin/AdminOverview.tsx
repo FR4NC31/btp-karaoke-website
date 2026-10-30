@@ -248,7 +248,7 @@ export default function AdminOverview() {
 
       <OverviewSummary stats={stats} />
 
-      <div className="grid gap-5 xl:h-[600px] xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:h-[600px] xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <ActivityLog entries={activityEntriesFrom(bookings)} onRefresh={handleRefresh} />
 
         <PendingApprovals
