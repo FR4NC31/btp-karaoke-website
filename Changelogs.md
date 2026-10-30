@@ -138,6 +138,7 @@ Last updated: October 30, 2026
 
 ### Chores
 
+- chore: normalize line endings to LF for admin overview files (559bfd1)
 - chore(db): add the 0008 migration snapshot (5e57cda)
 - chore: update Aiven CA cert after service rotation (63d0527)
 - chore: exclude protected branches from changelog bot pushes (6fe9e6a)
