@@ -68,8 +68,9 @@ test.describe('studio closures', () => {
     const serviceId = await serviceIdByCode(page, 'KARAOKE-MV')
 
     try {
-      await page.goto('/admin/blocked-days')
-      await expect(page.getByRole('heading', { name: 'Blocked days' })).toBeVisible()
+      await page.goto('/admin')
+      await page.getByRole('button', { name: 'Blocked Days' }).click()
+      await expect(page.getByRole('heading', { name: 'Studio closures' })).toBeVisible()
 
       await page.locator('#blockout-date').fill(day)
       await page.locator('#blockout-reason').selectOption('maintenance')
