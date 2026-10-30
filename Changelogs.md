@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: October 29, 2026
+Last updated: October 30, 2026
 
 ### Features
 
@@ -61,6 +61,8 @@ Last updated: October 29, 2026
 
 ### Bug Fixes
 
+- fix(admin): address review feedback on activity log labels, heading wrap, and e2e tests (b5c48fe)
+- fix(admin): center overview tables and specify activity types (9ca37fb)
 - fix(landing): address PR review feedback on single-page layout, accessibility, and smooth scroll (d0c87b0)
 - fix(admin): address code review findings on payment approval and line endings (0cc38aa)
 - fix(admin): resolve 404 unknown action error on booking payment approval (d528a70)
@@ -144,6 +146,10 @@ Last updated: October 29, 2026
 
 ### Other Changes
 
+- Merge pull request #72 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (0083ee7)
+- test(e2e): align blockout admin navigation with modal shell (8bd6028)
+- test(e2e): update booking flow for review modal (2680de6)
+- Merge pull request #71 from FR4NC31/feat/single-page-landing-redesign (0ee74b5)
 - Merge pull request #70 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (f15e19e)
 - Merge pull request #69 from FR4NC31/fix/booking-approval-route-order (96db857)
 - Merge branch 'develop' into fix/booking-approval-route-order (564a0dd)
