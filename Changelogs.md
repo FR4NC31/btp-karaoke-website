@@ -61,6 +61,7 @@ Last updated: October 30, 2026
 
 ### Bug Fixes
 
+- fix(bookings): guard against missing updated reservation row (8bc878c)
 - fix(admin): address review feedback on activity log labels, heading wrap, and e2e tests (b5c48fe)
 - fix(admin): center overview tables and specify activity types (9ca37fb)
 - fix(landing): address PR review feedback on single-page layout, accessibility, and smooth scroll (d0c87b0)
