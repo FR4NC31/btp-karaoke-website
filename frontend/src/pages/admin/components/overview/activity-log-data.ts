@@ -1,7 +1,5 @@
 import type { IconSvgElement } from '@hugeicons/react'
 import {
-  Cancel01Icon,
-  CheckmarkBadge01Icon,
   Clock01Icon,
   MusicNote01Icon,
 } from '@hugeicons/core-free-icons'
@@ -27,44 +25,41 @@ export type ActivityLogEntry = {
   booking: AdminBooking
 }
 
-type StatusPresentation = {
+type ActivityPresentation = {
   typeLabel: string
   tone: ActivityTone
-  via: string
   icon: IconSvgElement
 }
 
-const STATUS_PRESENTATION: Record<BookingStatus, StatusPresentation> = {
-  pending: {
+function presentationFor(booking: AdminBooking): ActivityPresentation {
+  const code = booking.serviceCode?.toUpperCase() || ''
+  if (code.includes('VIDEO') || code.includes('MV') || code.includes('KARAOKE-MV')) {
+    return {
+      typeLabel: 'Upload Video',
+      tone: 'primary',
+      icon: MusicNote01Icon,
+    }
+  }
+  if (code.includes('TRACKING') || code.includes('MASTERING') || code.includes('ARRANGING') || code.includes('AUDIO')) {
+    return {
+      typeLabel: 'Upload Audio',
+      tone: 'primary',
+      icon: MusicNote01Icon,
+    }
+  }
+  return {
     typeLabel: 'Reservation',
     tone: 'warning',
-    via: 'Pending review',
     icon: Clock01Icon,
-  },
-  confirmed: {
-    typeLabel: 'Confirmation',
-    tone: 'success',
-    via: 'Confirmed',
-    icon: CheckmarkBadge01Icon,
-  },
-  completed: {
-    typeLabel: 'Session',
-    tone: 'primary',
-    via: 'Completed',
-    icon: MusicNote01Icon,
-  },
-  rejected: {
-    typeLabel: 'Rejected',
-    tone: 'error',
-    via: 'Rejected',
-    icon: Cancel01Icon,
-  },
-  cancelled: {
-    typeLabel: 'Cancelled',
-    tone: 'muted',
-    via: 'Cancelled',
-    icon: Cancel01Icon,
-  },
+  }
+}
+
+const STATUS_BADGE: Record<BookingStatus, { label: string; tone: ActivityTone }> = {
+  pending: { label: 'Pending review', tone: 'warning' },
+  confirmed: { label: 'Confirmed', tone: 'success' },
+  completed: { label: 'Completed', tone: 'primary' },
+  rejected: { label: 'Rejected', tone: 'error' },
+  cancelled: { label: 'Cancelled', tone: 'muted' },
 }
 
 /** "4 mins ago", "2 hrs ago", "3 days ago" — the log's coarse clock. */
@@ -106,7 +101,8 @@ export function activityEntriesFrom(
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
     .slice(0, limit)
     .map((booking) => {
-      const presentation = STATUS_PRESENTATION[booking.status]
+      const presentation = presentationFor(booking)
+      const statusInfo = STATUS_BADGE[booking.status] || { label: booking.status, tone: 'muted' }
       const contact = [booking.customerEmail, booking.customerContact]
         .filter(Boolean)
         .join(' · ')
@@ -130,8 +126,8 @@ export function activityEntriesFrom(
         userMeta: contact || 'No contact on file',
         timestamp: relativeTime(booking.createdAt, now),
         schedule: scheduleFor(booking),
-        status: presentation.via,
-        statusTone: presentation.tone,
+        status: statusInfo.label,
+        statusTone: statusInfo.tone,
         booking,
       }
     })
