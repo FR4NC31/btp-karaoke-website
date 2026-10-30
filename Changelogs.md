@@ -148,6 +148,7 @@ Last updated: October 30, 2026
 
 ### Other Changes
 
+- test(smoke): align contact and sign-in selectors with landing page (9d1cdde)
 - Merge pull request #72 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (0083ee7)
 - test(e2e): align blockout admin navigation with modal shell (8bd6028)
 - test(e2e): update booking flow for review modal (2680de6)
