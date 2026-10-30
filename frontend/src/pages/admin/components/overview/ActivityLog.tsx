@@ -71,7 +71,7 @@ export default function ActivityLog({ entries, onRefresh }: ActivityLogProps) {
             <div className="flex flex-wrap items-center gap-2">
               <h2
                 id="activity-log-heading"
-                className="truncate font-heading text-xl font-bold tracking-wide uppercase"
+                className="font-heading text-xl font-bold tracking-wide uppercase"
               >
                 Studio Operations &amp; Activity Log
               </h2>
@@ -80,7 +80,7 @@ export default function ActivityLog({ entries, onRefresh }: ActivityLogProps) {
                 Live Feed
               </span>
             </div>
-            <p className="mt-1 truncate text-[11px] text-text-muted">
+            <p className="mt-1 text-[11px] text-text-muted">
               Real-time reservation status updates, master streamloads, and studio logs
             </p>
           </div>

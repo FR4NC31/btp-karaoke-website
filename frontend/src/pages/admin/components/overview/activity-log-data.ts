@@ -40,7 +40,14 @@ function presentationFor(booking: AdminBooking): ActivityPresentation {
       icon: MusicNote01Icon,
     }
   }
-  if (code.includes('TRACKING') || code.includes('MASTERING') || code.includes('ARRANGING') || code.includes('AUDIO')) {
+  if (code.includes('TRACKING')) {
+    return {
+      typeLabel: 'Recording Session',
+      tone: 'primary',
+      icon: MusicNote01Icon,
+    }
+  }
+  if (code.includes('MASTERING') || code.includes('ARRANGING') || code.includes('AUDIO')) {
     return {
       typeLabel: 'Upload Audio',
       tone: 'primary',
