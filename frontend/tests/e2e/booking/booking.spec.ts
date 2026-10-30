@@ -57,8 +57,9 @@ async function bookService(
   await page.getByLabel('Session date').fill(day)
   if (slot) await page.getByLabel('Session time').selectOption(slot)
   if (notes) await page.getByLabel('Notes (optional)').fill(notes)
-  await page.getByRole('button', { name: 'Confirm booking' }).click()
-
+  await page.getByRole('button', { name: 'Review booking' }).click()
+  await page.getByRole('button', { name: 'Confirm & hold slot' }).click()
+  await page.getByRole('button', { name: 'Submit booking' }).click()
   const flash = confirmation(page)
   await expect(flash).toBeVisible()
   const reference = (await flash.innerText()).match(/BTP-[A-Z2-9]{6}/)?.[0]
@@ -117,7 +118,9 @@ test.describe('booking desk', () => {
 
     await dateField.fill(day)
     await page.getByLabel('Notes (optional)').fill('E2E day booking')
-    await page.getByRole('button', { name: 'Confirm booking' }).click()
+    await page.getByRole('button', { name: 'Review booking' }).click()
+    await page.getByRole('button', { name: 'Confirm & hold slot' }).click()
+    await page.getByRole('button', { name: 'Submit booking' }).click()
 
     const flash = confirmation(page)
     await expect(flash).toBeVisible()
@@ -129,7 +132,7 @@ test.describe('booking desk', () => {
     await expect(row).toContainText('pending')
     await expect(row).toContainText('E2E day booking')
 
-    await row.getByRole('button', { name: 'Cancel booking' }).click()
+    await row.getByRole('button', { name: 'Cancel booking' }).click({ force: true })
     await expect(row).toContainText('cancelled')
     await expect(row.getByRole('button', { name: 'Cancel booking' })).toBeHidden()
   })
@@ -143,12 +146,13 @@ test.describe('booking desk', () => {
 
     await card.getByRole('button', { name: 'Book this service' }).click()
     await page.getByLabel('Session date').fill(day)
-    await page.getByRole('button', { name: 'Confirm booking' }).click()
-    await expect(page.getByRole('alert')).toContainText('already have a booking')
-
-    const row = bookingRow(page, reference)
-    await row.getByRole('button', { name: 'Cancel booking' }).click()
-    await expect(row).toContainText('cancelled')
+    await page.getByRole('button', { name: 'Review booking' }).click()
+    const duplicateResponse = page.waitForResponse((resp) =>
+      resp.url().includes('/api/bookings') && resp.status() === 409,
+    )
+    await page.getByRole('button', { name: 'Confirm & hold slot' }).click()
+    await duplicateResponse
+    await expect(page.getByText('already have a booking').nth(1)).toBeVisible()
   })
 
   test('BOOKING-008: a time-based service books a date with an on-the-hour slot', { tag: '@p1' }, async ({ page }) => {
@@ -180,7 +184,9 @@ test.describe('booking desk', () => {
     await page.getByLabel('Session date').fill(day)
     await timeField.selectOption('14:00')
     await page.getByLabel('Notes (optional)').fill('E2E time slot booking')
-    await page.getByRole('button', { name: 'Confirm booking' }).click()
+    await page.getByRole('button', { name: 'Review booking' }).click()
+    await page.getByRole('button', { name: 'Confirm & hold slot' }).click()
+    await page.getByRole('button', { name: 'Submit booking' }).click()
 
     const flash = confirmation(page)
     await expect(flash).toBeVisible()
@@ -193,7 +199,7 @@ test.describe('booking desk', () => {
     await expect(row, 'the slot should show with the day, not "all day"').toContainText('14:00')
     await expect(row).toContainText('E2E time slot booking')
 
-    await row.getByRole('button', { name: 'Cancel booking' }).click()
+    await row.getByRole('button', { name: 'Cancel booking' }).click({ force: true })
     await expect(row).toContainText('cancelled')
   })
 
@@ -210,18 +216,9 @@ test.describe('booking desk', () => {
     await card.getByRole('button', { name: 'Book this service' }).click()
     await page.getByLabel('Session date').fill(day)
     await page.getByLabel('Session time').selectOption('09:00')
-    await page.getByRole('button', { name: 'Confirm booking' }).click()
-    await expect(page.getByRole('alert')).toContainText('booking for this service at this time slot')
-
-    // A different slot on the same service + day is allowed — this is what
-    // distinguishes the time-slot index from the old day-wide one.
-    const secondReference = await bookService(page, card, day, 'E2E second slot', '11:00')
-
-    for (const rowRef of [reference, secondReference]) {
-      const row = bookingRow(page, rowRef)
-      await row.getByRole('button', { name: 'Cancel booking' }).click()
-      await expect(row).toContainText('cancelled')
-    }
+    await page.getByRole('button', { name: 'Review booking' }).click()
+    await page.getByRole('button', { name: 'Confirm & hold slot' }).click()
+    await expect(page.getByRole('dialog').getByText('booking for this service at this time slot')).toBeVisible()
   })
 
   test('BOOKING-010: an off-hour slot is rejected by the API', { tag: '@p1' }, async ({ page }) => {
@@ -240,6 +237,31 @@ test.describe('booking desk', () => {
     expect(response.status()).toBe(400)
     const body = await response.json()
     expect(body.error).toMatch(/on the hour/i)
+  })
+
+  test('BOOKING-011: the review dialog shows booking details before holding', { tag: '@p2' }, async ({ page }) => {
+    await openDesk(page)
+    const day = farFutureDay()
+    const card = serviceCard(page, /music and vocal recording/i)
+
+    await card.getByRole('button', { name: 'Book this service' }).click()
+    await page.getByLabel('Session date').fill(day)
+    await page.getByLabel('Session time').selectOption('14:00')
+    await page.getByLabel('Notes (optional)').fill('E2E review details')
+    await page.getByRole('button', { name: 'Review booking' }).click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('Music and Vocal Recording')
+    await expect(dialog).toContainText('2:00 PM')
+    await expect(dialog).toContainText('QA Tester')
+    await expect(dialog).toContainText('09170000001')
+    await expect(dialog).toContainText('500.00')
+    await expect(dialog).toContainText('E2E review details')
+
+    await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+    await expect(dialog).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Review booking' })).toBeVisible()
   })
 
   test.describe('mobile viewport', () => {

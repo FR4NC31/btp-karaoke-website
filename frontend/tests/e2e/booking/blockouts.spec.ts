@@ -96,7 +96,7 @@ test.describe('studio closures', () => {
       await expect(page.getByRole('alert')).toContainText(
         'The studio is unavailable on this day (Maintenance)',
       )
-      await expect(page.getByRole('button', { name: 'Confirm booking' })).toBeDisabled()
+      await expect(page.getByRole('button', { name: 'Review booking' })).toBeDisabled()
 
       // Server guard: bypass the disabled button with the same session cookie.
       const blocked = await page.request.post('/api/bookings', {
