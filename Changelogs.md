@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 30, 2026
+Last updated: October 31, 2026
 
 ### Features
 
+- feat(studio): add required profile modal for incomplete accounts (5330966)
 - feat: redesign landing page into single-page layout with hash sections (15d7b50)
 - feat: auto-queue mediahub playback and enable direct queue thumbnail playback (38d8f2e)
 - feat(admin): redesign media hub with grid/list views (2fa7c6a)
@@ -148,6 +149,7 @@ Last updated: October 30, 2026
 
 ### Other Changes
 
+- Merge pull request #73 from FR4NC31/fix/admin-tables-centering-and-activity-types (5945bd9)
 - test(smoke): align contact and sign-in selectors with landing page (9d1cdde)
 - Merge pull request #72 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (0083ee7)
 - test(e2e): align blockout admin navigation with modal shell (8bd6028)
