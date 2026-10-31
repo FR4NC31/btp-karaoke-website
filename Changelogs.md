@@ -6,6 +6,7 @@ Last updated: October 31, 2026
 
 ### Features
 
+- feat(studio): harden required profile modal and QA auth setup (1a39125)
 - feat(studio): add required profile modal for incomplete accounts (5330966)
 - feat: redesign landing page into single-page layout with hash sections (15d7b50)
 - feat: auto-queue mediahub playback and enable direct queue thumbnail playback (38d8f2e)
