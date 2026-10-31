@@ -9,6 +9,7 @@ import ProfileSkeleton from './components/profile/ProfileSkeleton'
 import { useKaraokeVideo, type OnAirTrack } from '../../lib/karaoke-player'
 import { LoungeQueueProvider, useLoungeQueueState } from '../../lib/lounge-queue'
 import { PlaylistLibraryProvider, usePlaylistLibraryState } from '../../lib/playlist-library'
+import RequiredProfileModal from '../../components/RequiredProfileModal'
 
 const SKELETON_MS = 3500
 const FALLBACK_ON_AIR: OnAirTrack = {
@@ -118,6 +119,8 @@ export default function StudioShell() {
           onToggleQueue={() => setOverlayOpen((open) => !open)}
         />
       )}
+
+      <RequiredProfileModal />
     </div>
   )
 }
