@@ -14,6 +14,7 @@ export const authClient = createAuthClient({
         role: { type: 'string', required: false },
         membershipTier: { type: 'string', required: false },
         membershipExpiresAt: { type: 'date', required: false },
+        contact_verified: { type: 'boolean', required: false },
       },
     }),
   ],

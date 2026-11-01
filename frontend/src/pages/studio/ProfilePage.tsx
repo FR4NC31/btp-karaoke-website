@@ -17,7 +17,7 @@ export default function ProfilePage() {
     email: user?.email ?? '',
     emailVerified: user?.emailVerified ?? false,
     phone: user?.contact_num ? formatPhoneNumber(user.contact_num) : 'Not set',
-    phoneVerified: (user as any)?.contact_verified ?? false,
+    phoneVerified: user?.contact_verified ?? false,
     handle: user?.email ? `@${user.email.split('@')[0]}` : '@your_handle',
     memberSince: user?.createdAt
       ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })

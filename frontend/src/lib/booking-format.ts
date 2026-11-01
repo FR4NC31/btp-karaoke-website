@@ -25,7 +25,7 @@ export function formatDay(isoDate: string): string {
 
 export function formatPhoneNumber(phone: string): string {
   if (!phone || phone === 'Not set') return phone
-  let cleaned = phone.replace(/[^\d+]/g, '')
+  const cleaned = phone.replace(/[^\d+]/g, '')
   if (cleaned.startsWith('+63')) {
     const rest = cleaned.slice(3)
     const digits = rest.startsWith('0') ? rest.slice(1) : rest
