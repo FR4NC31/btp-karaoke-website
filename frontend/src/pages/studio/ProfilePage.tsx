@@ -38,6 +38,7 @@ export default function ProfilePage() {
           onLocationSaved={() => refetch()}
           onImageSaved={() => refetch()}
           onPhoneVerified={() => refetch()}
+          onEmailVerified={() => refetch()}
         />
       ) : (
         <PublicProfileTab />

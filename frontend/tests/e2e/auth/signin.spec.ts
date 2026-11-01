@@ -193,11 +193,11 @@ test.describe('authentication', () => {
         await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
         await page.getByRole('button', { name: 'Sign In' }).click()
       } else {
-        await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+        await page.getByRole('button', { name: 'Sign In to Studio', exact: true }).click()
         const dialog = page.getByRole('dialog')
         await dialog.getByLabel('Email').fill(TEST_USER.email)
         await dialog.getByLabel('Password', { exact: true }).fill(TEST_USER.password)
-        await dialog.getByRole('button', { name: 'Sign In' }).click()
+        await page.getByRole('button', { name: 'Sign In' }).click()
       }
 
       await expect(page).toHaveURL('/studio')

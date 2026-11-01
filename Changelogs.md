@@ -2,10 +2,12 @@
 
 ## Unreleased
 
-Last updated: November 1, 2026
+Last updated: November 2, 2026
 
 ### Features
 
+- feat(profile): use six-box OTP input in account verification (ba006c5)
+- feat(auth): add email OTP verification flow (94877c8)
 - feat(profile): contact number verification via SMS OTP (60396b5)
 - feat(studio): harden required profile modal and QA auth setup (1a39125)
 - feat(studio): add required profile modal for incomplete accounts (5330966)
@@ -64,6 +66,7 @@ Last updated: November 1, 2026
 
 ### Bug Fixes
 
+- fix(auth): address review feedback on email OTP flow (c72279c)
 - fix: wire contact_verified field and clean up profile typing (918fbb8)
 - fix(bookings): guard against missing updated reservation row (8bc878c)
 - fix(admin): address review feedback on activity log labels, heading wrap, and e2e tests (b5c48fe)
@@ -152,6 +155,7 @@ Last updated: November 1, 2026
 
 ### Other Changes
 
+- Merge pull request #76 from FR4NC31/fix/profile-contact-verified (c305cac)
 - Merge pull request #75 from itsGenreee/feat/contact-verification (baa9526)
 - Merge pull request #74 from FR4NC31/feat/required-profile-modal (f93d09d)
 - Merge pull request #73 from FR4NC31/fix/admin-tables-centering-and-activity-types (5945bd9)

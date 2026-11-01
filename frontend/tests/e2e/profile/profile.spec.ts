@@ -115,4 +115,18 @@ test.describe('profile', () => {
       expect.soft(response.ok(), await response.text()).toBeTruthy()
     }
   })
+
+  test('PROFILE-004: email verification modal opens and accepts 6-digit code', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/studio/profile')
+    const verifyButton = page.getByRole('button', { name: 'Verify Email' })
+    await expect(verifyButton).toBeVisible()
+    await verifyButton.click()
+    await expect(page.getByRole('heading', { name: 'Verify Email Address' })).toBeVisible()
+
+    const input = page.locator('input[type="text"][maxLength="6"]')
+    await input.fill('123456')
+
+    await page.getByRole('button', { name: 'Verify Code' }).click()
+    await expect(page.getByText('Email address verified successfully!')).toBeVisible()
+  })
 })
