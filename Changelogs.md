@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: October 31, 2026
+Last updated: November 1, 2026
 
 ### Features
 
+- feat(profile): contact number verification via SMS OTP (60396b5)
 - feat(studio): harden required profile modal and QA auth setup (1a39125)
 - feat(studio): add required profile modal for incomplete accounts (5330966)
 - feat: redesign landing page into single-page layout with hash sections (15d7b50)
@@ -63,6 +64,7 @@ Last updated: October 31, 2026
 
 ### Bug Fixes
 
+- fix: wire contact_verified field and clean up profile typing (918fbb8)
 - fix(bookings): guard against missing updated reservation row (8bc878c)
 - fix(admin): address review feedback on activity log labels, heading wrap, and e2e tests (b5c48fe)
 - fix(admin): center overview tables and specify activity types (9ca37fb)
@@ -150,6 +152,8 @@ Last updated: October 31, 2026
 
 ### Other Changes
 
+- Merge pull request #75 from itsGenreee/feat/contact-verification (baa9526)
+- Merge pull request #74 from FR4NC31/feat/required-profile-modal (f93d09d)
 - Merge pull request #73 from FR4NC31/fix/admin-tables-centering-and-activity-types (5945bd9)
 - test(smoke): align contact and sign-in selectors with landing page (9d1cdde)
 - Merge pull request #72 from itsGenreee/feat/queue-auto-play-and-thumbnail-selection (0083ee7)
