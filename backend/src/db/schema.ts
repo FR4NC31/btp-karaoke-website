@@ -59,6 +59,8 @@ export const user = pgTable('user', {
   contactVerified: boolean('contact_verified').notNull().default(false),
   phoneOtp: text('phone_otp'),
   phoneOtpExpiresAt: timestamp('phone_otp_expires_at', { withTimezone: true }),
+  emailOtp: text('email_otp'),
+  emailOtpExpiresAt: timestamp('email_otp_expires_at', { withTimezone: true }),
   /**
    * Philippines location, nullable for accounts that have not set one yet.
    * Barangay + city/municipality + province only — no street address.

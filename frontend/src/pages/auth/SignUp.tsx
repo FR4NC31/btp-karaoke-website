@@ -1,6 +1,55 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import SignUpForm from './SignUpForm'
+import OtpVerificationModal from '../../components/OtpVerificationModal'
+
+const PENDING_KEY = 'btp.pendingVerificationEmail'
 
 export default function SignUp() {
+  const navigate = useNavigate()
+  const [pendingEmail, setPendingEmail] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem(PENDING_KEY)
+    } catch {
+      return null
+    }
+  })
+
+  function handleSignUpSuccess(email: string) {
+    try {
+      sessionStorage.setItem(PENDING_KEY, email)
+    } catch {
+      // ignore storage failures
+    }
+    setPendingEmail(email)
+  }
+
+  async function handleVerify(code: string) {
+    const res = await fetch('/api/me/email/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ otp: code }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data.error || 'Invalid verification code')
+    }
+    try {
+      sessionStorage.removeItem(PENDING_KEY)
+    } catch {
+      // ignore
+    }
+    setPendingEmail(null)
+    navigate('/studio')
+  }
+
+  async function handleResend() {
+    await fetch('/api/me/email/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8">
@@ -9,7 +58,24 @@ export default function SignUp() {
           Join BTP Karaoke to start singing
         </p>
 
-        <SignUpForm />
+        <SignUpForm onSuccess={handleSignUpSuccess} />
+
+        <OtpVerificationModal
+          open={pendingEmail !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              try {
+                sessionStorage.removeItem(PENDING_KEY)
+              } catch {
+                // ignore
+              }
+              setPendingEmail(null)
+            }
+          }}
+          email={pendingEmail ?? ''}
+          onVerify={handleVerify}
+          onResend={handleResend}
+        />
       </div>
     </div>
   )

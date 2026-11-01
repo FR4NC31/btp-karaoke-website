@@ -30,12 +30,11 @@ async function fillSignUpForm(page: Page, overrides: Partial<Record<string, stri
 test.describe('registration', () => {
   test.use({ storageState: ANONYMOUS })
 
-  test('AUTH-010: valid registration reaches the studio', { tag: '@p0' }, async ({ page }) => {
+  test('AUTH-010: valid registration opens email verification OTP modal', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/signup')
     await fillSignUpForm(page)
     await page.getByRole('button', { name: 'Register' }).click()
-    await expect(page).toHaveURL('/studio')
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Email Verification' })).toBeVisible()
   })
 
   test('AUTH-011: contact number shorter than 11 digits is rejected', { tag: '@p1' }, async ({ page }) => {
@@ -69,7 +68,7 @@ test.describe('registration', () => {
 
     await page.getByLabel('Contact number').fill('09171234567')
     await page.getByRole('button', { name: 'Register' }).click()
-    await expect(page).toHaveURL('/studio')
+    await expect(page.getByRole('heading', { name: 'Email Verification' })).toBeVisible()
   })
 
   test('AUTH-022: sign-up rejects a partial location payload', { tag: '@p1' }, async ({ page, baseURL }) => {

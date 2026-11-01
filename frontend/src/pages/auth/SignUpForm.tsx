@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
 import { signUp } from '../../lib/auth-client'
@@ -9,7 +9,7 @@ import type { AuthMode } from '../../lib/auth-dialog'
 
 type Props = {
   onSwitch?: (mode: AuthMode) => void
-  onSuccess?: () => void
+  onSuccess?: (email: string) => void
   email?: string
   onEmailChange?: (email: string) => void
 }
@@ -24,7 +24,6 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const navigate = useNavigate()
 
   function handleEmailChange(value: string) {
     if (emailProp === undefined) setInternalEmail(value)
@@ -64,8 +63,7 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
-      onSuccess?.()
-      navigate('/studio')
+      onSuccess?.(email)
     } catch (err) {
       setError(unexpectedError('sign-up', err))
     } finally {

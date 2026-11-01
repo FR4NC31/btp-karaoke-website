@@ -4,7 +4,7 @@ import { listServices, studioToday } from '../modules/bookings/index.ts'
 import { listPublicMedia } from '../modules/media/index.ts'
 import { getUserMembership } from '../modules/membership/index.ts'
 import { getGcashQrUrl } from '../modules/settings/index.ts'
-import { sendPhoneVerificationOtp, verifyPhoneOtp } from '../modules/users/verification.ts'
+import { sendPhoneVerificationOtp, verifyPhoneOtp, sendEmailVerificationOtp, verifyEmailOtp } from '../modules/users/verification.ts'
 import { requireSession } from '../middleware/session.ts'
 
 const publicApi = new Hono()
@@ -74,5 +74,30 @@ publicApi.get('/settings/gcash-qr', async (c) => {
   return c.json({ url })
 })
 
-export default publicApi
+publicApi.post('/me/email/send-otp', requireSession, async (c) => {
+  const session = c.get('session')
+  if (!session) throw new HTTPException(401)
+  try {
+    const result = await sendEmailVerificationOtp(session.user.id)
+    return c.json(result)
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Failed to send OTP' }, 400)
+  }
+})
 
+publicApi.post('/me/email/verify-otp', requireSession, async (c) => {
+  const session = c.get('session')
+  if (!session) throw new HTTPException(401)
+  try {
+    const body = await c.req.json<{ otp?: string }>()
+    if (!body.otp) {
+      return c.json({ error: 'OTP is required' }, 400)
+    }
+    const result = await verifyEmailOtp(session.user.id, body.otp)
+    return c.json(result)
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Verification failed' }, 400)
+  }
+})
+
+export default publicApi

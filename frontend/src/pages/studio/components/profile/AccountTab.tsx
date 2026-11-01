@@ -22,9 +22,10 @@ type AccountTabProps = {
   onLocationSaved: () => void | Promise<void>
   onImageSaved?: () => void | Promise<void>
   onPhoneVerified?: () => void | Promise<void>
+  onEmailVerified?: () => void | Promise<void>
 }
 
-export default function AccountTab({ identity, onLocationSaved, onImageSaved, onPhoneVerified }: AccountTabProps) {
+export default function AccountTab({ identity, onLocationSaved, onImageSaved, onPhoneVerified, onEmailVerified }: AccountTabProps) {
   const { image, fullName, email, emailVerified, phone, phoneVerified, handle, memberSince, location } = identity
 
   const CROP_SIZE = 256
@@ -42,17 +43,19 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
   const cropViewportRef = useRef<HTMLDivElement>(null)
 
   const [otpModalOpen, setOtpModalOpen] = useState(false)
+  const [verificationType, setVerificationType] = useState<'phone' | 'email'>('phone')
   const [otpCode, setOtpCode] = useState('')
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpError, setOtpError] = useState('')
   const [otpSuccess, setOtpSuccess] = useState('')
 
-  async function handleSendOtp() {
+  async function handleSendOtp(type: 'phone' | 'email' = verificationType) {
     setOtpLoading(true)
     setOtpError('')
     setOtpSuccess('')
     try {
-      const res = await fetch('/api/me/phone/send-otp', {
+      const endpoint = type === 'email' ? '/api/me/email/send-otp' : '/api/me/phone/send-otp'
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -60,7 +63,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
       if (!res.ok) {
         throw new Error(data.error || 'Failed to send OTP')
       }
-      setOtpSuccess('6-digit OTP sent successfully via SMS!')
+      setOtpSuccess(type === 'email' ? '6-digit OTP sent successfully via Email!' : '6-digit OTP sent successfully via SMS!')
     } catch (err) {
       setOtpError(err instanceof Error ? err.message : 'Failed to send OTP')
     } finally {
@@ -68,7 +71,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
     }
   }
 
-  async function handleVerifyOtp() {
+  async function handleVerifyOtp(type: 'phone' | 'email' = verificationType) {
     if (!/^\d{6}$/.test(otpCode)) {
       setOtpError('Please enter a valid 6-digit number.')
       return
@@ -77,7 +80,8 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
     setOtpError('')
     setOtpSuccess('')
     try {
-      const res = await fetch('/api/me/phone/verify-otp', {
+      const endpoint = type === 'email' ? '/api/me/email/verify-otp' : '/api/me/phone/verify-otp'
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ otp: otpCode }),
@@ -86,10 +90,14 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
       if (!res.ok) {
         throw new Error(data.error || 'Invalid OTP')
       }
-      setOtpSuccess('Phone number verified successfully!')
+      setOtpSuccess(type === 'email' ? 'Email address verified successfully!' : 'Phone number verified successfully!')
       setTimeout(() => {
         setOtpModalOpen(false)
-        onPhoneVerified?.()
+        if (type === 'email') {
+          onEmailVerified?.()
+        } else {
+          onPhoneVerified?.()
+        }
       }, 1500)
     } catch (err) {
       setOtpError(err instanceof Error ? err.message : 'Verification failed')
@@ -296,13 +304,41 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
             value={fullName}
             hint="Display name across singing sessions"
           />
-          <DetailField
-            icon={Mail01Icon}
-            label="Email Address"
-            value={email}
-            hint="Primary Email"
-            verified={emailVerified}
-          />
+          <div className="rounded-lg border border-border bg-surface-elevated p-4 flex flex-col justify-between">
+            <div>
+              <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
+                <HugeiconsIcon icon={Mail01Icon} size={12} />
+                Email Address
+              </p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold break-words text-text-primary">
+                {email}
+                {emailVerified && (
+                  <span className="inline-flex items-center gap-1 rounded bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success uppercase">
+                    Verified
+                  </span>
+                )}
+              </p>
+              <p className={`mt-0.5 text-[11px] ${emailVerified ? 'text-success' : 'text-text-muted'}`}>
+                {emailVerified ? 'Email address verified' : 'Primary Account Email'}
+              </p>
+            </div>
+            {email && email !== 'Not set' && !emailVerified && (
+              <button
+                type="button"
+                onClick={() => {
+                  setVerificationType('email')
+                  setOtpModalOpen(true)
+                  setOtpCode('')
+                  setOtpError('')
+                  setOtpSuccess('')
+                  handleSendOtp('email')
+                }}
+                className="mt-3 inline-flex items-center justify-center rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/25"
+              >
+                Verify Email
+              </button>
+            )}
+          </div>
           <div className="rounded-lg border border-border bg-surface-elevated p-4 flex flex-col justify-between">
             <div>
               <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-text-muted uppercase">
@@ -325,11 +361,12 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
               <button
                 type="button"
                 onClick={() => {
+                  setVerificationType('phone')
                   setOtpModalOpen(true)
                   setOtpCode('')
                   setOtpError('')
                   setOtpSuccess('')
-                  handleSendOtp()
+                  handleSendOtp('phone')
                 }}
                 className="mt-3 inline-flex items-center justify-center rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/25"
               >
@@ -364,9 +401,11 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
       <Dialog open={otpModalOpen} onOpenChange={setOtpModalOpen}>
         <DialogContent className="border border-border bg-surface text-text-primary">
           <DialogHeader>
-            <DialogTitle>Verify Phone Number</DialogTitle>
+            <DialogTitle>{verificationType === 'email' ? 'Verify Email Address' : 'Verify Phone Number'}</DialogTitle>
             <DialogDescription className="text-text-secondary">
-              Enter the 6-digit OTP sent to your phone number via SMS.
+              {verificationType === 'email'
+                ? 'Enter the 6-digit OTP sent to your email address.'
+                : 'Enter the 6-digit OTP sent to your phone number via SMS.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -391,7 +430,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
             <div className="flex items-center justify-between">
               <button
                 type="button"
-                onClick={handleSendOtp}
+                onClick={() => handleSendOtp()}
                 disabled={otpLoading}
                 className="text-xs font-semibold text-primary transition hover:underline disabled:opacity-60"
               >
@@ -412,7 +451,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
             </button>
             <button
               type="button"
-              onClick={handleVerifyOtp}
+              onClick={() => handleVerifyOtp()}
               disabled={otpLoading || otpCode.length !== 6}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
