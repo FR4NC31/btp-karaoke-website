@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
   port: Number(process.env.SMTP_PORT) || 587,
@@ -15,15 +17,18 @@ export async function sendEmailOtp(to: string, otp: string) {
   const pass = process.env.SMTP_PASS
 
   if (!user || !pass) {
+    if (isProduction) {
+      throw new Error('SMTP credentials are not configured')
+    }
     console.warn('SMTP credentials missing. Mock email OTP outbox fallback:')
     console.log('\n========================================')
     console.log('[EMAIL OTP MOCK] To: ' + to)
     console.log('OTP Code: ' + otp)
     console.log('========================================\n')
-    return { success: true, mock: true, otp }
+    return { success: true, mock: true }
   }
 
-    const from = (() => {
+  const from = (() => {
     const raw = process.env.SMTP_FROM?.trim()
     if (raw && /@/.test(raw)) return raw
     return user || 'btp.music.production2024@gmail.com'

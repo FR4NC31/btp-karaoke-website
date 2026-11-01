@@ -115,8 +115,13 @@ export default function OtpVerificationModal({
     }
   }
 
+  function handleOpenChange(next: boolean) {
+    if (submitting && !next) return
+    onOpenChange(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="border border-border bg-surface p-6 text-text-primary sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold text-text-primary">
@@ -135,6 +140,7 @@ export default function OtpVerificationModal({
                 ref={(el) => { inputRefs.current[index] = el }}
                 type="text"
                 inputMode="numeric"
+                aria-label={`Verification code digit ${index + 1}`}
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}

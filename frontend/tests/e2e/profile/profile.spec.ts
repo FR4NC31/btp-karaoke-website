@@ -119,19 +119,14 @@ test.describe('profile', () => {
   test('PROFILE-004: email verification modal opens and accepts 6-digit code', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio/profile')
     const verifyButton = page.getByRole('button', { name: 'Verify Email' })
-    if (await verifyButton.isVisible()) {
-      await verifyButton.click()
-      await expect(page.getByRole('heading', { name: 'Verify Email Address' })).toBeVisible()
+    await expect(verifyButton).toBeVisible()
+    await verifyButton.click()
+    await expect(page.getByRole('heading', { name: 'Verify Email Address' })).toBeVisible()
 
-      const inputs = page.locator('input[type="text"][maxLength="1"]')
-      await inputs.nth(0).fill('1')
-      await inputs.nth(1).fill('2')
-      await inputs.nth(2).fill('3')
-      await inputs.nth(3).fill('4')
-      await inputs.nth(4).fill('5')
-      await inputs.nth(5).fill('6')
+    const input = page.locator('input[type="text"][maxLength="6"]')
+    await input.fill('123456')
 
-      await expect(page.getByRole('button', { name: 'Verify Code' })).toBeEnabled()
-    }
+    await page.getByRole('button', { name: 'Verify Code' }).click()
+    await expect(page.getByText('Email address verified successfully!')).toBeVisible()
   })
 })

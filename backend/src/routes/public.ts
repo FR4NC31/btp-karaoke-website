@@ -7,6 +7,21 @@ import { getGcashQrUrl } from '../modules/settings/index.ts'
 import { sendPhoneVerificationOtp, verifyPhoneOtp, sendEmailVerificationOtp, verifyEmailOtp } from '../modules/users/verification.ts'
 import { requireSession } from '../middleware/session.ts'
 
+const RATE_WINDOW_MS = 5 * 60 * 1000
+const RATE_LIMIT = 30
+const ipAttempts = new Map<string, { count: number; resetAt: number }>()
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const entry = ipAttempts.get(ip)
+  if (!entry || entry.resetAt <= now) {
+    ipAttempts.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS })
+    return false
+  }
+  entry.count += 1
+  return entry.count > RATE_LIMIT
+}
+
 const publicApi = new Hono()
 
 // Example protected route — returns 401 unless signed in.
@@ -77,6 +92,10 @@ publicApi.get('/settings/gcash-qr', async (c) => {
 publicApi.post('/me/email/send-otp', requireSession, async (c) => {
   const session = c.get('session')
   if (!session) throw new HTTPException(401)
+  const ip = c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || c.req.header('x-real-ip') || 'unknown'
+  if (isRateLimited(ip)) {
+    return c.json({ error: 'Too many requests. Please try again later.' }, 429)
+  }
   try {
     const result = await sendEmailVerificationOtp(session.user.id)
     return c.json(result)
@@ -88,6 +107,10 @@ publicApi.post('/me/email/send-otp', requireSession, async (c) => {
 publicApi.post('/me/email/verify-otp', requireSession, async (c) => {
   const session = c.get('session')
   if (!session) throw new HTTPException(401)
+  const ip = c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || c.req.header('x-real-ip') || 'unknown'
+  if (isRateLimited(ip)) {
+    return c.json({ error: 'Too many requests. Please try again later.' }, 429)
+  }
   try {
     const body = await c.req.json<{ otp?: string }>()
     if (!body.otp) {

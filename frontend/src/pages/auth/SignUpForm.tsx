@@ -63,6 +63,15 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
+      const otpRes = await fetch('/api/me/email/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!otpRes.ok) {
+        const data = await otpRes.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to send verification code')
+      }
+
       onSuccess?.(email)
     } catch (err) {
       setError(unexpectedError('sign-up', err))

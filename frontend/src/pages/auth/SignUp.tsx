@@ -44,10 +44,14 @@ export default function SignUp() {
   }
 
   async function handleResend() {
-    await fetch('/api/me/email/send-otp', {
+    const res = await fetch('/api/me/email/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || 'Failed to resend verification code')
+    }
   }
 
   return (
@@ -62,15 +66,8 @@ export default function SignUp() {
 
         <OtpVerificationModal
           open={pendingEmail !== null}
-          onOpenChange={(open) => {
-            if (!open) {
-              try {
-                sessionStorage.removeItem(PENDING_KEY)
-              } catch {
-                // ignore
-              }
-              setPendingEmail(null)
-            }
+          onOpenChange={() => {
+            // Keep the pending verification state until verification succeeds.
           }}
           email={pendingEmail ?? ''}
           onVerify={handleVerify}

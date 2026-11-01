@@ -1,8 +1,12 @@
+import { randomInt } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { user } from '../../db/schema.ts'
 import { sendSms } from '../notifications/sms.ts'
 import { sendEmailOtp } from '../notifications/email.ts'
+
+const EMAIL_OTP_MAX_ATTEMPTS = 5
+const emailOtpAttempts = new Map<string, number>()
 
 export async function sendPhoneVerificationOtp(userId: string) {
   const [dbUser] = await db.select().from(user).where(eq(user.id, userId)).limit(1)
@@ -15,7 +19,7 @@ export async function sendPhoneVerificationOtp(userId: string) {
   }
 
   // Generate 6-digit OTP only
-  const otp = Math.floor(100000 + Math.random() * 900000).toString()
+  const otp = randomInt(100000, 1000000).toString()
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
 
   await db
@@ -84,8 +88,10 @@ export async function sendEmailVerificationOtp(userId: string) {
     throw new Error('No email set on profile')
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString()
+  const otp = randomInt(100000, 1000000).toString()
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
+
+  emailOtpAttempts.delete(userId)
 
   await db
     .update(user)
@@ -126,12 +132,30 @@ export async function verifyEmailOtp(userId: string, otp: string) {
   }
 
   if (new Date() > new Date(dbUser.emailOtpExpiresAt)) {
+    emailOtpAttempts.delete(userId)
     throw new Error('OTP has expired')
   }
 
+  const attempts = emailOtpAttempts.get(userId) ?? 0
+  if (attempts >= EMAIL_OTP_MAX_ATTEMPTS) {
+    await db
+      .update(user)
+      .set({
+        emailOtp: null,
+        emailOtpExpiresAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, userId))
+    emailOtpAttempts.delete(userId)
+    throw new Error('Too many incorrect attempts. Request a new code.')
+  }
+
   if (dbUser.emailOtp !== otp) {
+    emailOtpAttempts.set(userId, attempts + 1)
     throw new Error('Incorrect OTP')
   }
+
+  emailOtpAttempts.delete(userId)
 
   await db
     .update(user)

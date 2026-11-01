@@ -4,6 +4,16 @@ import { useSession } from '../lib/auth-client'
 import { isSessionExitInProgress, markSessionExit } from '../lib/session-exit'
 import { SessionChecking, SessionUnavailable } from './SessionStates'
 
+const PENDING_KEY = 'btp.pendingVerificationEmail'
+
+function readPendingEmail(): string | null {
+  try {
+    return sessionStorage.getItem(PENDING_KEY)
+  } catch {
+    return null
+  }
+}
+
 export default function RequireAuth() {
   const { data, error, isPending, refetch } = useSession()
   const navigate = useNavigate()
@@ -35,7 +45,18 @@ export default function RequireAuth() {
     navigate(exitInProgress ? '/' : '/signin', { replace: true })
   }, [willBounce, navigate])
 
+  const pendingEmail = readPendingEmail()
+  const needsVerification =
+    Boolean(data?.user && !data.user.emailVerified && pendingEmail && pendingEmail === data.user.email)
+
+  useEffect(() => {
+    if (needsVerification) {
+      navigate('/signup', { replace: true })
+    }
+  }, [needsVerification, navigate])
+
   if (isPending) return <SessionChecking />
+  if (needsVerification) return <SessionChecking />
   if (data) return <Outlet />
   if (error) return <SessionUnavailable />
   if (!checked) return <SessionChecking />

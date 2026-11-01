@@ -5,12 +5,26 @@ import { SessionChecking } from './SessionStates'
 
 const PENDING_KEY = 'btp.pendingVerificationEmail'
 
-function hasPendingVerification() {
+function readPendingEmail(): string | null {
   try {
-    return Boolean(sessionStorage.getItem(PENDING_KEY))
+    return sessionStorage.getItem(PENDING_KEY)
   } catch {
+    return null
+  }
+}
+
+function hasPendingVerification(sessionEmail?: string | null): boolean {
+  const pending = readPendingEmail()
+  if (!pending) return false
+  if (sessionEmail && pending !== sessionEmail) {
+    try {
+      sessionStorage.removeItem(PENDING_KEY)
+    } catch {
+      // ignore
+    }
     return false
   }
+  return true
 }
 
 export default function RequireGuest() {
@@ -18,7 +32,7 @@ export default function RequireGuest() {
   const [searchParams] = useSearchParams()
 
   if (isPending) return <SessionChecking />
-  if (data && !hasPendingVerification()) {
+  if (data && !hasPendingVerification(data.user.email)) {
     return <Navigate to={landingPathFor(data.user.role, searchParams.get('next'))} replace />
   }
 

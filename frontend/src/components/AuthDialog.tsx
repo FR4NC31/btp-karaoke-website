@@ -49,10 +49,14 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   }
 
   async function handleResendOtp() {
-    await fetch('/api/me/email/send-otp', {
+    const res = await fetch('/api/me/email/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || 'Failed to resend verification code')
+    }
   }
 
   return (
@@ -85,8 +89,8 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
 
       <OtpVerificationModal
         open={pendingVerificationEmail !== null}
-        onOpenChange={(val) => {
-          if (!val) setPendingVerificationEmail(null)
+        onOpenChange={() => {
+          // Keep the pending verification state until verification succeeds.
         }}
         email={pendingVerificationEmail ?? ''}
         onVerify={handleVerifyOtp}
