@@ -45,6 +45,8 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
   const [otpModalOpen, setOtpModalOpen] = useState(false)
   const [verificationType, setVerificationType] = useState<'phone' | 'email'>('phone')
   const [otpCode, setOtpCode] = useState('')
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', ''])
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpError, setOtpError] = useState('')
   const [otpSuccess, setOtpSuccess] = useState('')
@@ -53,6 +55,8 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
     setOtpLoading(true)
     setOtpError('')
     setOtpSuccess('')
+    setOtpDigits(['', '', '', '', '', ''])
+    setOtpCode('')
     try {
       const endpoint = type === 'email' ? '/api/me/email/send-otp' : '/api/me/phone/send-otp'
       const res = await fetch(endpoint, {
@@ -329,6 +333,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
                   setVerificationType('email')
                   setOtpModalOpen(true)
                   setOtpCode('')
+                  setOtpDigits(['', '', '', '', '', ''])
                   setOtpError('')
                   setOtpSuccess('')
                   handleSendOtp('email')
@@ -364,6 +369,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
                   setVerificationType('phone')
                   setOtpModalOpen(true)
                   setOtpCode('')
+                  setOtpDigits(['', '', '', '', '', ''])
                   setOtpError('')
                   setOtpSuccess('')
                   handleSendOtp('phone')
@@ -414,14 +420,42 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
               <label className="block text-xs font-semibold uppercase text-text-muted mb-1.5">
                 6-Digit Verification Code
               </label>
-              <input
-                type="text"
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="123456"
-                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-center font-mono text-lg tracking-widest text-text-primary focus:border-primary focus:outline-none"
-              />
+              <div className="flex justify-center gap-2" onPaste={(e) => {
+                e.preventDefault()
+                const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+                const next = ['', '', '', '', '', '']
+                for (let i = 0; i < pasted.length; i++) next[i] = pasted[i]
+                setOtpDigits(next)
+                setOtpCode(next.join(''))
+                const idx = Math.min(pasted.length, 5)
+                otpInputRefs.current[idx]?.focus()
+              }}>
+                {otpDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { otpInputRefs.current[index] = el }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    aria-label={`Verification code digit ${index + 1}`}
+                    value={digit}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(-1)
+                      const next = [...otpDigits]
+                      next[index] = value
+                      setOtpDigits(next)
+                      setOtpCode(next.join(''))
+                      if (value && index < 5) otpInputRefs.current[index + 1]?.focus()
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+                        otpInputRefs.current[index - 1]?.focus()
+                      }
+                    }}
+                    className="h-12 w-11 rounded-lg border border-border bg-background text-center text-xl font-semibold text-text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                ))}
+              </div>
             </div>
 
             {otpError && <p role="alert" className="text-sm text-error">{otpError}</p>}
