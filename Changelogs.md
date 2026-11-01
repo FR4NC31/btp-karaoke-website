@@ -6,6 +6,7 @@ Last updated: November 2, 2026
 
 ### Features
 
+- feat(profile): use six-box OTP input in account verification (ba006c5)
 - feat(auth): add email OTP verification flow (94877c8)
 - feat(profile): contact number verification via SMS OTP (60396b5)
 - feat(studio): harden required profile modal and QA auth setup (1a39125)
