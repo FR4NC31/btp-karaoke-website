@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 1, 2026
+Last updated: November 2, 2026
 
 ### Features
 
@@ -65,6 +65,7 @@ Last updated: November 1, 2026
 
 ### Bug Fixes
 
+- fix(auth): address review feedback on email OTP flow (c72279c)
 - fix: wire contact_verified field and clean up profile typing (918fbb8)
 - fix(bookings): guard against missing updated reservation row (8bc878c)
 - fix(admin): address review feedback on activity log labels, heading wrap, and e2e tests (b5c48fe)
