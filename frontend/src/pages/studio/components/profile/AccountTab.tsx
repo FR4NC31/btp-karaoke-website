@@ -13,6 +13,7 @@ import { authClient } from '../../../../lib/auth-client'
 import { readableError, unexpectedError } from '../../../../lib/auth-errors'
 import UserAvatar from '../../../../components/UserAvatar'
 import DetailField from './DetailField'
+import EditProfileModal from './EditProfileModal'
 import LocationSection from './LocationSection'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../../components/ui/dialog'
 import type { ProfileIdentity } from './types'
@@ -50,6 +51,8 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpError, setOtpError] = useState('')
   const [otpSuccess, setOtpSuccess] = useState('')
+
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
 
   async function handleSendOtp(type: 'phone' | 'email' = verificationType) {
     setOtpLoading(true)
@@ -274,6 +277,7 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
         <div className="flex shrink-0 gap-2">
           <button
             type="button"
+            onClick={() => setEditProfileOpen(true)}
             className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-text-primary transition hover:bg-primary-hover"
           >
             <HugeiconsIcon icon={PencilIcon} size={15} />
@@ -295,10 +299,6 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
             <HugeiconsIcon icon={UserIcon} size={18} className="text-primary" />
             <h2 className="font-heading text-lg font-bold tracking-widest uppercase">Personal Details</h2>
           </div>
-          <button type="button" className="flex items-center gap-1 text-xs font-semibold text-primary transition hover:text-primary-hover">
-            <HugeiconsIcon icon={PencilIcon} size={13} />
-            Update
-          </button>
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -383,7 +383,14 @@ export default function AccountTab({ identity, onLocationSaved, onImageSaved, on
         </div>
       </section>
 
-      <LocationSection location={location} onSaved={onLocationSaved} />
+      <LocationSection location={location} onSaved={onLocationSaved} readOnly />
+
+      <EditProfileModal
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
+        identity={identity}
+        onSaved={onLocationSaved}
+      />
 
       <section className="rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center justify-between">
