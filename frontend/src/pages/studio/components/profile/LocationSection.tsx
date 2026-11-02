@@ -15,6 +15,7 @@ import type { ProfileLocation } from './types'
 type Props = {
   location: ProfileLocation
   onSaved: () => void | Promise<void>
+  readOnly?: boolean
 }
 
 type PrefillFlags = {
@@ -26,7 +27,7 @@ type PrefillFlags = {
 const SELECT_CLASSES =
   'w-full rounded-lg border border-border bg-surface-elevated px-4 py-2.5 text-text-primary outline-none transition focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60'
 
-export default function LocationSection({ location, onSaved }: Props) {
+export default function LocationSection({ location, onSaved, readOnly = false }: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -263,7 +264,7 @@ export default function LocationSection({ location, onSaved }: Props) {
           )}
         </div>
 
-        {!editing ? (
+        {!readOnly && !editing ? (
           <button
             type="button"
             onClick={beginEdit}
@@ -272,11 +273,11 @@ export default function LocationSection({ location, onSaved }: Props) {
             <HugeiconsIcon icon={PencilIcon} size={13} />
             {hasLocation ? 'Edit location' : 'Add location'}
           </button>
-        ) : (
+        ) : !readOnly ? (
           <span className="text-[10px] font-bold tracking-widest text-text-muted uppercase">
             Philippines
           </span>
-        )}
+        ) : null}
       </div>
 
       {!editing ? (
