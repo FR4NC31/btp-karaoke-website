@@ -42,22 +42,6 @@ export default function EditProfileModal({ open, onOpenChange, identity, onSaved
 
   const prefill = useRef({ province: true, city: true, barangay: true })
 
-  // Reset form whenever the modal opens.
-  useEffect(() => {
-    if (!open) return
-    setFirstName(identity.fullName.split(' ')[0] ?? '')
-    setLastName(identity.fullName.split(' ').slice(1).join(' ') ?? '')
-    setContact(identity.phone === 'Not set' ? '' : identity.phone.replace(/\D/g, ''))
-    setSaveError('')
-    setLoadError('')
-    prefill.current = { province: true, city: true, barangay: true }
-    setProvinceCode('')
-    setCityCode('')
-    setBarangayCode('')
-    setCities([])
-    setBarangays([])
-  }, [open, identity])
-
   useEffect(() => {
     if (!open) return
     let alive = true
