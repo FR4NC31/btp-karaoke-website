@@ -6,6 +6,7 @@ Last updated: November 2, 2026
 
 ### Features
 
+- feat(profile): read-only profile with edit modal for personal info and address (c89773f)
 - feat(profile): use six-box OTP input in account verification (ba006c5)
 - feat(auth): add email OTP verification flow (94877c8)
 - feat(profile): contact number verification via SMS OTP (60396b5)
@@ -155,6 +156,9 @@ Last updated: November 2, 2026
 
 ### Other Changes
 
+- refactor(profile): drop redundant open-reset effect in EditProfileModal (a62dc4e)
+- Merge pull request #78 from itsGenreee/feat/edit-profile-modal (b3b7fa8)
+- Merge pull request #77 from FR4NC31/feat/email-verification-otp (7bb7477)
 - Merge pull request #76 from FR4NC31/fix/profile-contact-verified (c305cac)
 - Merge pull request #75 from itsGenreee/feat/contact-verification (baa9526)
 - Merge pull request #74 from FR4NC31/feat/required-profile-modal (f93d09d)
