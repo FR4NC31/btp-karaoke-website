@@ -199,7 +199,7 @@ export default function RequiredProfileModal({ open: externalOpen, onOpenChange,
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="border border-border bg-surface text-text-primary sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="border border-border bg-surface text-text-primary sm:max-w-xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <span className="grid size-8 place-items-center rounded-lg bg-primary/20 text-primary">
