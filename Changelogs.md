@@ -67,6 +67,7 @@ Last updated: November 3, 2026
 
 ### Bug Fixes
 
+- fix(auth): restore send-otp call with same-origin credentials (73dafb3)
 - fix(profile,auth): hide required profile modal close button; send OTP with credentials (5ce8219)
 - fix(auth): address review feedback on email OTP flow (c72279c)
 - fix: wire contact_verified field and clean up profile typing (918fbb8)
