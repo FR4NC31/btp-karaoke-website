@@ -66,6 +66,7 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
       const otpRes = await fetch('/api/me/email/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
       })
       if (!otpRes.ok) {
         const data = await otpRes.json().catch(() => ({}))

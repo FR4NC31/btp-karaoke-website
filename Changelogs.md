@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 2, 2026
+Last updated: November 3, 2026
 
 ### Features
 
@@ -67,6 +67,8 @@ Last updated: November 2, 2026
 
 ### Bug Fixes
 
+- fix(auth): restore send-otp call with same-origin credentials (73dafb3)
+- fix(profile,auth): hide required profile modal close button; send OTP with credentials (5ce8219)
 - fix(auth): address review feedback on email OTP flow (c72279c)
 - fix: wire contact_verified field and clean up profile typing (918fbb8)
 - fix(bookings): guard against missing updated reservation row (8bc878c)
@@ -156,6 +158,7 @@ Last updated: November 2, 2026
 
 ### Other Changes
 
+- Merge pull request #79 from FR4NC31/fix/edit-profile-modal-form-reset (1d96216)
 - refactor(profile): drop redundant open-reset effect in EditProfileModal (a62dc4e)
 - Merge pull request #78 from itsGenreee/feat/edit-profile-modal (b3b7fa8)
 - Merge pull request #77 from FR4NC31/feat/email-verification-otp (7bb7477)

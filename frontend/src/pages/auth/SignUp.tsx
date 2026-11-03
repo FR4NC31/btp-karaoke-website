@@ -28,6 +28,7 @@ export default function SignUp() {
     const res = await fetch('/api/me/email/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({ otp: code }),
     })
     const data = await res.json()
@@ -47,6 +48,7 @@ export default function SignUp() {
     const res = await fetch('/api/me/email/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
