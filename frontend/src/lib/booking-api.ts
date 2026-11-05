@@ -170,7 +170,8 @@ export function cancelBooking(id: string): Promise<{ booking: Booking }> {
 }
 
 /** Moves a pending/confirmed booking to another day/time slot. Payment,
- *  receipt and status stay as they are — only the schedule changes. */
+ *  receipt and status stay as they are — only the schedule (and notes, when
+ *  sent; the reschedule modal always sends them) changes. */
 export function rescheduleBooking(
   id: string,
   input: { bookingDate: string; bookingTime?: string | null; notes?: string },

@@ -353,6 +353,9 @@ export default function BookingPage() {
           paymentMethod,
         })
         booking = created.booking
+        // Store it immediately so a failed receipt upload can be retried
+        // against the same row instead of creating a duplicate.
+        heldBooking.current = booking
       }
 
       if (paymentMethod === 'gcash' && receipt) {
@@ -477,6 +480,7 @@ export default function BookingPage() {
         bookingCount={visibleBookings.length}
         query={query}
         onQueryChange={setQuery}
+        studioOpen={!blockouts.some((b) => b.bookingDate === studioToday)}
       />
 
       {loadError && (

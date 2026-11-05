@@ -17,7 +17,7 @@ type BookingItemProps = {
  * "CONFIRMED & NOTIFIED" (CSS uppercases it); every other state shows as-is.
  */
 function statusLabel(booking: Booking): string {
-  return booking.status === 'confirmed' ? 'Confirmed & Notified' : booking.status
+  return booking.status === 'confirmed' ? 'Confirmed' : booking.status
 }
 
 function paymentTag(booking: Booking): string | null {

@@ -1030,9 +1030,10 @@ same service, day, or slot independently. Every booking created is cancelled
 again by the same test — a leaked `pending` row would break the next run. Days
 come from the shared `unusedDay` helper (`tests/e2e/helpers/booking.ts`):
 randomised 400–699 days out, then filtered against the account's existing
-bookings and the studio closures — so parallel workers cannot collide, and
-leftovers from an earlier failed run can neither 409 the create nor collide
-with the service + ISO-day row locator.
+bookings and the studio closures — which reduces (but cannot fully prevent)
+collisions from stale rows and parallel workers, since no day is reserved
+across callers; leftovers from an earlier failed run can neither 409 the
+create nor collide with the service + ISO-day row locator.
 
 ### BOOKING-001
 
@@ -1040,9 +1041,9 @@ with the service + ISO-day row locator.
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Bookings** in the top bar.
   3. Click **New Booking** in the page toolbar.
-- **Expected:** `/studio/bookings` loads on the reservations view (the
-  Reservation Overview card + the `Booked Studio Sessions` list — the page
-  carries no h1 of its own); the
+- **Expected:** `/studio/bookings` loads on the reservations view with the
+  Reservation Overview card (and the `Booked Studio Sessions` list when
+  bookings exist — the page carries no h1 of its own); the
   catalogue view renders ten service cards from `/api/services`; the Karaoke MV
   card prices at 1,000.00.
 - **Automation:** Playwright — **Status: Automated**
@@ -1082,8 +1083,8 @@ with the service + ISO-day row locator.
   popup click **View My Bookings**. 7. Open the row's 3-dot menu → **Cancel
   Session** → confirm in the modal. 8. Flip the overview's archive toggle.
 - **Expected:** The popup carries a `BTP-XXXXXX` reference plus the Date / Slot
-  / Payment / Rate summary and returns to the overview; the row appears in "My
-  Studio Bookings" as **pending** with the notes text; the confirmation modal's
+  / Payment / Rate summary and returns to the overview; the row appears in
+  `Booked Studio Sessions` as **pending** with the notes text; the confirmation modal's
   **Cancel Reservation** archives the row (hidden by default) and the archive
   toggle reveals it as **cancelled**.
 - **Notes:** The booking day is rendered human-readable, so the exact day is
@@ -1109,8 +1110,7 @@ with the service + ISO-day row locator.
 - **Priority:** P2 (mobile viewport 390×844)
 - **Steps:** 1. Open `/studio/bookings` at 390×844. 2. Click **New Booking**.
 - **Expected:** The catalog sidebar is not rendered, the top-bar **Bookings**
-  link is still visible and named, the toolbar wraps without clipping, and all
-  10 cards render.
+  link is still visible and named, and all 10 cards render.
 - **Regression guard:** the desk is reachable from two places precisely so
   that hiding the sidebar below `md` cannot strand it; removing either entry
   point fails this case.

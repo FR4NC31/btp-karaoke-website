@@ -1,3 +1,5 @@
+import { Link } from 'react-router'
+
 function Bar({ className = '' }: { className?: string }) {
   return (
     <div
@@ -45,12 +47,34 @@ function ShellSkeleton() {
   )
 }
 
+/** Neutral loading chrome for public (guest) routes — no studio shell. */
+function GuestSkeleton() {
+  return (
+    <div aria-hidden="true" className="grid min-h-dvh place-items-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <Bar className="size-10 rounded-full" />
+        <Bar className="h-3 w-32" />
+      </div>
+    </div>
+  )
+}
+
 /** Session check in flight — the shell pulses; no visible text. */
 export function SessionChecking() {
   return (
     <div role="status">
       <span className="sr-only">Checking your session…</span>
       <ShellSkeleton />
+    </div>
+  )
+}
+
+/** Neutral session check for public auth pages. */
+export function SessionCheckingGuest() {
+  return (
+    <div role="status">
+      <span className="sr-only">Checking your session…</span>
+      <GuestSkeleton />
     </div>
   )
 }
@@ -65,11 +89,10 @@ export function SessionUnavailable() {
     <div className="relative min-h-dvh">
       <ShellSkeleton />
       <div className="absolute inset-0 grid place-items-center bg-background/80 px-4">
-        <div
-          role="alert"
-          className="w-full max-w-md rounded-xl border border-border bg-surface p-6 text-center shadow-2xl"
-        >
-          <p className="text-sm text-error">Could not reach the server to check your session.</p>
+        <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 text-center shadow-2xl">
+          <p role="alert" className="text-sm text-error">
+            Could not reach the server to check your session.
+          </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <button
               type="button"
@@ -78,12 +101,12 @@ export function SessionUnavailable() {
             >
               Try again
             </button>
-            <a
-              href="/"
+            <Link
+              to="/"
               className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text-secondary transition hover:text-text-primary"
             >
               Go home
-            </a>
+            </Link>
           </div>
         </div>
       </div>

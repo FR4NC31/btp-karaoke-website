@@ -10,6 +10,8 @@ type BookingToolbarProps = {
   bookingCount: number
   query: string
   onQueryChange: (value: string) => void
+  /** Whether the studio is open today (no blockout for today). */
+  studioOpen?: boolean
 }
 
 const PILL_BASE =
@@ -31,6 +33,7 @@ export default function BookingToolbar({
   bookingCount,
   query,
   onQueryChange,
+  studioOpen = true,
 }: BookingToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -80,9 +83,16 @@ export default function BookingToolbar({
           New Booking
         </button>
 
-        <span className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-text-secondary">
-          <span aria-hidden="true" className="size-2 rounded-full bg-success" />
-          Studio Open 24/7
+        <span
+          className={`flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-xs font-semibold ${
+            studioOpen ? 'text-text-secondary' : 'text-error'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`size-2 rounded-full ${studioOpen ? 'bg-success' : 'bg-error'}`}
+          />
+          {studioOpen ? 'Studio Open 24/7' : 'Studio Closed Today'}
         </span>
       </div>
     </div>

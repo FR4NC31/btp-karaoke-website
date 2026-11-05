@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, service } from '../../db/schema.ts'
 import {
@@ -215,6 +215,12 @@ export async function rescheduleBooking(
     throw new BookingError(`A ${existing.status} booking can no longer be rescheduled.`, 409)
   }
 
+  // Enforce abuse suspension, same as creation.
+  const susp = await getUserSuspension(userId)
+  if (susp && susp > new Date()) {
+    throw new BookingError(`Booking temporarily suspended until ${susp.toISOString()}.`, 403)
+  }
+
   const bookingDate = validateBookingDay(input.bookingDate)
   const { unit } = await assertServiceAvailable(existing.serviceId)
   const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
@@ -226,7 +232,7 @@ export async function rescheduleBooking(
     const updated = await db
       .update(booking)
       .set({ bookingDate, bookingTime, notes, updatedAt: new Date() })
-      .where(and(eq(booking.id, bookingId), eq(booking.userId, userId)))
+      .where(and(eq(booking.id, bookingId), eq(booking.userId, userId), inArray(booking.status, ['pending', 'confirmed'])))
       .returning({ id: booking.id })
 
     if (updated.length === 0) {

@@ -35,8 +35,9 @@ export default function FlashToast({ message, onDismiss }: FlashToastProps) {
   })
 
   // Hold for 2 s, then slide down and report back so the flash can clear.
-  // The timers live in callbacks (not the effect body), so a re-render
-  // never restarts the cycle.
+  // The cycle survives re-renders because the effect depends on [message]:
+  // identical messages don't re-run it, and a new message remounts the
+  // toast (keyed by message) and restarts the timers.
   useEffect(() => {
     if (!message) return
     const hideTimer = window.setTimeout(() => setLeaving(true), VISIBLE_MS)

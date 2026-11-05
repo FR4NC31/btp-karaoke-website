@@ -67,18 +67,27 @@ export function farFutureDay(): string {
  */
 export async function unusedDay(page: Page, ...avoid: string[]): Promise<string> {
   const used = new Set<string>(avoid)
-  const res = await page.request.get('/api/bookings')
-  if (res.ok()) {
-    const body = (await res.json()) as { bookings: Array<{ bookingDate: string }> }
-    for (const row of body.bookings) used.add(row.bookingDate)
+  const bookingsRes = await page.request.get('/api/bookings')
+  if (!bookingsRes.ok()) {
+    throw new Error(`GET /api/bookings failed: ${bookingsRes.status()}`)
   }
-  const closures = await page.request.get('/api/bookings/blockouts')
-  if (closures.ok()) {
-    const body = (await closures.json()) as { blockouts: Array<{ bookingDate: string }> }
-    for (const row of body.blockouts) used.add(row.bookingDate)
+  const bookingsBody = (await bookingsRes.json()) as { bookings: Array<{ bookingDate: string }> }
+  for (const row of bookingsBody.bookings) used.add(row.bookingDate)
+
+  const closuresRes = await page.request.get('/api/bookings/blockouts')
+  if (!closuresRes.ok()) {
+    throw new Error(`GET /api/bookings/blockouts failed: ${closuresRes.status()}`)
   }
-  for (let tries = 0; tries < 1000; tries += 1) {
-    const day = farFutureDay()
+  const closuresBody = (await closuresRes.json()) as { blockouts: Array<{ bookingDate: string }> }
+  for (const row of closuresBody.blockouts) used.add(row.bookingDate)
+
+  // Walk the pool deterministically so a free day is returned whenever one
+  // exists (random sampling could miss it and throw prematurely).
+  const base = new Date()
+  for (let offset = 400; offset <= 699; offset += 1) {
+    const d = new Date(base)
+    d.setUTCDate(d.getUTCDate() + offset)
+    const day = d.toISOString().slice(0, 10)
     if (!used.has(day)) return day
   }
   throw new Error('no free day left in the 400–699 booking pool')

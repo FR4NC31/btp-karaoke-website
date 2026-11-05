@@ -1,5 +1,5 @@
 import type { Booking } from '../../../../lib/booking-api'
-import { formatDay } from '../../../../lib/booking-format'
+import { formatDay, formatTime12h } from '../../../../lib/booking-format'
 
 type CancelReservationDialogProps = {
   booking: Booking
@@ -40,7 +40,7 @@ export default function CancelReservationDialog({
             You are about to cancel{' '}
             <span className="font-semibold text-text-primary">{booking.serviceName}</span> on{' '}
             {formatDay(booking.bookingDate)}
-            {booking.bookingTime ? ` at ${booking.bookingTime.slice(0, 5)}` : ''} (
+            {booking.bookingTime ? ` at ${formatTime12h(booking.bookingTime)}` : ''} (
             {booking.referenceCode}). This cannot be undone.
           </p>
         </div>

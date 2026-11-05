@@ -13,7 +13,9 @@ import { Calendar } from '../../../../components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../../components/ui/popover'
 import { WING_LABELS } from './constants'
 
-/** The receipt dropzone accepts images up to 10 MB (mirrored server-side). */
+/** The receipt dropzone accepts images up to 10 MB. The server's upload
+ *  ceiling is much higher (200 MB by default), so this is a client-side
+ *  convenience limit for receipts, not a mirrored policy. */
 const RECEIPT_MAX_BYTES = 10 * 1024 * 1024
 
 /** `YYYY-MM-DD` → a local Date (built in local time, so no UTC off-by-one). */
@@ -68,7 +70,7 @@ const FIELD_CLASSES =
 const LABEL_CLASSES = 'block text-sm font-semibold text-text-primary'
 
 function methodChip(active: boolean): string {
-  return `flex flex-1 cursor-pointer items-center gap-2.5 rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+  return `flex flex-1 cursor-pointer items-center gap-2.5 rounded-lg border px-4 py-3 text-sm font-semibold transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background ${
     active
       ? 'border-primary bg-primary/10 text-text-primary'
       : 'border-border bg-background text-text-secondary hover:border-primary/40 hover:text-text-primary'
@@ -138,8 +140,11 @@ export default function BookingForm({
   function acceptReceipt(file: File | null | undefined) {
     setReceiptError('')
     if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setReceiptError('Receipt must be a JPG or PNG image.')
+    const ext = file.name.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] ?? ''
+    const acceptedExt = new Set(['.jpg', '.jpeg', '.png', '.webp'])
+    const acceptedMime = new Set(['image/jpeg', 'image/png', 'image/webp'])
+    if (!acceptedExt.has(ext) || !acceptedMime.has(file.type.toLowerCase())) {
+      setReceiptError('Receipt must be a JPG, PNG or WebP image.')
       return
     }
     if (file.size > RECEIPT_MAX_BYTES) {

@@ -112,7 +112,7 @@ frontend/tests/e2e/
 ├── karaoke/discovery.spec.ts    KARAOKE-001…022 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle, logo home
 ├── karaoke/playlists.spec.ts    PLAYLIST-001…013 playlists library, detail, create/add/remove/delete, rename, liked songs, skeletons, shuffle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
-├── booking/booking.spec.ts      BOOKING-001…010,013,014  booking desk: two views, nav, filters, day + time-slot bookings, uniqueness, exact hours, booking modal
+├── booking/booking.spec.ts      BOOKING-001…010,013…017  booking desk: two views, nav, filters, day + time-slot bookings, uniqueness, exact hours, booking modal, reservation actions
 ├── booking/blockouts.spec.ts    BOOKING-011…012  studio closures: block/unblock, customer refusal, API guard
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
@@ -199,10 +199,11 @@ not need a separate test ID.
   pinned to the reference code the test itself just created, never to the size
   of the list, which sibling tests are mutating in parallel. Booking days come
   from the shared `unusedDay` helper — randomised 400–699 days out, then
-  filtered against the account's existing bookings and the studio closures, so
-  workers cannot collide on the unique index and a leftover row from an earlier
-  failed run can neither 409 the create nor collide with the service + day row
-  locator.
+  filtered against the account's existing bookings and the studio closures,
+  which reduces (but cannot fully prevent) collisions from stale rows and
+  parallel workers, since no day is reserved across callers; a leftover row
+  from an earlier failed run can neither 409 the create nor collide with the
+  service + day row locator.
 - PR smoke uses the disposable service database above; the trusted full run
   still uses the live QA database. Neither may point at production (see
   [qa-strategy.md](qa-strategy.md#database--environment-safety)).
