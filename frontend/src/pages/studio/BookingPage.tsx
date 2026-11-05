@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
+import { Archive01Icon, Calendar01Icon, CalendarRemove01Icon } from '@hugeicons/core-free-icons'
 import {
   BLOCKOUT_REASON_LABELS,
   BookingApiError,
@@ -9,21 +9,25 @@ import {
   describeBookingError,
   fetchBlockouts,
   fetchBookings,
-  fetchGcashQr,
   fetchServices,
   isTimeBasedService,
-  setBookingPaymentMethod,
+  rescheduleBooking,
   uploadReceipt,
   type Booking,
   type PublicBlockout,
   type Service,
 } from '../../lib/booking-api'
 import { WING_LABELS } from './components/booking/constants'
-import { formatDay, nextOpenDay } from '../../lib/booking-format'
-import BookingForm from './components/booking/BookingForm'
-import BookingReviewDialog from './components/booking/BookingReviewDialog'
-import BookingServiceCard from './components/booking/BookingServiceCard'
+import { formatDay, formatTime12h, nextOpenDay } from '../../lib/booking-format'
+import BookingForm, { type PaymentChoice } from './components/booking/BookingForm'
+import BookingToolbar, { type BookingTab } from './components/booking/BookingToolbar'
 import BookingsPanel from './components/booking/BookingsPanel'
+import BookingsSkeleton from './components/booking/BookingsSkeleton'
+import CancelReservationDialog from './components/booking/CancelReservationDialog'
+import FlashToast from './components/booking/FlashToast'
+import ReservationAddedDialog from './components/booking/ReservationAddedDialog'
+import ReservationDetailsDialog from './components/booking/ReservationDetailsDialog'
+import ServiceCatalog from './components/booking/ServiceCatalog'
 import { useSession } from '../../lib/auth-client'
 
 /**
@@ -41,6 +45,11 @@ import { useSession } from '../../lib/auth-client'
  * Services and bookings both come from the backend (`/api/services`,
  * `/api/bookings`) — the catalog is real data, not the static module in
  * `data.ts`, so prices live in one place.
+ *
+ * The page is the booking-desk mockup's two views: `bookings` (reservation
+ * overview card, the My bookings list, the empty state) and `services` (policy
+ * banner, wing filter pills, catalogue rows). The toolbar switches between
+ * them; picking a service opens the booking form as a modal on top.
  */
 
 /** Key for the in-progress booking form, so maximizing the player queue (which
@@ -68,10 +77,12 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [wing, setWing] = useState('all')
+  // Which of the mockup's two views is on screen, and the catalogue search.
+  const [tab, setTab] = useState<BookingTab>('bookings')
+  const [query, setQuery] = useState('')
 
   // Booking form — `selected` doubles as "the form is open".
   const [selected, setSelected] = useState<Service | null>(null)
-  const [reviewOpen, setReviewOpen] = useState(false)
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
   const [notes, setNotes] = useState('')
@@ -80,36 +91,24 @@ export default function BookingPage() {
   const [flash, setFlash] = useState('')
   const [cancellingId, setCancellingId] = useState('')
 
-  // Payment modal state.
-  const [paymentOpen, setPaymentOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'filler' | 'gcash'>('filler')
-  const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null)
-  const [paymentReceiptPreview, setPaymentReceiptPreview] = useState<string | null>(null)
-  const paymentReceiptInputRef = useRef<HTMLInputElement>(null)
+  // Reservation actions from the mockup: the archive toggle, the "Reservation
+  // Added!" popup, and the row menu's details / reschedule / cancel flows.
+  const [showArchived, setShowArchived] = useState(false)
+  const [addedBooking, setAddedBooking] = useState<Booking | null>(null)
+  const [detailsBooking, setDetailsBooking] = useState<Booking | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null)
+  const [cancelError, setCancelError] = useState('')
+  const [rescheduling, setRescheduling] = useState<Booking | null>(null)
 
-  // Own the blob URL lifecycle for the receipt preview: create it when a file
-  // is chosen, revoke it on replacement/unmount so Strict Mode and navigation
-  // don't leak object URLs.
-  useEffect(() => {
-    if (!paymentReceipt) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPaymentReceiptPreview(null)
-      return
-    }
-    const url = URL.createObjectURL(paymentReceipt)
-    setPaymentReceiptPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [paymentReceipt])
-  const [gcashQrUrl, setGcashQrUrl] = useState<string | null>(null)
-  const [paymentSubmitting, setPaymentSubmitting] = useState(false)
-  /** The pending row that reserves the slot while the payment modal is open. */
-  const [holdBooking, setHoldBooking] = useState<Booking | null>(null)
-  const [pendingBooking, setPendingBooking] = useState<{
-    service: Service
-    bookingDate: string
-    bookingTime?: string
-    notes?: string
-  } | null>(null)
+  // Payment is part of the one booking modal: no method picked yet, no receipt.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentChoice>('')
+  const [receipt, setReceipt] = useState<File | null>(null)
+  /**
+   * Row created by a submit whose receipt upload then failed: the slot is
+   * already taken, so a retry re-uploads instead of creating a second row.
+   * Cleared on success, on close, and whenever the form inputs change.
+   */
+  const heldBooking = useRef<Booking | null>(null)
   // Bumped when a mutation starts, so a refresh that was already in flight
   // cannot overwrite the row set the mutation just produced.
   const bookingGeneration = useRef(0)
@@ -144,6 +143,8 @@ export default function BookingPage() {
             const service = serviceResult.services.find((entry: Service) => entry.id === draft.serviceId)
             if (service) {
               setSelected(service)
+              // The form lives on the catalogue view — follow the draft there.
+              setTab('services')
               setBookingDate(draft.bookingDate || serviceResult.studioToday)
               setBookingTime(draft.bookingTime || '')
               setNotes(draft.notes || '')
@@ -187,9 +188,22 @@ export default function BookingPage() {
     }
   }
 
+  /**
+   * Releases a row a failed submit left behind. Best-effort: if the cancel
+   * fails, the 5-minute payment hold expires on its own.
+   */
+  function releaseHold() {
+    const held = heldBooking.current
+    if (!held) return
+    heldBooking.current = null
+    void cancelBooking(held.id).catch(() => {
+      // The 5-minute expiry will release it anyway.
+    })
+  }
+
   function startBooking(service: Service) {
+    releaseHold()
     setSelected(service)
-    setReviewOpen(false)
     // Pre-fill with the first open day so a closed "today" does not greet the
     // customer with an error the moment the form opens.
     setBookingDate(
@@ -197,14 +211,33 @@ export default function BookingPage() {
     )
     setBookingTime('')
     setNotes('')
+    setPaymentMethod('')
+    setReceipt(null)
     setFormError('')
     setFlash('')
   }
 
+  /** Closes the modal, dropping the draft and any half-finished hold. */
+  function closeForm() {
+    if (submitting) return
+    releaseHold()
+    setSelected(null)
+    setRescheduling(null)
+    setPaymentMethod('')
+    setReceipt(null)
+    setFormError('')
+    try {
+      window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
   // Persist the in-progress form so it survives the page unmounting when the
-  // player queue is maximized from the player bar.
+  // player queue is maximized from the player bar. Change Schedule never
+  // writes a draft — restoring one would reopen it as a fresh booking.
   useEffect(() => {
-    if (!selected) {
+    if (!selected || rescheduling) {
       try {
         window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
       } catch {
@@ -225,8 +258,14 @@ export default function BookingPage() {
     } catch {
       // Ignore storage failures.
     }
-  }, [selected, bookingDate, bookingTime, notes])
+  }, [selected, rescheduling, bookingDate, bookingTime, notes])
 
+  /**
+   * The single Confirm Booking submit: create the row (payment method locked
+   * in the same call), then attach the GCash receipt when that method is
+   * chosen. A receipt failure keeps `heldBooking` so the retry only re-uploads
+   * — the customer never ends up with two rows for one attempt.
+   */
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (!selected || submitting) return
@@ -245,180 +284,200 @@ export default function BookingPage() {
       return
     }
 
-    // Show the customer what they are about to book before reserving anything.
-    // The 5-minute hold starts only after they confirm this review step.
-    setFormError('')
-    setReviewOpen(true)
-  }
+    // Change Schedule — same modal, schedule-only submit: payment, receipt
+    // and status stay as they are, only the day/slot/notes move.
+    if (rescheduling) {
+      bookingGeneration.current += 1
+      setSubmitting(true)
+      setFormError('')
+      setLoadError('')
+      try {
+        const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
+        const { booking: updated } = await rescheduleBooking(rescheduling.id, {
+          bookingDate,
+          bookingTime: timePayload,
+          notes: notes.trim(),
+        })
+        setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)).sort(byNewest))
+        setRescheduling(null)
+        setSelected(null)
+        setPaymentMethod('')
+        setReceipt(null)
+        setBookingTime('')
+        setNotes('')
+        try {
+          window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
+        } catch {
+          // Ignore storage failures.
+        }
+        setFlash(
+          `Successfully rescheduled to ${formatDay(updated.bookingDate)}${
+            updated.bookingTime ? ` at ${formatTime12h(updated.bookingTime)}` : ''
+          }.`,
+        )
+        void refreshBookingsQuietly()
+      } catch (err) {
+        setFormError(describeBookingError(err, 'The schedule could not be updated.'))
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
 
-  /** Creates the 5-minute hold after the customer confirms the review modal. */
-  async function handleConfirmHold() {
-    if (!selected || submitting) return
+    if (!paymentMethod) {
+      setFormError('Choose a payment method — GCash or In Person.')
+      return
+    }
 
-    const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
+    if (paymentMethod === 'gcash' && !receipt) {
+      setFormError('Upload your GCash payment receipt.')
+      return
+    }
 
     bookingGeneration.current += 1
     setSubmitting(true)
     setFormError('')
     setLoadError('')
     try {
-      const { booking } = await createBooking({
-        serviceId: selected.id,
-        bookingDate,
-        bookingTime: timePayload,
-        notes: notes.trim() || undefined,
-      })
-      setHoldBooking(booking)
-      setPendingBooking({
-        service: selected,
-        bookingDate,
-        bookingTime: timePayload,
-        notes: notes.trim() || undefined,
-      })
-      setReviewOpen(false)
-      setPaymentMethod('filler')
-      setPaymentReceipt(null)
-      setPaymentOpen(true)
-      void fetchGcashQr()
-        .then((r: { url: string | null }) => setGcashQrUrl(r.url))
-        .catch(() => setGcashQrUrl(null))
-    } catch (err) {
-      // Stay on the review modal so the customer can retry or go back.
-      setFormError(describeBookingError(err, 'The slot could not be held.'))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  /** Cancels the hold when the customer backs out of the payment modal. */
-  async function closePaymentModal() {
-    const held = holdBooking
-    setPaymentOpen(false)
-    setPendingBooking(null)
-    setPaymentReceipt(null)
-    setHoldBooking(null)
-    setFormError('')
-    if (held) {
-      try {
-        await cancelBooking(held.id)
-      } catch {
-        // The 5-minute expiry will release it anyway.
+      let booking: Booking
+      if (heldBooking.current) {
+        // The row already exists from a failed attempt — just finish the receipt.
+        booking = heldBooking.current
+      } else {
+        const timePayload = isTimeBasedService(selected) ? bookingTime || undefined : undefined
+        const created = await createBooking({
+          serviceId: selected.id,
+          bookingDate,
+          bookingTime: timePayload,
+          notes: notes.trim() || undefined,
+          paymentMethod,
+        })
+        booking = created.booking
       }
-    }
-  }
 
-  async function handlePaymentSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!pendingBooking || !holdBooking || paymentSubmitting) return
-    if (paymentMethod === 'gcash' && !paymentReceipt) {
-      setFormError('Please upload your GCash receipt screenshot.')
-      return
-    }
-
-    bookingGeneration.current += 1
-    setPaymentSubmitting(true)
-    setFormError('')
-    setLoadError('')
-    try {
-      let booking = holdBooking
-      if (paymentMethod === 'gcash' && paymentReceipt) {
-        const result = await uploadReceipt(holdBooking.id, paymentReceipt)
+      if (paymentMethod === 'gcash' && receipt) {
+        const result = await uploadReceipt(booking.id, receipt)
         booking = result.booking
       }
-      const locked = await setBookingPaymentMethod(holdBooking.id, paymentMethod)
-      booking = locked.booking
+      heldBooking.current = null
 
       setBookings((prev) => [booking, ...prev].sort(byNewest))
       setSelected(null)
-      setPendingBooking(null)
-      setPaymentOpen(false)
-      setPaymentReceipt(null)
-      setHoldBooking(null)
+      // The mockup's "Reservation Added!" popup carries the summary; its
+      // "View My Bookings" button is what navigates back to the overview.
+      setAddedBooking(booking)
       try {
         window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
       } catch {
         // Ignore storage failures.
       }
+      setBookingTime('')
       setNotes('')
-      setFlash(
-        `Booked ${booking.serviceName} for ${formatDay(booking.bookingDate)} ${booking.bookingTime ? `at ${booking.bookingTime.slice(0, 5)}` : ''} — reference ${booking.referenceCode}. Awaiting payment approval.`,
-      )
+      setPaymentMethod('')
+      setReceipt(null)
       void refreshBookingsQuietly()
     } catch (err) {
+      // A 404 means the held row vanished server-side — a retry must recreate it.
+      if (err instanceof BookingApiError && err.status === 404) {
+        heldBooking.current = null
+      }
       setFormError(describeBookingError(err, 'The booking could not be saved.'))
     } finally {
-      setPaymentSubmitting(false)
+      setSubmitting(false)
     }
   }
 
-  async function handleCancel(booking: Booking) {
-    if (cancellingId) return
+  /** Opens the "modal for sureness" instead of cancelling straight away. */
+  function requestCancel(booking: Booking) {
+    setCancelTarget(booking)
+    setCancelError('')
+    setFlash('')
+    setLoadError('')
+  }
+
+  /** Confirms the cancellation from that dialog. */
+  async function handleCancel() {
+    const target = cancelTarget
+    if (!target || cancellingId) return
     bookingGeneration.current += 1
-    setCancellingId(booking.id)
+    setCancellingId(target.id)
+    setCancelError('')
     setFlash('')
     setLoadError('')
     try {
-      const { booking: updated } = await cancelBooking(booking.id)
+      const { booking: updated } = await cancelBooking(target.id)
       // Swap the one row: bookingDate is unchanged, so the list order holds.
       setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
-      setFlash(`Cancelled ${updated.referenceCode}.`)
+      setCancelTarget(null)
+      setFlash('Successfully cancelled your reservation.')
     } catch (err) {
-      setFlash('')
-      setLoadError(describeBookingError(err, 'The booking could not be cancelled.'))
-      // A 409/404 means this list is stale — re-read it so the row shows its
-      // real state instead of a Cancel button the server will keep refusing.
+      const message = describeBookingError(err, 'The booking could not be cancelled.')
       if (err instanceof BookingApiError && (err.status === 409 || err.status === 404)) {
+        // Stale list — close the dialog and re-read so the row shows its real
+        // state instead of a cancel action the server will keep refusing.
+        setCancelTarget(null)
+        setLoadError(message)
         void refreshBookingsQuietly()
+      } else {
+        // Retryable: keep the dialog open with the error inside it.
+        setCancelError(message)
       }
     } finally {
       setCancellingId('')
     }
   }
 
+  /** Change Schedule: the booking form again, prefilled from the row. */
+  function openReschedule(booking: Booking) {
+    const service = services.find((entry) => entry.id === booking.serviceId)
+    if (!service) return
+    releaseHold()
+    setRescheduling(booking)
+    setSelected(service)
+    setBookingDate(booking.bookingDate)
+    setBookingTime(booking.bookingTime ? booking.bookingTime.slice(0, 5) : '')
+    setNotes(booking.notes ?? '')
+    // Hidden in reschedule mode, but kept consistent so closing resets cleanly.
+    setPaymentMethod(booking.paymentMethod ?? 'filler')
+    setReceipt(null)
+    setFormError('')
+    setFlash('')
+  }
+
   const wings = ['all', ...Array.from(new Set(services.map((s) => s.wing)))]
-  const visibleServices = services.filter((s) => wing === 'all' || s.wing === wing)
+  const needle = query.trim().toLowerCase()
+  const visibleServices = services.filter((service) => {
+    if (wing !== 'all' && service.wing !== wing) return false
+    if (!needle) return true
+    return [service.name, service.description, service.unit, WING_LABELS[service.wing] ?? service.wing].some(
+      (field) => field.toLowerCase().includes(needle),
+    )
+  })
   const activeBlockout = selected
     ? (blockouts.find((b) => b.bookingDate === bookingDate) ?? null)
     : null
 
-  const customerName =
-    [session?.user?.first_name, session?.user?.last_name].filter(Boolean).join(' ') ||
-    session?.user?.name ||
-    'Not set'
-  const customerContact = session?.user?.contact_num?.trim() || 'Not set'
-  const reviewDiscountPercent = isVip ? 20 : 0
-  const reviewAmountDue = selected
-    ? selected.pricePhp * (1 - reviewDiscountPercent / 100)
-    : 0
+  // The archive toggle hides terminal rows (cancelled/rejected/completed)
+  // from the default list; flipping it in the overview brings them back.
+  const visibleBookings = showArchived
+    ? bookings
+    : bookings.filter(
+        (b) => b.status !== 'cancelled' && b.status !== 'rejected' && b.status !== 'completed',
+      )
 
-  if (loading) {
-    return (
-      <p role="status" className="text-sm text-text-muted">
-        Loading the booking desk…
-      </p>
-    )
-  }
+  // The whole desk pulses while the catalogue, list and closures load —
+  // the landing (reservations) view, mirrored block for block.
+  if (loading) return <BookingsSkeleton />
 
   return (
-    <div className="space-y-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-wide uppercase">Booking Desk</h1>
-          <p className="mt-1 text-xs font-bold tracking-widest text-primary uppercase">
-            Reserve a session day
-          </p>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-text-muted">
-          Per-hour services (recording, editing, coaching) book a date + a start time on the hour
-          (e.g. 1:00 PM–2:00 PM) — open 24 hours. Per-song, per-video, per-day and per-event
-          services book a date; rates marked “starting” are confirmed after consultation.
-          {isVip && (
-            <span className="mt-1 block font-semibold text-primary">
-              VIP member: 20% off all services applied at checkout.
-            </span>
-          )}
-        </p>
-      </header>
+    <div className="space-y-6">
+      <BookingToolbar
+        tab={tab}
+        onTabChange={setTab}
+        bookingCount={visibleBookings.length}
+        query={query}
+        onQueryChange={setQuery}
+      />
 
       {loadError && (
         <p role="alert" className="rounded-lg border border-error/40 bg-error/10 px-4 py-3 text-sm text-error">
@@ -426,15 +485,7 @@ export default function BookingPage() {
         </p>
       )}
 
-      {flash && (
-        <p
-          role="status"
-          className="flex items-start gap-2.5 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
-        >
-          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="mt-0.5 shrink-0" />
-          {flash}
-        </p>
-      )}
+      {flash && <FlashToast key={flash} message={flash} onDismiss={() => setFlash('')} />}
 
       {blockouts.length > 0 && (
         <section
@@ -466,261 +517,153 @@ export default function BookingPage() {
         </section>
       )}
 
-      {/* ------------------------------- catalog ------------------------------ */}
-      <section>
-        <div className="flex flex-wrap items-center gap-2">
-          {wings.map((w) => (
-            <button
-              key={w}
-              type="button"
-              aria-pressed={wing === w}
-              onClick={() => setWing(w)}
-              className={`rounded-lg px-4 py-2 text-xs font-bold tracking-widest uppercase transition ${
-                wing === w
-                  ? 'bg-primary-soft text-primary'
-                  : 'bg-surface text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {w === 'all' ? 'All services' : (WING_LABELS[w] ?? w)}
-            </button>
-          ))}
-          <span className="ml-auto text-[11px] font-semibold tracking-widest text-text-muted uppercase">
-            {visibleServices.length} service{visibleServices.length === 1 ? '' : 's'}
-          </span>
-        </div>
-
-        {/* Booking form — opens when a service is chosen. */}
-        {selected && (
-          <BookingForm
-            service={selected}
-            studioToday={studioToday}
-            bookingDate={bookingDate}
-            onDateChange={setBookingDate}
-            bookingTime={bookingTime}
-            onTimeChange={setBookingTime}
-            notes={notes}
-            onNotesChange={setNotes}
-            blockout={activeBlockout}
-            formError={formError}
-            submitting={submitting}
-            onClose={() => {
-              setSelected(null)
-              setReviewOpen(false)
-              setFormError('')
-              try {
-                window.sessionStorage.removeItem(BOOKING_DRAFT_KEY)
-              } catch {
-                // Ignore storage failures.
-              }
-            }}
-            onSubmit={handleSubmit}
-          />
-        )}
-
-        {reviewOpen && selected && (
-          <BookingReviewDialog
-            service={selected}
-            bookingDate={bookingDate}
-            bookingTime={isTimeBasedService(selected) ? bookingTime : undefined}
-            customerName={customerName}
-            customerContact={customerContact}
-            amountDuePhp={reviewAmountDue}
-            discountPercent={reviewDiscountPercent}
-            notes={notes}
-            error={formError}
-            submitting={submitting}
-            onBack={() => {
-              if (submitting) return
-              setReviewOpen(false)
-              setFormError('')
-            }}
-            onConfirm={() => {
-              void handleConfirmHold()
-            }}
-          />
-        )}
-
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleServices.map((service) => (
-            <BookingServiceCard
-              key={service.id}
-              service={service}
-              disabled={submitting}
-              onBook={startBooking}
-            />
-          ))}
-        </ul>
-
-        {visibleServices.length === 0 && (
-          <p className="mt-6 text-sm text-text-muted">No services in this wing yet.</p>
-        )}
-      </section>
-
-      {/* ------------------------------ my bookings --------------------------- */}
-      <BookingsPanel
-        bookings={bookings}
-        loadError={loadError}
-        cancellingId={cancellingId}
-        onCancel={handleCancel}
-      />
-
-      {paymentOpen && pendingBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <form
-            onSubmit={handlePaymentSubmit}
-            className="w-full max-w-md space-y-4 rounded-xl border border-border bg-surface p-6"
+      {tab === 'bookings' ? (
+        <>
+          {/* ---------------------- reservation overview -------------------- */}
+          <section
+            aria-labelledby="reservation-overview-heading"
+            className="rounded-xl border border-border bg-surface p-5"
           >
-            <h2 className="font-heading text-lg font-bold tracking-wide uppercase">
-              Payment method
-            </h2>
-            <p className="text-xs text-text-muted">
-              {pendingBooking.service.name} · {formatDay(pendingBooking.bookingDate)}
-            </p>
-            <p className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] font-semibold text-warning">
-              Slot held for 5 minutes. Finish payment before it expires or the slot reopens.
-            </p>
-
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
+                <HugeiconsIcon icon={Calendar01Icon} size={20} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 id="reservation-overview-heading" className="text-xl font-bold tracking-wide">
+                  Reservation Overview
+                </h2>
+                <p className="mt-1 text-sm text-text-muted">
+                  Manage your active studio reservations or add new service sessions below.
+                </p>
+              </div>
+              {/* Icon-only archive toggle — no text, per the mockup. */}
               <button
                 type="button"
-                onClick={() => setPaymentMethod('filler')}
-                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-bold tracking-widest uppercase transition ${
-                  paymentMethod === 'filler'
-                    ? 'border-primary bg-primary-soft text-primary'
-                    : 'border-border text-text-secondary'
-                }`}
+                aria-pressed={showArchived}
+                aria-label={showArchived ? 'Hide archived bookings' : 'Show archived bookings'}
+                title={showArchived ? 'Hide archived bookings' : 'Show archived bookings'}
+                onClick={() => setShowArchived((shown) => !shown)}
+                className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-surface-elevated text-text-secondary transition hover:border-primary/50 hover:text-primary"
               >
-                Filler (cash)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('gcash')}
-                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-bold tracking-widest uppercase transition ${
-                  paymentMethod === 'gcash'
-                    ? 'border-primary bg-primary-soft text-primary'
-                    : 'border-border text-text-secondary'
-                }`}
-              >
-                GCash
+                <HugeiconsIcon icon={Archive01Icon} size={18} />
               </button>
             </div>
 
-            {paymentMethod === 'gcash' && (
-              <div className="space-y-3">
-                {gcashQrUrl ? (
-                  <img src={gcashQrUrl} alt="GCash QR code" className="mx-auto max-h-64 rounded-lg border border-border" />
-                ) : (
-                  <p className="text-xs text-text-muted">No QR code configured yet.</p>
-                )}
-                <div>
-                  <label
-                    htmlFor="payment-receipt"
-                    className="block text-[11px] font-bold tracking-widest text-text-secondary uppercase"
-                  >
-                    Upload receipt screenshot
-                  </label>
-                  <input
-                    ref={paymentReceiptInputRef}
-                    id="payment-receipt"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null
-                      setPaymentReceipt(file)
-                      // Allow re-selecting the same file later.
-                      e.target.value = ''
-                    }}
-                    className="sr-only"
-                  />
-                  {paymentReceiptPreview ? (
-                    <div className="mt-2 space-y-2">
-                      <img
-                        src={paymentReceiptPreview}
-                        alt="Receipt preview"
-                        className="max-h-48 rounded-lg border border-border object-contain"
-                      />
-                      <div className="flex items-center justify-between gap-2 text-xs">
-                        <span className="truncate text-text-secondary">
-                          {paymentReceipt?.name}
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => paymentReceiptInputRef.current?.click()}
-                            className="text-text-secondary underline-offset-4 transition hover:text-text-primary hover:underline"
-                          >
-                            Change
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPaymentReceipt(null)
-                            }}
-                            className="text-text-secondary underline-offset-4 transition hover:text-error hover:underline"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <label
-                      htmlFor="payment-receipt"
-                      className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-background px-4 py-6 text-center transition hover:border-primary hover:bg-surface-elevated"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                        className="size-8 text-text-muted"
-                        aria-hidden="true"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
-                        />
-                      </svg>
-                      <span className="text-xs font-semibold text-text-secondary">
-                        Click to upload receipt
-                      </span>
-                      <span className="text-[11px] text-text-muted">
-                        PNG, JPG or screenshot
-                      </span>
-                    </label>
-                  )}
-                </div>
+            {/* Empty state lives inside the overview panel, below its header. */}
+            {visibleBookings.length === 0 && !loadError && (
+              <div className="mt-5 flex flex-col items-center rounded-xl border border-border bg-surface-elevated px-6 py-12 text-center">
+                <span className="grid size-14 place-items-center rounded-full bg-surface text-primary">
+                  <HugeiconsIcon icon={CalendarRemove01Icon} size={26} />
+                </span>
+                <h3 className="mt-5 text-lg font-bold tracking-wide">
+                  No Reservations Selected Yet
+                </h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-text-muted">
+                  Your reservation desk is currently empty. Pick services from our studio catalogue
+                  to get started.
+                </p>
               </div>
             )}
+          </section>
 
-            {formError && (
-              <p role="alert" className="text-sm text-error">
-                {formError}
-              </p>
-            )}
+          {/* ------------------------------ my bookings --------------------- */}
+          {visibleBookings.length > 0 && (
+            <BookingsPanel
+              bookings={visibleBookings}
+              onViewDetails={setDetailsBooking}
+              onReschedule={openReschedule}
+              onCancel={requestCancel}
+            />
+          )}
+        </>
+      ) : (
+        <ServiceCatalog
+          wings={wings}
+          wing={wing}
+          onWingChange={setWing}
+          services={visibleServices}
+          isVip={isVip}
+          disabled={submitting}
+          onBack={() => setTab('bookings')}
+          onBook={startBooking}
+        />
+      )}
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                disabled={paymentSubmitting}
-                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {paymentSubmitting ? 'Submitting…' : 'Submit booking'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void closePaymentModal()
-                }}
-                className="rounded-lg border border-border px-4 py-2.5 text-sm text-text-secondary transition hover:text-text-primary"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
+      {/* Booking form — opens when a service is chosen (create) or when the
+          row menu picks Change Schedule (reschedule). */}
+      {selected && (
+        <BookingForm
+          service={selected}
+          mode={rescheduling ? 'reschedule' : 'create'}
+          studioToday={studioToday}
+          bookingDate={bookingDate}
+          onDateChange={(value) => {
+            releaseHold()
+            setFormError('')
+            setBookingDate(value)
+          }}
+          bookingTime={bookingTime}
+          onTimeChange={(value) => {
+            releaseHold()
+            setFormError('')
+            setBookingTime(value)
+          }}
+          notes={notes}
+          onNotesChange={(value) => {
+            releaseHold()
+            setFormError('')
+            setNotes(value)
+          }}
+          blockedDates={blockouts.map((blockout) => blockout.bookingDate)}
+          paymentMethod={paymentMethod}
+          onPaymentMethodChange={(value) => {
+            releaseHold()
+            setFormError('')
+            setPaymentMethod(value)
+            if (value !== 'gcash') setReceipt(null)
+          }}
+          receipt={receipt}
+          onReceiptChange={setReceipt}
+          blockout={activeBlockout}
+          formError={formError}
+          submitting={submitting}
+          onClose={closeForm}
+          onSubmit={handleSubmit}
+        />
+      )}
+
+      {/* "Reservation Added!" — the mockup's success popup after a create. */}
+      {addedBooking && (
+        <ReservationAddedDialog
+          booking={addedBooking}
+          onViewBookings={() => {
+            setAddedBooking(null)
+            setTab('bookings')
+          }}
+        />
+      )}
+
+      {/* View Details — read-only summary of one reservation. */}
+      {detailsBooking && (
+        <ReservationDetailsDialog
+          booking={detailsBooking}
+          onClose={() => setDetailsBooking(null)}
+        />
+      )}
+
+      {/* Cancel Session — the confirmation modal for sureness. */}
+      {cancelTarget && (
+        <CancelReservationDialog
+          booking={cancelTarget}
+          busy={cancellingId === cancelTarget.id}
+          error={cancelError}
+          onConfirm={handleCancel}
+          onDismiss={() => {
+            if (cancellingId) return
+            setCancelTarget(null)
+            setCancelError('')
+          }}
+        />
       )}
     </div>
   )

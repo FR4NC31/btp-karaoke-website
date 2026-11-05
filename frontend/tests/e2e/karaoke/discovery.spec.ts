@@ -769,7 +769,7 @@ test.describe('karaoke discovery', () => {
     const topBar = page.getByRole('banner')
     await topBar.getByRole('link', { name: 'Bookings' }).click()
     await expect(page).toHaveURL('/studio/bookings')
-    await expect(page.getByRole('heading', { level: 1, name: 'Booking Desk' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Reservation Overview' })).toBeVisible()
 
     const playerBar = page.getByRole('contentinfo')
     await expect(playerBar).toContainText('The Reason')

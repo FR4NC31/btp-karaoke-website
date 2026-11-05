@@ -87,6 +87,8 @@
   --color-success: #45b96b;
   --color-warning: #d99a2b;
   --color-error: #d94a4a;
+  /* Payment-method tag (mockup's blue "PAYMENT: GCASH" chip). */
+  --color-info: #4d9fe6;
 }
 
 @layer base {

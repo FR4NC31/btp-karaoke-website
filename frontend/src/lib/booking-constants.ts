@@ -4,14 +4,21 @@
  */
 export const NOTES_MAX = 500
 
-/**
- * Whole-hour options for hourly services — values are 24-hour `HH:00`, labels
- * also show the 12-hour form. Hourly bookings must start on the hour, so the
- * admin and customer pickers share this one list.
- */
-export const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => {
-  const value = `${String(hour).padStart(2, '0')}:00`
+/** `HH:MM` (24-hour) → `01:00 PM` style clock, padded like the mockup. */
+function clock(hourOfDay: number): string {
+  const hour = hourOfDay % 24
   const suffix = hour < 12 ? 'AM' : 'PM'
   const display = hour % 12 === 0 ? 12 : hour % 12
-  return { value, label: `${value} (${display}:00 ${suffix})` }
-})
+  return `${String(display).padStart(2, '0')}:00 ${suffix}`
+}
+
+/**
+ * Whole-hour options for hourly services — values are 24-hour `HH:00` (the
+ * server rejects anything off the hour, and the pickers select by value),
+ * labels show the booked range `01:00 PM - 02:00 PM`. Hourly bookings must
+ * start on the hour, so the admin and customer pickers share this one list.
+ */
+export const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
+  value: `${String(hour).padStart(2, '0')}:00`,
+  label: `${clock(hour)} - ${clock(hour + 1)}`,
+}))

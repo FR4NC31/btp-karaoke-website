@@ -7,6 +7,7 @@ import {
   createBooking,
   listBookingsForUser,
   listPublicBlockouts,
+  rescheduleBooking,
   setBookingPaymentMethod,
   studioToday,
 } from '../modules/bookings/index.ts'
@@ -56,7 +57,7 @@ bookingApi.post('/', requireSession, async (c) => {
     return c.json({ error: 'Expected a JSON body.' }, 400)
   }
 
-  const { serviceId, bookingDate, bookingTime, notes } = (body ?? {}) as Record<
+  const { serviceId, bookingDate, bookingTime, notes, paymentMethod } = (body ?? {}) as Record<
     string,
     unknown
   >
@@ -69,6 +70,14 @@ bookingApi.post('/', requireSession, async (c) => {
   if (notes !== undefined && notes !== null && typeof notes !== 'string') {
     return c.json({ error: 'notes must be a string when provided.' }, 400)
   }
+  if (
+    paymentMethod !== undefined &&
+    paymentMethod !== null &&
+    paymentMethod !== 'filler' &&
+    paymentMethod !== 'gcash'
+  ) {
+    return c.json({ error: 'paymentMethod must be "filler" or "gcash".' }, 400)
+  }
 
   try {
     const booking = await createBooking({
@@ -77,6 +86,10 @@ bookingApi.post('/', requireSession, async (c) => {
       bookingDate,
       bookingTime: typeof bookingTime === 'string' ? bookingTime : undefined,
       notes: typeof notes === 'string' ? notes : undefined,
+      // The booking modal locks the method in the same call. Omitted (older
+      // clients) still creates a 5-minute hold the payment step must finish.
+      paymentMethod:
+        paymentMethod === 'filler' || paymentMethod === 'gcash' ? paymentMethod : undefined,
     })
     return c.json({ booking }, 201)
   } catch (err) {
@@ -97,6 +110,48 @@ bookingApi.post('/:id/cancel', requireSession, async (c) => {
 
   try {
     const booking = await cancelBooking(c.req.param('id'), session.user.id)
+    return c.json({ booking })
+  } catch (err) {
+    if (err instanceof BookingError) {
+      return c.json({ error: err.message }, err.status)
+    }
+    throw err
+  }
+})
+
+// Move a pending/confirmed booking to another day or time slot. Same
+// validation + unique-index guardrails as creation; payment, receipt and
+// status are left untouched.
+bookingApi.post('/:id/reschedule', requireSession, async (c) => {
+  const session = c.get('session')
+  if (!session) {
+    throw new HTTPException(401)
+  }
+
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Expected a JSON body.' }, 400)
+  }
+
+  const { bookingDate, bookingTime, notes } = (body ?? {}) as Record<string, unknown>
+  if (typeof bookingDate !== 'string') {
+    return c.json({ error: 'bookingDate is required.' }, 400)
+  }
+  if (bookingTime !== undefined && bookingTime !== null && typeof bookingTime !== 'string') {
+    return c.json({ error: 'bookingTime must be a string when provided.' }, 400)
+  }
+  if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+    return c.json({ error: 'notes must be a string when provided.' }, 400)
+  }
+
+  try {
+    const booking = await rescheduleBooking(c.req.param('id'), session.user.id, {
+      bookingDate,
+      bookingTime: typeof bookingTime === 'string' ? bookingTime : undefined,
+      notes: typeof notes === 'string' ? notes : undefined,
+    })
     return c.json({ booking })
   } catch (err) {
     if (err instanceof BookingError) {

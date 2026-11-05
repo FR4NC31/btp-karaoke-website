@@ -21,6 +21,8 @@ export interface Booking {
   serviceCode: string
   serviceName: string
   serviceUnit: string
+  /** Service wing (create/learn/promote/protect), joined from the service. */
+  wing: string
   pricePhp: number
   /** Final amount due after membership discount (falls back to pricePhp). */
   amountDuePhp: number
