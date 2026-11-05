@@ -47,6 +47,7 @@ export const bookingColumns = {
   serviceCode: service.code,
   serviceName: service.name,
   serviceUnit: service.unit,
+  wing: service.wing,
   pricePhp: service.pricePhp,
 }
 
@@ -66,6 +67,7 @@ export type BookingRow = {
   serviceCode: string
   serviceName: string
   serviceUnit: string
+  wing: string
   pricePhp: string
 }
 

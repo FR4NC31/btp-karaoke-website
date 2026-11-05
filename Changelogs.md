@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: November 3, 2026
+Last updated: November 5, 2026
 
 ### Features
 
+- feat(booking): redesign booking desk UI, toast, skeleton, session states (6c836a9)
 - feat(profile): read-only profile with edit modal for personal info and address (c89773f)
 - feat(profile): use six-box OTP input in account verification (ba006c5)
 - feat(auth): add email OTP verification flow (94877c8)
@@ -67,6 +68,7 @@ Last updated: November 3, 2026
 
 ### Bug Fixes
 
+- fix(review): address PR #81 review findings (6bf5a1a)
 - fix(auth): restore send-otp call with same-origin credentials (73dafb3)
 - fix(profile,auth): hide required profile modal close button; send OTP with credentials (5ce8219)
 - fix(auth): address review feedback on email OTP flow (c72279c)
@@ -158,6 +160,7 @@ Last updated: November 3, 2026
 
 ### Other Changes
 
+- Merge pull request #80 from FR4NC31/fix/required-profile-modal-close-and-signup-otp (f3afb93)
 - Merge pull request #79 from FR4NC31/fix/edit-profile-modal-form-reset (1d96216)
 - refactor(profile): drop redundant open-reset effect in EditProfileModal (a62dc4e)
 - Merge pull request #78 from itsGenreee/feat/edit-profile-modal (b3b7fa8)

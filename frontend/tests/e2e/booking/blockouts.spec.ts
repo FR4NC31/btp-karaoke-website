@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures'
 import { ADMIN_STORAGE_STATE } from '../helpers/auth'
+import { openDatePicker, unusedDay } from '../helpers/booking'
 
 test.use({ storageState: ADMIN_STORAGE_STATE })
 
@@ -9,15 +10,10 @@ test.use({ storageState: ADMIN_STORAGE_STATE })
  *
  * An admin blocks a whole day from /admin/blocked-days; the customer desk lists it
  * and refuses the date client-side, and the API refuses it too. Unblocking
- * reopens the day. Days are random and far out, and cleanup runs in `finally`
+ * reopens the day. Days come from the shared `unusedDay` pool (far out, and
+ * clear of old reservations and closures), and cleanup runs in `finally`
  * so a failed assertion cannot leave the QA calendar closed.
  */
-
-function farFutureDay(): string {
-  const d = new Date()
-  d.setUTCDate(d.getUTCDate() + 500 + Math.floor(Math.random() * 200))
-  return d.toISOString().slice(0, 10)
-}
 
 // Mirrors frontend/src/lib/booking-format.ts (same locale, same UTC parse).
 const dayFormat = new Intl.DateTimeFormat('en-PH', {
@@ -63,7 +59,7 @@ async function removeBlockoutForDay(page: Page, day: string): Promise<void> {
 
 test.describe('studio closures', () => {
   test('BOOKING-011: a blocked day is refused by the desk and the API, then reopened', { tag: '@p1' }, async ({ page }) => {
-    const day = farFutureDay()
+    const day = await unusedDay(page)
     const label = formatDay(day)
     const serviceId = await serviceIdByCode(page, 'KARAOKE-MV')
 
@@ -89,15 +85,18 @@ test.describe('studio closures', () => {
       await expect(closures(page)).toContainText(label)
       await expect(closures(page)).toContainText('Maintenance')
 
+      // The catalogue lives behind the New Booking view.
+      await page.getByRole('button', { name: 'New Booking', exact: true }).click()
       const card = page.getByRole('article').filter({
         has: page.getByRole('heading', { name: /karaoke music video/i }),
       })
       await card.getByRole('button', { name: 'Book this service' }).click()
-      await page.getByLabel('Session date').fill(day)
-      await expect(page.getByRole('alert')).toContainText(
-        'The studio is unavailable on this day (Maintenance)',
-      )
-      await expect(page.getByRole('button', { name: 'Review booking' })).toBeDisabled()
+      // The blocked day is disabled in the shadcn calendar: the client can
+      // never select it, so the API probe below is the real backstop.
+      const popover = await openDatePicker(page, day)
+      await expect(popover.locator(`td[data-day="${day}"] button`)).toBeDisabled()
+      await page.keyboard.press('Escape')
+      await expect(popover).toBeHidden()
 
       // Server guard: bypass the disabled button with the same session cookie.
       const blocked = await page.request.post('/api/bookings', {
@@ -127,7 +126,7 @@ test.describe('studio closures', () => {
   })
 
   test('BOOKING-012: a day can be blocked without a reason', { tag: '@p2' }, async ({ page }) => {
-    const day = farFutureDay()
+    const day = await unusedDay(page)
     const label = formatDay(day)
 
     try {

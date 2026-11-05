@@ -1028,16 +1028,24 @@ day-with-time, both keyed on the customer — so one customer cannot hold the
 same service at two slots on one day, but two different customers can book the
 same service, day, or slot independently. Every booking created is cancelled
 again by the same test — a leaked `pending` row would break the next run. Days
-are randomised 400–699 days out so parallel workers cannot collide either.
+come from the shared `unusedDay` helper (`tests/e2e/helpers/booking.ts`):
+randomised 400–699 days out, then filtered against the account's existing
+bookings and the studio closures — which reduces (but cannot fully prevent)
+collisions from stale rows and parallel workers, since no day is reserved
+across callers; leftovers from an earlier failed run can neither 409 the
+create nor collide with the service + ISO-day row locator.
 
 ### BOOKING-001
 
 - **Title:** The top bar opens the desk and the catalog renders
 - **Priority:** P1
 - **Steps:** 1. Open `/studio`. 2. Click **Bookings** in the top bar.
-- **Expected:** `/studio/bookings` loads with h1 "Booking Desk"; ten service
-  cards render from `/api/services`; the Karaoke MV card prices at 1,000.00;
-  the "My bookings" panel is present.
+  3. Click **New Booking** in the page toolbar.
+- **Expected:** `/studio/bookings` loads on the reservations view with the
+  Reservation Overview card (and the `Booked Studio Sessions` list when
+  bookings exist — the page carries no h1 of its own); the
+  catalogue view renders ten service cards from `/api/services`; the Karaoke MV
+  card prices at 1,000.00.
 - **Automation:** Playwright — **Status: Automated**
 
 ### BOOKING-002
@@ -1046,7 +1054,8 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Priority:** P2
 - **Steps:** 1. Open `/studio` at desktop width. 2. Click **Bookings** in the
   catalog sidebar.
-- **Expected:** `/studio/bookings` loads with h1 "Booking Desk".
+- **Expected:** `/studio/bookings` loads the reservations view (Reservation
+  Overview heading).
 - **Notes:** The sidebar is `hidden md:flex`, so this case only applies at
   ≥768 px — BOOKING-006 covers the width where it is gone.
 - **Automation:** Playwright — **Status: Automated**
@@ -1055,8 +1064,8 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 - **Title:** The wing filter narrows the catalog
 - **Priority:** P2
-- **Steps:** 1. Open `/studio/bookings`. 2. Click **FILSCAP & Membership**.
-  3. Click **All services**.
+- **Steps:** 1. Open `/studio/bookings`. 2. Click **New Booking**. 3. Click
+  **FILSCAP & Membership**. 4. Click **All Services**.
 - **Expected:** 10 cards → 1 card (FILSCAP assistance) → 10 cards, with
   `aria-pressed="true"` on the selected wing.
 - **Automation:** Playwright — **Status: Automated**
@@ -1065,13 +1074,19 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 - **Title:** A day booking is created, listed as pending, then cancelled
 - **Priority:** P1
-- **Steps:** 1. Open the desk. 2. On the Karaoke MV card click **Book this
-  service**. 3. Confirm the pre-filled day equals the picker's `min`
-  boundary. 4. Choose a day ~1–2 years out, add notes, **Confirm booking**.
-  5. Cancel the new row.
-- **Expected:** A confirmation flash carries a `BTP-XXXXXX` reference; the row
-  appears in "My bookings" as **pending** with the notes text; cancelling flips
-  it to **cancelled** and removes the cancel action.
+- **Steps:** 1. Open the desk. 2. Switch to **New Booking**. 3. On the Karaoke
+  MV card click **Book this service**. 4. Confirm the shadcn date trigger comes
+  pre-filled with an open day (`MM/DD/YYYY`). 5. Choose a day ~1–2 years out in
+  the calendar, add notes, pick the
+  **In Person** payment method (**Confirm Booking** stays disabled until a
+  method is chosen), then **Confirm Booking**. 6. In the "Reservation Added!"
+  popup click **View My Bookings**. 7. Open the row's 3-dot menu → **Cancel
+  Session** → confirm in the modal. 8. Flip the overview's archive toggle.
+- **Expected:** The popup carries a `BTP-XXXXXX` reference plus the Date / Slot
+  / Payment / Rate summary and returns to the overview; the row appears in
+  `Booked Studio Sessions` as **pending** with the notes text; the confirmation modal's
+  **Cancel Reservation** archives the row (hidden by default) and the archive
+  toggle reveals it as **cancelled**.
 - **Notes:** The booking day is rendered human-readable, so the exact day is
   asserted at the API level rather than here. Cancelling is also the test's
   own cleanup.
@@ -1081,8 +1096,9 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 - **Title:** The same service on the same day cannot be booked twice
 - **Priority:** P2
-- **Steps:** 1. Book a service ~1–2 years out. 2. Re-open the same service on
-  the same day and submit again. 3. Cancel the live booking.
+- **Steps:** 1. Book a service ~1–2 years out (**In Person**, **Confirm
+  Booking**). 2. Re-open the same service on the same day, pick **In Person**
+  and confirm again. 3. Cancel the live booking.
 - **Expected:** The form shows an alert containing "already have a booking"
   instead of silently doing nothing — the partial unique index is surfaced as a
   plain-language conflict, not a raw database error.
@@ -1092,7 +1108,7 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 
 - **Title:** The top bar still reaches the desk when the sidebar is hidden
 - **Priority:** P2 (mobile viewport 390×844)
-- **Steps:** 1. Open `/studio/bookings` at 390×844.
+- **Steps:** 1. Open `/studio/bookings` at 390×844. 2. Click **New Booking**.
 - **Expected:** The catalog sidebar is not rendered, the top-bar **Bookings**
   link is still visible and named, and all 10 cards render.
 - **Regression guard:** the desk is reachable from two places precisely so
@@ -1105,7 +1121,8 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Title:** A signed-out visitor is bounced to sign-in
 - **Priority:** P2
 - **Steps:** 1. Without a session, open `/studio/bookings` directly.
-- **Expected:** Redirect to `/signin`; no "Booking Desk" content is ever shown.
+- **Expected:** Redirect to `/signin`; the sign-in form is shown and no studio
+  content ever appears.
 - **Automation:** Playwright — **Status: Automated**
 
 ### BOOKING-008
@@ -1113,12 +1130,14 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Title:** A time-based service books a date with an on-the-hour slot
 - **Priority:** P1
 - **Steps:** 1. Open the desk. 2. On the Music and Vocal Recording card (billed
-  per hour) click **Book this service**. 3. Confirm a **Session time** field is
-  shown and that its picker only offers whole-hour values (`HH:00`). 4. Choose a
-  day ~1–2 years out, pick `14:00`, add notes, confirm. 5. Cancel the new row.
-- **Expected:** The confirmation flash carries a reference; the row lists as
-  **pending** with the `14:00` slot (not "all day") and the notes; cancelling
-  flips it to **cancelled**.
+  per hour) click **Book this service**. 3. Confirm a **Select Time Slot** field
+  is shown and that its picker only offers whole-hour values (`HH:00`). 4. Choose
+  a day ~1–2 years out, pick `14:00`, add notes, pick **In Person**, **Confirm
+  Booking**. 5. Cancel the new row.
+- **Expected:** The popup carries a reference; the row lists as **pending** with
+  the slot rendered as `02:00 PM` (12-hour, not "all day") and the notes;
+  cancelling through the 3-dot menu + confirmation modal archives it as
+  **cancelled**.
 - **Automation:** Playwright — **Status: Automated**
 
 ### BOOKING-009
@@ -1126,7 +1145,8 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Title:** The same time slot cannot be booked twice, but another slot can
 - **Priority:** P2
 - **Steps:** 1. On the Music, Vocal Audio Editing and Mastering card, book a day
-  ~1–2 years out at 09:00. 2. Submit the same day and slot again. 3. Then book
+  ~1–2 years out at 09:00 (**In Person**, **Confirm Booking**). 2. Confirm the
+  same day and slot again. 3. Then book
   the same service and day at 11:00. 4. Cancel both rows.
 - **Expected:** The duplicate slot shows an alert containing "time slot"; the
   second, different slot succeeds — proving the day-wide index no longer
@@ -1149,12 +1169,12 @@ are randomised 400–699 days out so parallel workers cannot collide either.
 - **Priority:** P1
 - **Steps:** 1. As an admin, block a far-future day with reason **Maintenance**
   (and a note). 2. Open the customer desk: confirm the day appears under **Studio
-  closures**. 3. Pick a day-based service, fill the blocked day, and confirm the
-  form shows "The studio is unavailable on this day (Maintenance)" and disables
-  **Confirm booking**. 4. POST `/api/bookings` for the same day → 409. 5. Unblock
+  closures**. 3. Pick a day-based service, open the shadcn date calendar, and
+  confirm the blocked day is disabled (unclickable) in the picker. 4. POST
+  `/api/bookings` for the same day → 409. 5. Unblock
   the day. 6. POST the same booking again → 201, then cancel it.
-- **Expected:** Both the client and the server refuse while the day is blocked;
-  reopening restores booking; cleanup leaves no blockout behind.
+- **Expected:** The client can never select a closed day and the server refuses
+  it too; reopening restores booking; cleanup leaves no blockout behind.
 - **Automation:** Playwright (`tests/e2e/booking/blockouts.spec.ts`) — **Status: Automated**
 
 ### BOOKING-012
@@ -1166,6 +1186,84 @@ are randomised 400–699 days out so parallel workers cannot collide either.
   reason suffix.
 - **Expected:** The closure is listed with just the date; unblocking is available.
 - **Automation:** Playwright (`tests/e2e/booking/blockouts.spec.ts`) — **Status: Automated**
+
+### BOOKING-013
+
+- **Title:** The toolbar switches between the reservations and catalogue views
+- **Priority:** P2
+- **Steps:** 1. Open `/studio/bookings` (lands on the reservations view).
+  2. Click **New Booking** in the toolbar. 3. Search "karaoke music video" in
+  the toolbar search. 4. Click **Back to My Bookings**.
+- **Expected:** The reservations view shows the Reservation Overview card (its
+  old **Add Reservation** button is gone — only the icon-only archive toggle
+  remains) and the `Booked Studio Sessions` list; the toolbar's **New Booking**
+  pill moves to the catalogue (`aria-pressed` flips, 10 cards, the back link
+  appears); the search narrows to 1 card; the back link returns to the
+  reservations view.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-014
+
+- **Title:** The booking modal collects session details and payment method
+- **Priority:** P2
+- **Steps:** 1. Open the desk → **New Booking** → **Book this service** on an
+  hourly card. 2. Confirm the modal shows the service header, **Select Date**
+  (shadcn calendar trigger, pre-filled with an open day as `MM/DD/YYYY`),
+  **Select Time Slot**, **Session Notes
+  (Optional)**, and the **Payment Method** radios. 3. Confirm **Confirm
+  Booking** is disabled with no method picked. 4. Pick **GCash** → the receipt
+  dropzone appears and confirm stays disabled without a file. 5. Pick **In
+  Person** → dropzone hides, confirm enables. 6. **Cancel** closes the modal
+  with no booking created.
+- **Expected:** One modal, one submit — no review step; payment is required
+  with no default; the GCash receipt is mandatory for GCash.
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-015
+
+- **Title:** The success popup summarises the booking and returns to the
+  overview
+- **Priority:** P2
+- **Steps:** 1. Open the desk → **New Booking** → book a day service with
+  **In Person**. 2. Inspect the "Reservation Added!" popup. 3. Click **View My
+  Bookings**. 4. Cancel the new row (cleanup).
+- **Expected:** The popup shows the service name plus Date / Slot ("All day") /
+  Payment ("In Person") / Rate rows and the `BTP-XXXXXX` reference; its single
+  button closes it and lands on the Reservation Overview + `Booked Studio
+  Sessions`
+  view (the create flow no longer navigates on its own).
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-016
+
+- **Title:** View Details opens the reservation sheet (In Person has no
+  receipt)
+- **Priority:** P2
+- **Steps:** 1. Book a day service (**In Person**), then open the row's 3-dot
+  menu → **View Details**. 2. Inspect the sheet. 3. Click **Close**. 4. Cancel
+  the row (cleanup).
+- **Expected:** The "Reservation Details" dialog shows the wing tag (from the
+  service's wing), service name, rate, **Scheduled Date**, **Time Slot**
+  ("All day"), **Payment Option** ("In Person") and a **Close** button; an In
+  Person booking renders no payment-proof block (a GCash row would show its
+  receipt image, or the "no proof yet" note).
+- **Automation:** Playwright — **Status: Automated**
+
+### BOOKING-017
+
+- **Title:** Change Schedule reopens the booking form and moves the slot
+- **Priority:** P1
+- **Steps:** 1. Book a day service, then open the row's 3-dot menu → **Change
+  Schedule**. 2. Confirm the modal is prefilled with the booked day and has no
+  payment radios. 3. Pick another far-future day → **Confirm Booking**. 4.
+  Verify at the API that `bookingDate` moved. 5. Cancel the row (cleanup).
+- **Expected:** The reschedule reuses the booking modal without the payment
+  block (moving a slot must not ask for payment again); a "Successfully
+  rescheduled to …" toast confirms — bottom-right, slides up, holds 2 s, slides
+  down and disappears (no reservation ID in the toast); `POST
+  /api/bookings/:id/reschedule` updates the
+  row in place — same reference, new day; the row stays **pending**.
+- **Automation:** Playwright — **Status: Automated**
 
 ---
 

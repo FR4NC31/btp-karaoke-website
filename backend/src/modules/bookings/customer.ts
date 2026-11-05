@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, service } from '../../db/schema.ts'
 import {
@@ -192,5 +192,70 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
     throw new Error('The booking could not be read back after cancelling.')
   }
   return cancelled
+}
+
+/**
+ * Moves one of the caller's own bookings to another day/time slot.
+ *
+ * Same validation path as creation (day format/horizon, service billing unit,
+ * blockout) so a rescheduled slot is exactly as bookable as a fresh one, and
+ * the same unique indexes reject a move onto a slot that is already taken —
+ * surfaced as the friendly 409s the create path uses. Payment method, receipt
+ * and status stay put: changing the schedule must not undo an approval or make
+ * the customer pay again.
+ */
+export async function rescheduleBooking(
+  bookingId: string,
+  userId: string,
+  input: { bookingDate: unknown; bookingTime?: unknown; notes?: unknown },
+): Promise<Booking> {
+  const existing = await findBookingForUser(bookingId, userId)
+  if (!existing) throw new BookingError('That reservation does not exist.', 404)
+  if (existing.status !== 'pending' && existing.status !== 'confirmed') {
+    throw new BookingError(`A ${existing.status} booking can no longer be rescheduled.`, 409)
+  }
+
+  // Enforce abuse suspension, same as creation.
+  const susp = await getUserSuspension(userId)
+  if (susp && susp > new Date()) {
+    throw new BookingError(`Booking temporarily suspended until ${susp.toISOString()}.`, 403)
+  }
+
+  const bookingDate = validateBookingDay(input.bookingDate)
+  const { unit } = await assertServiceAvailable(existing.serviceId)
+  const bookingTime = validateBookingTime(input.bookingTime, bookingDate, unit)
+  const notes = input.notes === undefined ? existing.notes : validateNotes(input.notes)
+
+  await assertDayNotBlocked(bookingDate)
+
+  try {
+    const updated = await db
+      .update(booking)
+      .set({ bookingDate, bookingTime, notes, updatedAt: new Date() })
+      .where(and(eq(booking.id, bookingId), eq(booking.userId, userId), inArray(booking.status, ['pending', 'confirmed'])))
+      .returning({ id: booking.id })
+
+    if (updated.length === 0) {
+      // Raced: the row vanished or changed hands between the read and the write.
+      const gone = await findBookingForUser(bookingId, userId)
+      if (!gone) throw new BookingError('That reservation does not exist.', 404)
+      throw new BookingError(`A ${gone.status} booking can no longer be rescheduled.`, 409)
+    }
+  } catch (err) {
+    const constraint = uniqueViolationConstraint(err)
+    if (constraint === 'booking_active_day_unique_idx') {
+      throw new BookingError('You already have a booking for that service on that day.', 409)
+    }
+    if (constraint === 'booking_active_time_unique_idx') {
+      throw new BookingError('That customer already has a booking for this service at this time slot.', 409)
+    }
+    throw err
+  }
+
+  const rescheduled = await findBookingForUser(bookingId, userId)
+  if (!rescheduled) {
+    throw new Error('The booking could not be read back after rescheduling.')
+  }
+  return rescheduled
 }
 

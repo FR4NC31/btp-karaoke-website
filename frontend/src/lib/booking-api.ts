@@ -34,6 +34,8 @@ export interface Booking {
   serviceCode: string
   serviceName: string
   serviceUnit: string
+  /** Service wing (create/learn/promote/protect) joined from the service. */
+  wing: string
   pricePhp: number
   /** Final amount due after membership discount (falls back to pricePhp). */
   amountDuePhp: number
@@ -165,6 +167,19 @@ export function createBooking(input: {
 
 export function cancelBooking(id: string): Promise<{ booking: Booking }> {
   return request(`/api/bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
+}
+
+/** Moves a pending/confirmed booking to another day/time slot. Payment,
+ *  receipt and status stay as they are — only the schedule (and notes, when
+ *  sent; the reschedule modal always sends them) changes. */
+export function rescheduleBooking(
+  id: string,
+  input: { bookingDate: string; bookingTime?: string | null; notes?: string },
+): Promise<{ booking: Booking }> {
+  return request(`/api/bookings/${encodeURIComponent(id)}/reschedule`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 /** Locks in the payment method for a held slot (filler = cash, gcash = hold). */

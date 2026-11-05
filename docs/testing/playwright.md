@@ -112,7 +112,7 @@ frontend/tests/e2e/
 ├── karaoke/discovery.spec.ts    KARAOKE-001…022 media hub (DB-backed catalog), persistent player, console, player bar, PiP, queue playback, navigation/toggle, logo home
 ├── karaoke/playlists.spec.ts    PLAYLIST-001…013 playlists library, detail, create/add/remove/delete, rename, liked songs, skeletons, shuffle
 ├── player/player.spec.ts        PLAYER-001,003,004,006,008,009 player bar controls, no-autoplay entry
-├── booking/booking.spec.ts      BOOKING-001…010  booking desk: nav, filters, day + time-slot bookings, uniqueness, exact hours
+├── booking/booking.spec.ts      BOOKING-001…010,013…017  booking desk: two views, nav, filters, day + time-slot bookings, uniqueness, exact hours, booking modal, reservation actions
 ├── booking/blockouts.spec.ts    BOOKING-011…012  studio closures: block/unblock, customer refusal, API guard
 ├── admin/admin.spec.ts          ADMIN-001…014    console: queue, reservations, booking for others, media catalog
 ├── admin/admin-security.spec.ts SEC-001…005      role boundary: 401/403, no self-promotion
@@ -197,8 +197,13 @@ not need a separate test ID.
   day, so a leaked `pending` row would break the next run.
 - All suites share one account (`qa@example.com`), so booking assertions are
   pinned to the reference code the test itself just created, never to the size
-  of the list, which sibling tests are mutating in parallel. Booking days are
-  randomised 400–699 days out so workers cannot collide on the unique index.
+  of the list, which sibling tests are mutating in parallel. Booking days come
+  from the shared `unusedDay` helper — randomised 400–699 days out, then
+  filtered against the account's existing bookings and the studio closures,
+  which reduces (but cannot fully prevent) collisions from stale rows and
+  parallel workers, since no day is reserved across callers; a leftover row
+  from an earlier failed run can neither 409 the create nor collide with the
+  service + day row locator.
 - PR smoke uses the disposable service database above; the trusted full run
   still uses the live QA database. Neither may point at production (see
   [qa-strategy.md](qa-strategy.md#database--environment-safety)).
@@ -233,24 +238,32 @@ What the product actually implements today (test coverage is limited to this):
 Per-day services claim one whole calendar day; per-hour / per-minute services
 (Music Studio Recording, Studio Radio Online) also require a time slot in
 `HH:MM` (24-hour, PH timezone) — migration 0008 added `bookingTime` plus the
-day-wide and time-slot partial unique indexes. There is still no payment.
+day-wide and time-slot partial unique indexes. Payment is a **method choice in
+the booking modal** (GCash with a receipt upload, or In Person) — no money
+moves online; the admin approves GCash receipts manually.
 
 | Feature                                 | Status                                    | Tests               |
 | --------------------------------------- | ----------------------------------------- | ------------------- |
 | Service catalog (10 seeded services)    | Working — real rows from `/api/services`  | BOOKING-001/003     |
+| Two-view desk (reservations + catalogue) | Working — the toolbar's **My Bookings** / **New Booking** pills and the catalogue's **Back to My Bookings** link switch views; the overview card carries the icon-only archive toggle (its old **Add Reservation** button is gone); the toolbar search filters the catalogue | BOOKING-013 |
 | Wing filter                             | Working (client-side filter)              | BOOKING-003         |
-| Create a day booking                    | Working (writes a row, `pending`)         | BOOKING-004         |
-| Create a time-slot booking              | Working — hourly services show a required **Session time** picker limited to whole hours (`HH:00`); the row shows the slot instead of "all day" | BOOKING-008 |
-| Cancel a pending booking                | Working (row kept as `cancelled` for audit) | BOOKING-004/008/009 |
+| Create a day booking                    | Working — writes a row `pending`; the mockup's **Reservation Added!** popup (service + Date/Slot/Payment/Rate + reference) appears and its **View My Bookings** button returns to the overview | BOOKING-004/015 |
+| Create a time-slot booking              | Working — hourly services show a required **Session time** picker limited to whole hours (`HH:00`); the row shows the slot as `02:00 PM` instead of "all day" | BOOKING-008 |
+| Reservation row (mockup item)           | Working — wing / status / payment tags, service name, `Scheduled:` ISO day + slot line, payment-proof thumbnail (GCash without an upload shows the placeholder; In Person has no block), 3-dot menu; no price on the row | BOOKING-004/016 |
+| Row menu: View Details                  | Working — read-only "Reservation Details" sheet (wing, name, rate, date, slot, payment option, receipt when present) | BOOKING-016 |
+| Row menu: Change Schedule               | Working — reopens the booking modal prefilled, without the payment block; `POST /api/bookings/:id/reschedule` moves the day/slot in place (pending or confirmed) | BOOKING-017 |
+| Cancel a pending booking                | Working — 3-dot menu → **Cancel Session** → confirmation modal; the row is kept as `cancelled` and archived (hidden until the overview's archive toggle reveals it) | BOOKING-004/008/009/015/016/017 |
+| Archive toggle (overview)               | Working — icon-only button hides/shows terminal rows (`cancelled`/`rejected`/`completed`), client-side | BOOKING-004/013 |
 | One live booking per customer per service per day (date-only) | Working (partial unique index → 409) | BOOKING-005      |
 | One live booking per customer per slot (timed) | Working — the same customer's slot 409s, a different slot on the same day succeeds (`booking_active_time_unique_idx`) | BOOKING-009 |
 | Hourly starts on the hour               | Working — off-hour slots are rejected by the server even when the UI is bypassed | BOOKING-008/010 |
+| Booking modal (single submit)           | Working — date + time slot + notes + **Payment Method** radios in one modal; **Confirm Booking** stays disabled until GCash/In Person is picked (no default); GCash additionally requires the receipt dropzone; no review step | BOOKING-014 |
+| Payment method (GCash / In Person)      | Working — `createBooking` locks the method in the same call; GCash rows upload a receipt (`POST /api/bookings/:id/receipt`), In Person carries no hold; abandoned GCash holds expire into the escalating suspension sweep | BOOKING-004/005/008/009/014 |
 | Blocked days (admin closure)            | Working — admin blocks a whole day with an optional reason; the customer desk lists it and refuses the date; reopening restores booking | BOOKING-011/012 |
 | Entry points (top bar + sidebar)        | Working — both are load-bearing, one is the mobile route | BOOKING-001/002/006 |
 | Signed-out access                       | Blocked by `RequireAuth`                  | BOOKING-007         |
 | Admin confirm / reject                  | Working — the `/admin` queue answers pending reservations | ADMIN-002/003 |
 | Time slots / time blocks                | Working (migration 0008)                  | BOOKING-008/009/010 |
-| Payment                                 | Not implemented (no online payment)       | —                   |
 
 ## Admin console testing
 
@@ -322,8 +335,8 @@ their tests create the rows they assert and delete them afterwards.
   `POST /api/bookings/:id/cancel`) is exercised end-to-end through the UI by
   BOOKING-001…007. Its error branches — 401 anonymous, 400 for a past or
   malformed day, 404 unknown service, 409 duplicate and double-cancel — are
-  verified by a direct API probe rather than by Playwright: the form's own
-  `min` on the date picker means the browser blocks a past day before the
+  verified by a direct API probe rather than by Playwright: the form's
+  shadcn calendar disables past days (and studio blockouts) before the
   request is ever sent, so those branches are unreachable from the UI.
 - The **admin API** (`GET/POST /api/admin/bookings`,
   `POST /api/admin/bookings/:id/{confirm,reject,complete,cancel}`,
