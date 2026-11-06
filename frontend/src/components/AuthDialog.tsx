@@ -23,7 +23,15 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    if (open && !isPending && session && !pendingVerificationEmail) {
+    const pending = (() => {
+      try {
+        return sessionStorage.getItem('btp.pendingVerificationEmail')
+      } catch {
+        return null
+      }
+    })()
+    const hasPending = Boolean(pending && (!session?.user.email || pending === session.user.email))
+    if (open && !isPending && session && !pendingVerificationEmail && !hasPending) {
       onClose()
       navigate(landingPathFor(session.user.role, searchParams.get('next')))
     }

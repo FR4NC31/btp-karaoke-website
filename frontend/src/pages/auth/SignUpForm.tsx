@@ -63,6 +63,15 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
+      // Persist the pending-verification email before the session change
+      // remounts this component, so SignUp re-initialises state from
+      // sessionStorage and keeps the OTP modal open.
+      try {
+        sessionStorage.setItem('btp.pendingVerificationEmail', email)
+      } catch {
+        // ignore storage failures
+      }
+
       const otpRes = await fetch('/api/me/email/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

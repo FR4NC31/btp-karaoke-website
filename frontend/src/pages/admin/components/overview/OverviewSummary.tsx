@@ -51,9 +51,9 @@ export default function OverviewSummary({ stats }: { stats: OverviewStat[] }) {
             >
               <HugeiconsIcon icon={stat.icon} size={16} />
             </span>
-            <h2 className="text-[10px] font-bold tracking-[0.14em] text-text-secondary uppercase">
+            <span className="text-[10px] font-bold tracking-[0.14em] text-text-secondary uppercase">
               {stat.label}
-            </h2>
+            </span>
           </div>
 
           <div className="mt-4 flex items-end justify-between gap-3">
