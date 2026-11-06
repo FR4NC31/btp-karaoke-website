@@ -69,6 +69,7 @@ Last updated: November 6, 2026
 
 ### Bug Fixes
 
+- fix(ci): read admin email from secrets, fail fast on bad password (1413ebf)
 - fix: keep otp resend state on initial send failure (5d1f76a)
 - fix: avoid setState in effect for AuthDialog hydration (63a7544)
 - fix(pr-review): accessibility heading, otp marker cleanup, dialog hydration (6374967)
@@ -167,6 +168,7 @@ Last updated: November 6, 2026
 
 ### Other Changes
 
+- Merge pull request #85 from FR4NC31/redesign/admin-sidebar-status (6626076)
 - test: scope pending approvals heading to level 2 (4bc4a13)
 - Merge pull request #84 from FR4NC31/fix/e2e-test-issues (e06f598)
 - Merge pull request #83 from FR4NC31/chore/seed-qa-admin-and-e2e-fixes (dd19045)
