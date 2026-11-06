@@ -69,6 +69,8 @@ Last updated: November 7, 2026
 
 ### Bug Fixes
 
+- fix(e2e): sweep expired holds before clearing suspension (65d0eb5)
+- fix(e2e): reset booking state each run, repair stale locators (6e2390c)
 - fix(review): scope sign-in error to 401, correct admin credential docs (a048c37)
 - fix(ci): read admin email from secrets, fail fast on bad password (1413ebf)
 - fix: keep otp resend state on initial send failure (5d1f76a)
@@ -169,6 +171,7 @@ Last updated: November 7, 2026
 
 ### Other Changes
 
+- Merge pull request #87 from FR4NC31/fix/admin-e2e-setup (531d7dc)
 - Merge pull request #85 from FR4NC31/redesign/admin-sidebar-status (6626076)
 - test: scope pending approvals heading to level 2 (4bc4a13)
 - Merge pull request #84 from FR4NC31/fix/e2e-test-issues (e06f598)
