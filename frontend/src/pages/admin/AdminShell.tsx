@@ -453,18 +453,22 @@ export default function AdminShell() {
             ))}
           </nav>
 
-          <div className="space-y-3 border-t border-border p-3">
-            <div className="rounded-xl border border-border bg-surface-elevated px-3 py-2.5">
-              <p className="flex items-center gap-2 text-xs font-semibold text-text-primary">
-                <span className="size-1.5 rounded-full bg-success" />
-                Studio Net
-              </p>
-              <p className="mt-0.5 pl-3.5 text-[10px] font-bold tracking-widest text-success uppercase">
-                Active / Online
-              </p>
+          {/* Spotify-style footer: no card chrome, hairline divider, 8px rhythm.
+              The logout icon stays out of the way until the row is hovered
+              (or focused from the keyboard). */}
+          <div className="space-y-1 border-t border-border px-2 pt-2 pb-2">
+            <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
+              <span className="relative flex size-2 shrink-0 items-center justify-center">
+                <span className="absolute inset-0 animate-ping rounded-full bg-success/40 motion-reduce:animate-none" />
+                <span className="relative size-1.5 rounded-full bg-success" />
+              </span>
+              <span className="text-[11px] font-semibold text-text-secondary">Studio Net</span>
+              <span className="ml-auto text-[9px] font-bold tracking-[0.18em] text-text-muted uppercase">
+                Online
+              </span>
             </div>
 
-            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-elevated p-2">
+            <div className="group flex items-center gap-2.5 rounded-md px-2 py-1.5 transition hover:bg-surface-elevated">
               <UserAvatar
                 image={user?.image}
                 icon={UserIcon}
@@ -481,13 +485,15 @@ export default function AdminShell() {
                 disabled={signingOut}
                 aria-label="Log out"
                 title="Log out"
-                className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-primary-soft hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
+                className={`grid size-7 shrink-0 place-items-center rounded-md text-text-muted transition hover:bg-surface hover:text-error focus-visible:opacity-100 disabled:cursor-not-allowed ${
+                  signingOut ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
               >
                 <HugeiconsIcon icon={Logout01Icon} size={15} />
               </button>
             </div>
             {signOutError && (
-              <p role="alert" className="px-1 text-[11px] text-error">
+              <p role="alert" className="px-2 text-[11px] text-error">
                 {signOutError}
               </p>
             )}
