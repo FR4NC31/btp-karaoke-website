@@ -166,6 +166,7 @@ Last updated: November 6, 2026
 
 ### Other Changes
 
+- test: scope pending approvals heading to level 2 (ee68479)
 - Merge pull request #83 from FR4NC31/chore/seed-qa-admin-and-e2e-fixes (dd19045)
 - Merge pull request #82 from itsGenreee/chore/e2e-triage (ce66380)
 - test(e2e): remove outdated services/blockouts/profile tests; update nav titles (e7b9cac)
