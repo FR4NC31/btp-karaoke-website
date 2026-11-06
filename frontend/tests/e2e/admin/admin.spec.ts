@@ -52,16 +52,56 @@ async function serviceIdByCode(api: APIRequestContext, code: string): Promise<st
   return match.id
 }
 
+/**
+ * Signs up a throwaway customer and hands back its credentials. ADMIN-003
+ * books under this account instead of the shared QA one: rejecting a
+ * reservation records a payment failure against its owner
+ * (`rejectPayment` → `recordPaymentFailure`), which suspends that account
+ * for 10 minutes. Under `fullyParallel` the booking suite runs alongside
+ * this test, so a suspension on the shared account would 403 every
+ * `POST /api/bookings` made in the gap between the Reject click and any
+ * cleanup — a race, not a deterministic fix. A fresh account per run has
+ * no other users of it to race, and the leftover suspension dies with the
+ * address (same pattern as SEC-003's `qa-role-probe-*`).
+ */
+async function signUpRejectProbe(
+  baseURL: string | undefined,
+): Promise<{ email: string; password: string }> {
+  const credentials = {
+    email: `qa-reject-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`,
+    password: 'Probe123!',
+  }
+  const context = await rawRequest.newContext({ baseURL })
+  try {
+    const signUp = await context.post('/api/auth/sign-up/email', {
+      headers: { Origin: baseURL ?? '' },
+      data: {
+        email: credentials.email,
+        password: credentials.password,
+        name: 'E2E Reject Probe',
+        first_name: 'E2E',
+        last_name: 'Reject',
+        contact_num: '+639170000003',
+      },
+    })
+    expect(signUp.ok(), `probe sign-up should succeed (got ${signUp.status()})`).toBeTruthy()
+    return credentials
+  } finally {
+    await context.dispose()
+  }
+}
+
 async function createPendingAsCustomer(
   baseURL: string | undefined,
   serviceCode: string,
   slot?: string,
+  credentials: { email: string; password: string } = TEST_USER,
 ): Promise<{ id: string; referenceCode: string }> {
   const context = await rawRequest.newContext({ baseURL })
   try {
     const signIn = await context.post('/api/auth/sign-in/email', {
       headers: { Origin: baseURL ?? '' },
-      data: { email: TEST_USER.email, password: TEST_USER.password },
+      data: { email: credentials.email, password: credentials.password },
     })
     expect(signIn.ok()).toBeTruthy()
 
@@ -100,7 +140,11 @@ test.describe('reservation queue', () => {
     const { referenceCode } = await createPendingAsCustomer(baseURL, 'STUDIO-TRACKING', '09:00')
 
     await page.goto('/admin')
-    const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
+    // The queue row carries the reference only on its View button
+    // (aria-label), never as row text — filter on the button, not hasText.
+    const row = pendingQueue(page)
+      .locator('tr')
+      .filter({ has: page.getByRole('button', { name: `View ${referenceCode}` }) })
     await expect(row).toBeVisible()
 
     await row.getByRole('button', { name: `View ${referenceCode}` }).click()
@@ -126,10 +170,18 @@ test.describe('reservation queue', () => {
   })
 
   test('ADMIN-003: a pending reservation is rejected from the queue', { tag: '@p1' }, async ({ page, baseURL }) => {
-    const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM')
+    // Owned by a throwaway account: the reject suspends the owner by design,
+    // and the shared QA account must stay bookable while other suites run
+    // in parallel (see signUpRejectProbe).
+    const probe = await signUpRejectProbe(baseURL)
+    const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM', undefined, probe)
 
     await page.goto('/admin')
-    const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
+    // Same as ADMIN-002: the reference lives on the View button, not in the
+    // row's text, so hasText would never match.
+    const row = pendingQueue(page)
+      .locator('tr')
+      .filter({ has: page.getByRole('button', { name: `View ${referenceCode}` }) })
     await expect(row).toBeVisible()
 
     await row.getByRole('button', { name: `View ${referenceCode}` }).click()
@@ -243,7 +295,9 @@ test.describe('console entry points', () => {
     await expect(page).toHaveURL('/admin')
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+    // LandingPage's hero button is "Sign In to Studio" — the auth modal's own
+    // submit button inside the dialog is the one called plain "Sign In".
+    await page.getByRole('button', { name: 'Sign In to Studio', exact: true }).click()
     await expect(page).toHaveURL('/admin')
     await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
