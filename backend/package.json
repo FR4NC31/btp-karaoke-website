@@ -10,6 +10,7 @@
     "migrate": "node --env-file=.env scripts/migrate.ts",
     "seed": "node --env-file=.env scripts/seed.ts",
     "seed:e2e": "node --env-file=.env scripts/seed-e2e-user.ts",
+    "seed:qa-admin": "node --env-file=.env scripts/seed-qa-admin.ts",
     "promote-admin": "node --env-file=.env scripts/promote-admin.ts",
     "test": "node --test src/modules/auth/settings.test.ts src/modules/users/location.test.ts src/modules/bookings/validation.test.ts",
     "typecheck": "tsc --noEmit"

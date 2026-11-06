@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 5, 2026
+Last updated: November 6, 2026
 
 ### Features
 
@@ -68,6 +68,7 @@ Last updated: November 5, 2026
 
 ### Bug Fixes
 
+- fix(review): guard qa-admin seed, read password from env, document usage (362f9cc)
 - fix(review): address PR #81 review findings (6bf5a1a)
 - fix(auth): restore send-otp call with same-origin credentials (73dafb3)
 - fix(profile,auth): hide required profile modal close button; send OTP with credentials (5ce8219)
@@ -151,6 +152,7 @@ Last updated: November 5, 2026
 
 ### Chores
 
+- chore: add QA admin seed script and fix e2e booking pool (5cc39a5)
 - chore: normalize line endings to LF for admin overview files (559bfd1)
 - chore(db): add the 0008 migration snapshot (5e57cda)
 - chore: update Aiven CA cert after service rotation (63d0527)
@@ -160,6 +162,9 @@ Last updated: November 5, 2026
 
 ### Other Changes
 
+- Merge pull request #82 from itsGenreee/chore/e2e-triage (ce66380)
+- test(e2e): remove outdated services/blockouts/profile tests; update nav titles (e7b9cac)
+- Merge pull request #81 from FR4NC31/feat/booking-desk-ui-polish (32433c0)
 - Merge pull request #80 from FR4NC31/fix/required-profile-modal-close-and-signup-otp (f3afb93)
 - Merge pull request #79 from FR4NC31/fix/edit-profile-modal-form-reset (1d96216)
 - refactor(profile): drop redundant open-reset effect in EditProfileModal (a62dc4e)
