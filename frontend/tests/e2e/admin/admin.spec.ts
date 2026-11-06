@@ -129,7 +129,7 @@ test.describe('reservation queue', () => {
     await expect(listed).toContainText('completed')
   })
 
-  test('ADMIN-003: a pending reservation is rejected from the queue', { tag: '@p1' }, async ({ page, baseURL }) => {
+  test('ADMIN-003: a pending reservation is rejected from the queue', { tag: '@p1' }, async ({ page, baseURL, request }) => {
     const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM')
 
     await page.goto('/admin')
@@ -147,6 +147,25 @@ test.describe('reservation queue', () => {
     await expect(flashWith(page, `${referenceCode} rejected`)).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(row).toBeHidden()
+
+    // Rejecting escalates a payment failure by design (rejectPayment →
+    // recordPaymentFailure), which suspends the booking owner — the shared
+    // QA account — for 10 minutes. Every later POST /api/bookings would then
+    // answer 403, so this test cleans up the suspension its own reject caused.
+    const users = await request.get(
+      `/api/admin/users?query=${encodeURIComponent(TEST_USER.email)}`,
+    )
+    expect(users.ok()).toBeTruthy()
+    const { users: matches } = (await users.json()) as {
+      users: { id: string; email: string }[]
+    }
+    const qa = matches.find((u) => u.email === TEST_USER.email)
+    expect(qa, 'the shared QA account should exist').toBeTruthy()
+    const cleared = await request.post(`/api/admin/users/${qa!.id}/clear-suspension`)
+    expect(
+      cleared.ok(),
+      `clear-suspension should succeed (got ${cleared.status()})`,
+    ).toBeTruthy()
 
     await page.goto('/admin/bookings')
     await page.getByLabel('Search').fill(referenceCode)
