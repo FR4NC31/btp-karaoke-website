@@ -52,16 +52,56 @@ async function serviceIdByCode(api: APIRequestContext, code: string): Promise<st
   return match.id
 }
 
+/**
+ * Signs up a throwaway customer and hands back its credentials. ADMIN-003
+ * books under this account instead of the shared QA one: rejecting a
+ * reservation records a payment failure against its owner
+ * (`rejectPayment` → `recordPaymentFailure`), which suspends that account
+ * for 10 minutes. Under `fullyParallel` the booking suite runs alongside
+ * this test, so a suspension on the shared account would 403 every
+ * `POST /api/bookings` made in the gap between the Reject click and any
+ * cleanup — a race, not a deterministic fix. A fresh account per run has
+ * no other users of it to race, and the leftover suspension dies with the
+ * address (same pattern as SEC-003's `qa-role-probe-*`).
+ */
+async function signUpRejectProbe(
+  baseURL: string | undefined,
+): Promise<{ email: string; password: string }> {
+  const credentials = {
+    email: `qa-reject-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`,
+    password: 'Probe123!',
+  }
+  const context = await rawRequest.newContext({ baseURL })
+  try {
+    const signUp = await context.post('/api/auth/sign-up/email', {
+      headers: { Origin: baseURL ?? '' },
+      data: {
+        email: credentials.email,
+        password: credentials.password,
+        name: 'E2E Reject Probe',
+        first_name: 'E2E',
+        last_name: 'Reject',
+        contact_num: '+639170000003',
+      },
+    })
+    expect(signUp.ok(), `probe sign-up should succeed (got ${signUp.status()})`).toBeTruthy()
+    return credentials
+  } finally {
+    await context.dispose()
+  }
+}
+
 async function createPendingAsCustomer(
   baseURL: string | undefined,
   serviceCode: string,
   slot?: string,
+  credentials: { email: string; password: string } = TEST_USER,
 ): Promise<{ id: string; referenceCode: string }> {
   const context = await rawRequest.newContext({ baseURL })
   try {
     const signIn = await context.post('/api/auth/sign-in/email', {
       headers: { Origin: baseURL ?? '' },
-      data: { email: TEST_USER.email, password: TEST_USER.password },
+      data: { email: credentials.email, password: credentials.password },
     })
     expect(signIn.ok()).toBeTruthy()
 
@@ -129,8 +169,12 @@ test.describe('reservation queue', () => {
     await expect(listed).toContainText('completed')
   })
 
-  test('ADMIN-003: a pending reservation is rejected from the queue', { tag: '@p1' }, async ({ page, baseURL, request }) => {
-    const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM')
+  test('ADMIN-003: a pending reservation is rejected from the queue', { tag: '@p1' }, async ({ page, baseURL }) => {
+    // Owned by a throwaway account: the reject suspends the owner by design,
+    // and the shared QA account must stay bookable while other suites run
+    // in parallel (see signUpRejectProbe).
+    const probe = await signUpRejectProbe(baseURL)
+    const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM', undefined, probe)
 
     await page.goto('/admin')
     // Same as ADMIN-002: the reference lives on the View button, not in the
@@ -147,25 +191,6 @@ test.describe('reservation queue', () => {
     await expect(flashWith(page, `${referenceCode} rejected`)).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(row).toBeHidden()
-
-    // Rejecting escalates a payment failure by design (rejectPayment →
-    // recordPaymentFailure), which suspends the booking owner — the shared
-    // QA account — for 10 minutes. Every later POST /api/bookings would then
-    // answer 403, so this test cleans up the suspension its own reject caused.
-    const users = await request.get(
-      `/api/admin/users?query=${encodeURIComponent(TEST_USER.email)}`,
-    )
-    expect(users.ok()).toBeTruthy()
-    const { users: matches } = (await users.json()) as {
-      users: { id: string; email: string }[]
-    }
-    const qa = matches.find((u) => u.email === TEST_USER.email)
-    expect(qa, 'the shared QA account should exist').toBeTruthy()
-    const cleared = await request.post(`/api/admin/users/${qa!.id}/clear-suspension`)
-    expect(
-      cleared.ok(),
-      `clear-suspension should succeed (got ${cleared.status()})`,
-    ).toBeTruthy()
 
     await page.goto('/admin/bookings')
     await page.getByLabel('Search').fill(referenceCode)
