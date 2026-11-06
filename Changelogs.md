@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 6, 2026
+Last updated: November 7, 2026
 
 ### Features
 
@@ -69,6 +69,7 @@ Last updated: November 6, 2026
 
 ### Bug Fixes
 
+- fix(review): scope sign-in error to 401, correct admin credential docs (a048c37)
 - fix(ci): read admin email from secrets, fail fast on bad password (1413ebf)
 - fix: keep otp resend state on initial send failure (5d1f76a)
 - fix: avoid setState in effect for AuthDialog hydration (63a7544)
