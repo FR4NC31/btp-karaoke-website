@@ -4,6 +4,13 @@ import { join, resolve } from 'node:path'
 import { request as apiRequest, test as setup } from '@playwright/test'
 import { ADMIN_STORAGE_STATE, TEST_ADMIN, signInAsAdmin } from '../helpers/auth'
 
+/**
+ * The only address `backend/scripts/seed-qa-admin.ts` can create or repair —
+ * it is hard-coded there. Used to decide whether the re-seed hint in the
+ * sign-in error below would actually help.
+ */
+const QA_ADMIN_EMAIL = 'qa-admin@example.com'
+
 setup('authenticate as the QA admin', async ({ page, baseURL }) => {
   setup.setTimeout(60_000)
 
@@ -32,17 +39,32 @@ setup('authenticate as the QA admin', async ({ page, baseURL }) => {
       data: { email: TEST_ADMIN.email, password: TEST_ADMIN.password },
     })
     if (!signInResponse.ok()) {
+      const status = signInResponse.status()
       const body = await signInResponse.text().catch(() => '')
+      // Only 401 means "these credentials were checked and rejected". A 429
+      // (rate limit) or 5xx fails before Better Auth ever reads the password,
+      // so blaming the secret there would send operators to rotate a value
+      // that was never wrong — report the status and body instead.
+      const diagnosis =
+        status === 401
+          ? 'TEST_ADMIN_PASSWORD does not match the account stored in the ' +
+            'database — TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD must ' +
+            'describe the same account. Update the TEST_ADMIN_PASSWORD repo ' +
+            'secret (and frontend/.env.local) to that account\'s real ' +
+            'password, or point TEST_ADMIN_EMAIL at an account you control.' +
+            // seed:qa-admin always writes qa-admin@example.com, so it cannot
+            // repair whatever address TEST_ADMIN_EMAIL happens to name.
+            (TEST_ADMIN.email === QA_ADMIN_EMAIL
+              ? ' Re-seeding a disposable database: cd backend && ' +
+                'E2E_DB_SETUP=1 TEST_ADMIN_PASSWORD=<password> ' +
+                'npm run seed:qa-admin.'
+              : '')
+          : 'This is not necessarily a credential problem — rate limiting ' +
+            'and server errors look the same from here. Check the backend ' +
+            'logs before touching the secrets.'
       throw new Error(
-        `QA admin sign-in failed for ${TEST_ADMIN.email} ` +
-          `(HTTP ${signInResponse.status()}). TEST_ADMIN_PASSWORD does not match ` +
-          'the account stored in the database — the email and password secrets ' +
-          'must describe the same account. Either update the TEST_ADMIN_PASSWORD ' +
-          'repo secret (and frontend/.env.local) to that account\'s real password, ' +
-          'or point TEST_ADMIN_EMAIL at an account you control. Re-seeding a ' +
-          'disposable database: cd backend && E2E_DB_SETUP=1 TEST_ADMIN_PASSWORD=' +
-          '<password> npm run seed:qa-admin. Body: ' +
-          body.slice(0, 200),
+        `QA admin sign-in failed for ${TEST_ADMIN.email} (HTTP ${status}). ` +
+          `${diagnosis} Body: ${body.slice(0, 200)}`,
       )
     }
     const sessionResponse = await api.get('/api/auth/get-session')
