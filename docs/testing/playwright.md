@@ -173,15 +173,19 @@ not need a separate test ID.
 - Controlled fake data only: `qa@example.com`, `juan@example.com`,
   `09171234567` (11-digit dummy), `Secret123!` — defined in
   `helpers/auth.ts` / `signup.spec.ts`.
-- The admin account is `qa-admin@example.com`, promoted once through the CLI.
-  Its password is deliberately **not** in the repo: `TEST_ADMIN` in
+- The admin account defaults to `qa-admin@example.com`, promoted once through
+  the CLI. Its password is deliberately **not** in the repo: `TEST_ADMIN` in
   `helpers/auth.ts` reads `TEST_ADMIN_EMAIL` / `TEST_ADMIN_PASSWORD` from the
   environment — locally that is `frontend/.env.local` (gitignored, loaded by
-  `playwright.config.ts`); in CI it is the `TEST_ADMIN_PASSWORD` repo secret
-  (see `.github/workflows/e2e.yml`). To rotate or reset it: delete the
+  `playwright.config.ts`); in CI both are repo secrets (see
+  `.github/workflows/e2e.yml`). The two must describe the **same** account:
+  `setup/admin.setup.ts` throws immediately when sign-in is rejected, instead
+  of failing later on the `/admin` redirect. To rotate or reset it: delete the
   `qa-admin@example.com` row in the database, put the new password in
   `frontend/.env.local` (and update the repo secret), then run the suite —
-  `setup/admin.setup.ts` recreates the account and re-promotes it.
+  `setup/admin.setup.ts` recreates the account and re-promotes it. Swapping in
+  a personal account means setting `TEST_ADMIN_EMAIL` to that address and
+  promoting it once (`cd backend && npm run promote-admin -- you@example.com`).
 - The PR smoke job runs **without** any live credential: it uses a disposable
   local PostgreSQL database seeded by `backend/scripts/seed-e2e-user.ts`, and
   `playwright.config.ts` leaves `setup/admin.setup.ts` out of the setup project

@@ -23,10 +23,28 @@ setup('authenticate as the QA admin', async ({ page, baseURL }) => {
       },
     })
 
-    await api.post('/api/auth/sign-in/email', {
+    // Sign-up answers 409 for an already-seeded account; that is expected and
+    // is NOT what proves the credentials. The sign-in below is, so it is the
+    // one that must succeed — otherwise the setup used to sail past a bad
+    // password and only surface as a confusing "stayed on /signin" 10s later.
+    const signInResponse = await api.post('/api/auth/sign-in/email', {
       headers: browserLike,
       data: { email: TEST_ADMIN.email, password: TEST_ADMIN.password },
     })
+    if (!signInResponse.ok()) {
+      const body = await signInResponse.text().catch(() => '')
+      throw new Error(
+        `QA admin sign-in failed for ${TEST_ADMIN.email} ` +
+          `(HTTP ${signInResponse.status()}). TEST_ADMIN_PASSWORD does not match ` +
+          'the account stored in the database — the email and password secrets ' +
+          'must describe the same account. Either update the TEST_ADMIN_PASSWORD ' +
+          'repo secret (and frontend/.env.local) to that account\'s real password, ' +
+          'or point TEST_ADMIN_EMAIL at an account you control. Re-seeding a ' +
+          'disposable database: cd backend && E2E_DB_SETUP=1 TEST_ADMIN_PASSWORD=' +
+          '<password> npm run seed:qa-admin. Body: ' +
+          body.slice(0, 200),
+      )
+    }
     const sessionResponse = await api.get('/api/auth/get-session')
     const session = sessionResponse.ok() ? await sessionResponse.json() : null
     const role: unknown = session?.user?.role
