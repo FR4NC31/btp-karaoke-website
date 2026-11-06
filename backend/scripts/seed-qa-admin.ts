@@ -3,10 +3,34 @@ import { hashPassword } from 'better-auth/crypto'
 import { eq, sql } from 'drizzle-orm'
 import { db, pool } from '../src/db/client.ts'
 import { user } from '../src/db/schema.ts'
+import { requireDisposableDatabase } from './e2e-db-guard.ts'
+
+/**
+ * Seeds the QA admin account into a DISPOSABLE database only.
+ *
+ * This is a bootstrap helper for local/CI test databases. It is deliberately
+ * not a live role-management tool: production/staging role changes go through
+ * `npm run promote-admin`, which is the only path that touches `user.role` on
+ * a real database (see promote-admin.ts). Running this script against anything
+ * but a localhost database is refused by requireDisposableDatabase().
+ *
+ * The password is never hard-coded: it comes from TEST_ADMIN_PASSWORD, the same
+ * variable the Playwright admin setup reads (see frontend/tests/e2e/helpers/auth.ts).
+ */
+
+requireDisposableDatabase()
+
+const adminPassword = process.env.TEST_ADMIN_PASSWORD
+if (!adminPassword) {
+  throw new Error(
+    'TEST_ADMIN_PASSWORD is not set. Export it (the same value the Playwright ' +
+      'admin setup uses) before running seed:qa-admin.',
+  )
+}
 
 const adminUser = {
   email: 'qa-admin@example.com',
-  password: 'Secret123!',
+  password: adminPassword,
   name: 'QA Admin',
   firstName: 'QA',
   lastName: 'Admin',
