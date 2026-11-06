@@ -69,6 +69,7 @@ Last updated: November 7, 2026
 
 ### Bug Fixes
 
+- fix(e2e): isolate ADMIN-003 reject on throwaway account (746ec47)
 - fix(e2e): clear suspension caused by ADMIN-003 reject (65554d2)
 - fix(e2e): sweep expired holds before clearing suspension (65d0eb5)
 - fix(e2e): reset booking state each run, repair stale locators (6e2390c)
