@@ -26,5 +26,4 @@ test.describe('profile', () => {
     await page.getByRole('button', { name: 'My Account' }).click()
     await expect(page.getByRole('heading', { name: 'Personal Details' })).toBeVisible()
   })
-
-}
+})

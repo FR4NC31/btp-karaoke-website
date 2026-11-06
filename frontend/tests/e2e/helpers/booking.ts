@@ -84,11 +84,11 @@ export async function unusedDay(page: Page, ...avoid: string[]): Promise<string>
   // Walk the pool deterministically so a free day is returned whenever one
   // exists (random sampling could miss it and throw prematurely).
   const base = new Date()
-  for (let offset = 400; offset <= 699; offset += 1) {
+  for (let offset = 100; offset <= 650; offset += 1) {
     const d = new Date(base)
     d.setUTCDate(d.getUTCDate() + offset)
     const day = d.toISOString().slice(0, 10)
     if (!used.has(day)) return day
   }
-  throw new Error('no free day left in the 400–699 booking pool')
+  throw new Error('no free day left in the 100–650 booking pool')
 }
