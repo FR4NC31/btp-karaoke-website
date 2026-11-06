@@ -245,8 +245,13 @@ jobs:
       - name: Playwright full suite
         working-directory: frontend
         env:
-          # Same contract as the smoke step above.
-          TEST_ADMIN_EMAIL: qa-admin@example.com
+          # Same contract as the smoke step above, plus one change: the admin
+          # *email* is a secret too. Hard-coding qa-admin@example.com here made
+          # a rotated TEST_ADMIN_PASSWORD point at a different account than the
+          # one the operator had actually seeded, so the setup failed with
+          # "Invalid password" no matter what the secret said. Both halves now
+          # come from the same place; the fallback keeps older repos working.
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL || 'qa-admin@example.com' }}
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
         run: npm run test:e2e
 
