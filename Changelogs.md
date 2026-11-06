@@ -68,6 +68,7 @@ Last updated: November 6, 2026
 
 ### Bug Fixes
 
+- fix: avoid setState in effect for AuthDialog hydration (63a7544)
 - fix(pr-review): accessibility heading, otp marker cleanup, dialog hydration (6374967)
 - fix(e2e): signup otp flow, heading duplicate, cross-link href (781275f)
 - fix(review): guard qa-admin seed, read password from env, document usage (362f9cc)
