@@ -68,6 +68,7 @@ Last updated: November 6, 2026
 
 ### Bug Fixes
 
+- fix(review): guard qa-admin seed, read password from env, document usage (362f9cc)
 - fix(review): address PR #81 review findings (6bf5a1a)
 - fix(auth): restore send-otp call with same-origin credentials (73dafb3)
 - fix(profile,auth): hide required profile modal close button; send OTP with credentials (5ce8219)
