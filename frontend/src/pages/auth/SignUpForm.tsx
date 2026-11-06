@@ -78,11 +78,8 @@ export default function SignUpForm({ onSwitch, onSuccess, onPendingStart, email:
         credentials: 'same-origin',
       })
       if (!otpRes.ok) {
-        try {
-          sessionStorage.removeItem('btp.pendingVerificationEmail')
-        } catch {
-          // ignore
-        }
+        // Keep the pending marker so the OTP modal can open and offer resend.
+        onPendingStart?.(email)
         const data = await otpRes.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to send verification code')
       }
