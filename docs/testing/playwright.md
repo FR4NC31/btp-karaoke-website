@@ -205,6 +205,20 @@ not need a separate test ID.
   not because the database is stateless. The booking suite cancels every
   booking it makes — the schema allows only one *live* booking per service per
   day, so a leaked `pending` row would break the next run.
+- The one leak that story misses is payment holds: an abandoned `gcash` hold
+  that expires is swept by `releaseExpiredPaymentHolds`, which also calls
+  `recordPaymentFailure` — escalating 10/30/60/120/240-minute penalties that
+  suspend `qa@example.com` mid-run, and the suspension check runs *before*
+  booking validation, so a stale suspension answers every later `POST
+  /api/bookings` with 403. Tests that die *after* creating a booking leave
+  live rows on the far-future pool instead, and the partial unique indexes
+  409 the next attempt on the same service + day (ADMIN-005's FILSCAP days).
+  `playwright.config.ts` therefore declares a `globalSetup`
+  (`setup/global-setup.ts`) that runs `backend` → `npm run reset:e2e-state`
+  before each run — it clears the suspension and cancels qa's and
+  `E2E Guest *`'s live bookings at least 300 days out (skipped with a
+  warning when `backend/.env` is absent). Residue accumulating *during* a
+  run can still bite — expect a 403 there, not a locator bug.
 - All suites share one account (`qa@example.com`), so booking assertions are
   pinned to the reference code the test itself just created, never to the size
   of the list, which sibling tests are mutating in parallel. Booking days come

@@ -76,6 +76,12 @@ export default defineConfig({
   reporter: reporters,
   outputDir: 'test-results',
 
+  // Clears qa@example.com's booking suspension before the suite starts —
+  // expired payment holds from the previous run otherwise suspend the shared
+  // account mid-run and every POST /api/bookings answers 403 (10 tests).
+  // See tests/e2e/setup/global-setup.ts.
+  globalSetup: './tests/e2e/setup/global-setup.ts',
+
   use: {
     baseURL,
     // Evidence policy: full traces/screenshots/videos are only retained for

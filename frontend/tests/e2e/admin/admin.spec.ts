@@ -100,7 +100,11 @@ test.describe('reservation queue', () => {
     const { referenceCode } = await createPendingAsCustomer(baseURL, 'STUDIO-TRACKING', '09:00')
 
     await page.goto('/admin')
-    const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
+    // The queue row carries the reference only on its View button
+    // (aria-label), never as row text — filter on the button, not hasText.
+    const row = pendingQueue(page)
+      .locator('tr')
+      .filter({ has: page.getByRole('button', { name: `View ${referenceCode}` }) })
     await expect(row).toBeVisible()
 
     await row.getByRole('button', { name: `View ${referenceCode}` }).click()
@@ -129,7 +133,11 @@ test.describe('reservation queue', () => {
     const { referenceCode } = await createPendingAsCustomer(baseURL, 'SOUND-SYSTEM')
 
     await page.goto('/admin')
-    const row = pendingQueue(page).locator('tbody tr').filter({ hasText: referenceCode })
+    // Same as ADMIN-002: the reference lives on the View button, not in the
+    // row's text, so hasText would never match.
+    const row = pendingQueue(page)
+      .locator('tr')
+      .filter({ has: page.getByRole('button', { name: `View ${referenceCode}` }) })
     await expect(row).toBeVisible()
 
     await row.getByRole('button', { name: `View ${referenceCode}` }).click()
@@ -243,7 +251,9 @@ test.describe('console entry points', () => {
     await expect(page).toHaveURL('/admin')
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+    // LandingPage's hero button is "Sign In to Studio" — the auth modal's own
+    // submit button inside the dialog is the one called plain "Sign In".
+    await page.getByRole('button', { name: 'Sign In to Studio', exact: true }).click()
     await expect(page).toHaveURL('/admin')
     await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
