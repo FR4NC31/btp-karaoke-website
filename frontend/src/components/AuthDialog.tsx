@@ -20,19 +20,13 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const [searchParams] = useSearchParams()
   const { data: session, isPending } = useSession()
   const [email, setEmail] = useState('')
-  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null)
-
-  // Hydrate pending verification from storage so a remount keeps the OTP flow.
-  useEffect(() => {
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(() => {
     try {
-      const stored = sessionStorage.getItem('btp.pendingVerificationEmail')
-      if (stored && !pendingVerificationEmail) {
-        setPendingVerificationEmail(stored)
-      }
+      return sessionStorage.getItem('btp.pendingVerificationEmail')
     } catch {
-      // ignore
+      return null
     }
-  }, [pendingVerificationEmail])
+  })
 
   useEffect(() => {
     const pending = (() => {
