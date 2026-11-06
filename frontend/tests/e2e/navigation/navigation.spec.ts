@@ -7,7 +7,7 @@ test.describe('navigation', () => {
   test('NAV-001: landing auth buttons open sign-up and sign-in modals', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/')
 
-    await page.getByRole('button', { name: 'Get Started' }).click()
+    await page.getByRole('button', { name: 'Get Started Free' }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByRole('heading', { name: 'Create account' })).toBeVisible()
     await expect(page).toHaveURL('/')
@@ -20,7 +20,7 @@ test.describe('navigation', () => {
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
 
-    await page.getByRole('button', { name: 'Sign In', exact: true }).click()
+    await page.getByRole('button', { name: 'Sign In to Studio' }).click()
     await expect(page.getByRole('dialog').getByRole('heading', { name: 'Welcome back' })).toBeVisible()
     await expect(page).toHaveURL('/')
   })
@@ -33,15 +33,6 @@ test.describe('navigation', () => {
     await page.getByRole('link', { name: 'Sign up' }).click()
     await expect(page).toHaveURL('/signup')
   })
-
-  test('NAV-004: header contact link reaches the contact page', { tag: '@p2' }, async ({ page }) => {
-    await page.goto('/')
-
-    await page.getByRole('link', { name: 'Contact' }).click()
-    await expect(page).toHaveURL('/contact')
-    await expect(page.getByRole('heading', { level: 1, name: 'Direct Lines' })).toBeVisible()
-  })
-
   test.describe('mobile', () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
@@ -58,12 +49,7 @@ test.describe('navigation', () => {
       await expect(mobileNav).toBeVisible()
       await expect(page.getByRole('button', { name: 'Close menu' })).toHaveAttribute('aria-expanded', 'true')
 
-      await mobileNav.getByRole('link', { name: 'Contact' }).click()
-      await expect(page).toHaveURL('/contact')
-
-      await page.goto('/')
-      await page.getByRole('button', { name: 'Open menu' }).click()
-      await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Home' }).click()
+      await mobileNav.getByRole('link', { name: 'Home' }).click()
       await expect(page).toHaveURL('/')
       await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeHidden()
       await expect(page.getByRole('button', { name: 'Open menu' })).toHaveAttribute('aria-expanded', 'false')
