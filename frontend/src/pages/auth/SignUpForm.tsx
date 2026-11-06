@@ -10,11 +10,12 @@ import type { AuthMode } from '../../lib/auth-dialog'
 type Props = {
   onSwitch?: (mode: AuthMode) => void
   onSuccess?: (email: string) => void
+  onPendingStart?: (email: string) => void
   email?: string
   onEmailChange?: (email: string) => void
 }
 
-export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEmailChange }: Props) {
+export default function SignUpForm({ onSwitch, onSuccess, onPendingStart, email: emailProp, onEmailChange }: Props) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [internalEmail, setInternalEmail] = useState('')
@@ -63,13 +64,12 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
-      // Persist the pending-verification email before the session change
-      // remounts this component, so SignUp re-initialises state from
-      // sessionStorage and keeps the OTP modal open.
+      onPendingStart?.(email)
+
       try {
         sessionStorage.setItem('btp.pendingVerificationEmail', email)
       } catch {
-        // ignore storage failures
+        // ignore storage failures; onPendingStart preserved state
       }
 
       const otpRes = await fetch('/api/me/email/send-otp', {
@@ -78,6 +78,11 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
         credentials: 'same-origin',
       })
       if (!otpRes.ok) {
+        try {
+          sessionStorage.removeItem('btp.pendingVerificationEmail')
+        } catch {
+          // ignore
+        }
         const data = await otpRes.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to send verification code')
       }

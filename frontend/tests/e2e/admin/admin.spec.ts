@@ -27,7 +27,7 @@ function topBar(page: Page) {
 }
 
 function pendingQueue(page: Page) {
-  return page.locator('section').filter({ has: page.getByRole('heading', { name: 'Pending approvals' }) })
+  return page.locator('section').filter({ has: page.getByRole('heading', { name: 'Pending approvals', level: 2 }) })
 }
 
 function reservationRow(page: Page, reference: string) {
@@ -91,7 +91,7 @@ test.describe('admin sign-in', () => {
     await signInAsAdmin(page)
 
     await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Pending approvals' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Pending approvals', level: 2 })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Today at the studio' })).toBeVisible()
   })
 })

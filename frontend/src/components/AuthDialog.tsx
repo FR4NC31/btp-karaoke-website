@@ -22,6 +22,18 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const [email, setEmail] = useState('')
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null)
 
+  // Hydrate pending verification from storage so a remount keeps the OTP flow.
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('btp.pendingVerificationEmail')
+      if (stored && !pendingVerificationEmail) {
+        setPendingVerificationEmail(stored)
+      }
+    } catch {
+      // ignore
+    }
+  }, [pendingVerificationEmail])
+
   useEffect(() => {
     const pending = (() => {
       try {
@@ -50,6 +62,11 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
     const data = await res.json()
     if (!res.ok) {
       throw new Error(data.error || 'Invalid verification code')
+    }
+    try {
+      sessionStorage.removeItem('btp.pendingVerificationEmail')
+    } catch {
+      // ignore
     }
     setPendingVerificationEmail(null)
     onClose()
@@ -88,7 +105,7 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
           </DialogHeader>
 
           {mode === 'signup' ? (
-            <SignUpForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={handleSignUpSuccess} />
+            <SignUpForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={handleSignUpSuccess} onPendingStart={setPendingVerificationEmail} />
           ) : mode === 'signin' ? (
             <SignInForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={onClose} />
           ) : null}
