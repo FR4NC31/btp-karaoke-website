@@ -6,6 +6,7 @@ Last updated: November 6, 2026
 
 ### Features
 
+- feat(admin): spotify-style sidebar status + identity footer (601dcd4)
 - feat(booking): redesign booking desk UI, toast, skeleton, session states (6c836a9)
 - feat(profile): read-only profile with edit modal for personal info and address (c89773f)
 - feat(profile): use six-box OTP input in account verification (ba006c5)
@@ -166,6 +167,8 @@ Last updated: November 6, 2026
 
 ### Other Changes
 
+- test: scope pending approvals heading to level 2 (4bc4a13)
+- Merge pull request #84 from FR4NC31/fix/e2e-test-issues (e06f598)
 - Merge pull request #83 from FR4NC31/chore/seed-qa-admin-and-e2e-fixes (dd19045)
 - Merge pull request #82 from itsGenreee/chore/e2e-triage (ce66380)
 - test(e2e): remove outdated services/blockouts/profile tests; update nav titles (e7b9cac)

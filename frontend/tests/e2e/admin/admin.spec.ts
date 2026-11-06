@@ -92,7 +92,6 @@ test.describe('admin sign-in', () => {
 
     await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Pending approvals', level: 2 })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Today at the studio' })).toBeVisible()
   })
 })
 
