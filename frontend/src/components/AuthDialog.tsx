@@ -20,10 +20,24 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
   const [searchParams] = useSearchParams()
   const { data: session, isPending } = useSession()
   const [email, setEmail] = useState('')
-  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null)
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem('btp.pendingVerificationEmail')
+    } catch {
+      return null
+    }
+  })
 
   useEffect(() => {
-    if (open && !isPending && session && !pendingVerificationEmail) {
+    const pending = (() => {
+      try {
+        return sessionStorage.getItem('btp.pendingVerificationEmail')
+      } catch {
+        return null
+      }
+    })()
+    const hasPending = Boolean(pending && (!session?.user.email || pending === session.user.email))
+    if (open && !isPending && session && !pendingVerificationEmail && !hasPending) {
       onClose()
       navigate(landingPathFor(session.user.role, searchParams.get('next')))
     }
@@ -42,6 +56,11 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
     const data = await res.json()
     if (!res.ok) {
       throw new Error(data.error || 'Invalid verification code')
+    }
+    try {
+      sessionStorage.removeItem('btp.pendingVerificationEmail')
+    } catch {
+      // ignore
     }
     setPendingVerificationEmail(null)
     onClose()
@@ -80,7 +99,7 @@ export default function AuthDialog({ mode, onClose, onSwitch }: Props) {
           </DialogHeader>
 
           {mode === 'signup' ? (
-            <SignUpForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={handleSignUpSuccess} />
+            <SignUpForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={handleSignUpSuccess} onPendingStart={setPendingVerificationEmail} />
           ) : mode === 'signin' ? (
             <SignInForm email={email} onEmailChange={setEmail} onSwitch={onSwitch} onSuccess={onClose} />
           ) : null}

@@ -68,6 +68,10 @@ Last updated: November 6, 2026
 
 ### Bug Fixes
 
+- fix: keep otp resend state on initial send failure (5d1f76a)
+- fix: avoid setState in effect for AuthDialog hydration (63a7544)
+- fix(pr-review): accessibility heading, otp marker cleanup, dialog hydration (6374967)
+- fix(e2e): signup otp flow, heading duplicate, cross-link href (781275f)
 - fix(review): guard qa-admin seed, read password from env, document usage (362f9cc)
 - fix(review): address PR #81 review findings (6bf5a1a)
 - fix(auth): restore send-otp call with same-origin credentials (73dafb3)
@@ -162,6 +166,7 @@ Last updated: November 6, 2026
 
 ### Other Changes
 
+- Merge pull request #83 from FR4NC31/chore/seed-qa-admin-and-e2e-fixes (dd19045)
 - Merge pull request #82 from itsGenreee/chore/e2e-triage (ce66380)
 - test(e2e): remove outdated services/blockouts/profile tests; update nav titles (e7b9cac)
 - Merge pull request #81 from FR4NC31/feat/booking-desk-ui-polish (32433c0)

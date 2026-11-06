@@ -10,11 +10,12 @@ import type { AuthMode } from '../../lib/auth-dialog'
 type Props = {
   onSwitch?: (mode: AuthMode) => void
   onSuccess?: (email: string) => void
+  onPendingStart?: (email: string) => void
   email?: string
   onEmailChange?: (email: string) => void
 }
 
-export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEmailChange }: Props) {
+export default function SignUpForm({ onSwitch, onSuccess, onPendingStart, email: emailProp, onEmailChange }: Props) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [internalEmail, setInternalEmail] = useState('')
@@ -63,12 +64,22 @@ export default function SignUpForm({ onSwitch, onSuccess, email: emailProp, onEm
         return
       }
 
+      onPendingStart?.(email)
+
+      try {
+        sessionStorage.setItem('btp.pendingVerificationEmail', email)
+      } catch {
+        // ignore storage failures; onPendingStart preserved state
+      }
+
       const otpRes = await fetch('/api/me/email/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
       })
       if (!otpRes.ok) {
+        // Keep the pending marker so the OTP modal can open and offer resend.
+        onPendingStart?.(email)
         const data = await otpRes.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to send verification code')
       }
