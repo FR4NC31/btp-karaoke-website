@@ -3,9 +3,6 @@ import { ADMIN_STORAGE_STATE, ANONYMOUS } from '../helpers/auth'
 
 const publicTitles = [
   ['/', 'Home'],
-  ['/about', 'About'],
-  ['/services', 'Services'],
-  ['/contact', 'Contact'],
   ['/signin', 'Sign In'],
   ['/signup', 'Sign Up'],
   ['/auth/error', 'Sign-In Error'],
