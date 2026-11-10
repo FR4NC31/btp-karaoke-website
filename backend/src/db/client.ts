@@ -56,6 +56,12 @@ const connectionString = ca ? withoutSslmode(databaseUrl) : databaseUrl
 
 export const pool = new Pool({
   connectionString,
+  // SCRAM-SHA-256-PLUS: bind the auth exchange to this TLS channel, so a
+  // proxy that terminated and re-encrypted the connection cannot relay the
+  // proof. pg only uses channel binding when the server offers it, and the
+  // `channel_binding` URL parameter is never read by pg — this option is
+  // the actual switch (it defaults to false).
+  enableChannelBinding: true,
   ...(ca ? { ssl: { ca, rejectUnauthorized: true } } : {}),
 })
 
