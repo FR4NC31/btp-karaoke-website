@@ -6,3 +6,5 @@ AGENTS.md
 .env.*
 !.env.example
 .playwright-cli
+.neon
+node_modules/

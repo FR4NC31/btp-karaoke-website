@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 7, 2026
+Last updated: November 10, 2026
 
 ### Features
 
@@ -69,6 +69,8 @@ Last updated: November 7, 2026
 
 ### Bug Fixes
 
+- fix(db): enforce SCRAM channel binding, drop dead URL param (8c845f7)
+- fix(db): restore snapshot chain, unpin Aiven CA from Neon example (88115e0)
 - fix(e2e): isolate ADMIN-003 reject on throwaway account (746ec47)
 - fix(e2e): clear suspension caused by ADMIN-003 reject (65554d2)
 - fix(e2e): sweep expired holds before clearing suspension (65d0eb5)
@@ -163,6 +165,7 @@ Last updated: November 7, 2026
 
 ### Chores
 
+- chore(db): add OTP column migration, switch example env to Neon (106f905)
 - chore: add QA admin seed script and fix e2e booking pool (5cc39a5)
 - chore: normalize line endings to LF for admin overview files (559bfd1)
 - chore(db): add the 0008 migration snapshot (5e57cda)
@@ -173,6 +176,7 @@ Last updated: November 7, 2026
 
 ### Other Changes
 
+- Merge pull request #88 from FR4NC31/fix/e2e-booking-suspension (eb91ae6)
 - Merge pull request #87 from FR4NC31/fix/admin-e2e-setup (531d7dc)
 - Merge pull request #85 from FR4NC31/redesign/admin-sidebar-status (6626076)
 - test: scope pending approvals heading to level 2 (4bc4a13)
