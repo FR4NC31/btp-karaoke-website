@@ -1,5 +1,5 @@
 {
-  "id": "dcdc6982-1a1f-4943-b5fd-2564298d203a",
+  "id": "5da29bd9-426d-4fd1-89a3-287c49ad559f",
   "prevId": "be0b72b1-4ff8-41fe-9e5b-713a246a99a1",
   "version": "7",
   "dialect": "postgresql",
@@ -711,37 +711,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "contact_verified": {
-          "name": "contact_verified",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "phone_otp": {
-          "name": "phone_otp",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "phone_otp_expires_at": {
-          "name": "phone_otp_expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email_otp": {
-          "name": "email_otp",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email_otp_expires_at": {
-          "name": "email_otp_expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "province": {
           "name": "province",
           "type": "text",
@@ -792,6 +761,25 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "contact_verified": {
+          "name": "contact_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "phone_otp": {
+          "name": "phone_otp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone_otp_expires_at": {
+          "name": "phone_otp_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},

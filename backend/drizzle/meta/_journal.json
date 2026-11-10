@@ -99,13 +99,6 @@
       "when": 1793536400000,
       "tag": "0013_email_verification",
       "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1794292687249,
-      "tag": "0014_lovely_mandroid",
-      "breakpoints": true
     }
   ]
 }
