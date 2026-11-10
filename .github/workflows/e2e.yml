@@ -232,7 +232,11 @@ jobs:
             echo "BETTER_AUTH_URL=http://localhost:3000"
             echo "BETTER_AUTH_API_KEY=${BETTER_AUTH_API_KEY}"
             echo "DATABASE_URL=${DATABASE_URL}"
-            echo "DB_CA_FILE=./ca.pem"
+            # Neon: public CA chain, so no custom trust root. A non-empty
+            # DB_CA_FILE pins verification to that file alone
+            # (rejectUnauthorized), which Neon's cert does not satisfy —
+            # ./ca.pem was the retired Aiven CA and broke this job.
+            echo "DB_CA_FILE="
             # Dummy non-empty values — same reason as pr-checks above.
             echo "GOOGLE_CLIENT_ID=e2e-dummy-client-id"
             echo "GOOGLE_CLIENT_SECRET=e2e-dummy-client-secret"
