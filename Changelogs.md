@@ -69,6 +69,7 @@ Last updated: November 10, 2026
 
 ### Bug Fixes
 
+- fix(db): enforce SCRAM channel binding, drop dead URL param (8c845f7)
 - fix(db): restore snapshot chain, unpin Aiven CA from Neon example (88115e0)
 - fix(e2e): isolate ADMIN-003 reject on throwaway account (746ec47)
 - fix(e2e): clear suspension caused by ADMIN-003 reject (65554d2)
