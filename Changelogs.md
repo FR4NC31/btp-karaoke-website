@@ -69,6 +69,7 @@ Last updated: November 10, 2026
 
 ### Bug Fixes
 
+- fix(ci): unpin retired Aiven CA from full-e2e job (ddbd731)
 - fix(db): enforce SCRAM channel binding, drop dead URL param (8c845f7)
 - fix(db): restore snapshot chain, unpin Aiven CA from Neon example (88115e0)
 - fix(e2e): isolate ADMIN-003 reject on throwaway account (746ec47)
@@ -176,6 +177,7 @@ Last updated: November 10, 2026
 
 ### Other Changes
 
+- Merge pull request #89 from FR4NC31/chore/neon-otp-migration (c0d4282)
 - Merge pull request #88 from FR4NC31/fix/e2e-booking-suspension (eb91ae6)
 - Merge pull request #87 from FR4NC31/fix/admin-e2e-setup (531d7dc)
 - Merge pull request #85 from FR4NC31/redesign/admin-sidebar-status (6626076)
