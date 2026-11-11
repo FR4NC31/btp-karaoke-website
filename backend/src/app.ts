@@ -1,13 +1,19 @@
  import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { bodyLimit } from 'hono/body-limit'
 import { auth } from './modules/auth/auth.ts'
 import { requireTrustedOrigin } from './middleware/origin-guard.ts'
+import { securityHeaders } from './middleware/security-headers.ts'
+import { rateLimit } from './middleware/rate-limit.ts'
 import adminApi from './routes/admin/index.ts'
 import bookingApi from './routes/bookings.ts'
 import publicApi from './routes/public.ts'
 import uploadApi from './routes/uploads.ts'
 
 const app = new Hono()
+
+app.use('*', securityHeaders())
+app.use('/api/*', rateLimit({ windowMs: 60_000, max: 60 }))
 
 // Origins allowed to call the API endpoints with credentials.
 // Must never be `*` when credentials are enabled.
@@ -42,6 +48,15 @@ app.use('/api/bookings', trustedOrigin)
 app.use('/api/bookings/*', trustedOrigin)
 app.use('/api/admin', trustedOrigin)
 app.use('/api/admin/*', trustedOrigin)
+
+// Reject oversized request bodies early (1 MB) on the JSON mutation surfaces.
+// Uploads are exempt: they stream through their own size check in storage.ts.
+const oneMb = 1024 * 1024
+app.use('/api/auth/*', bodyLimit({ maxSize: oneMb }))
+app.use('/api/bookings', bodyLimit({ maxSize: oneMb }))
+app.use('/api/bookings/*', bodyLimit({ maxSize: oneMb }))
+app.use('/api/admin', bodyLimit({ maxSize: oneMb }))
+app.use('/api/admin/*', bodyLimit({ maxSize: oneMb }))
 
 // Better Auth handles everything under /api/auth/* (sign-in, sign-up,
 // Google OAuth callback, session, sign-out...). Register before any

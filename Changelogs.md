@@ -179,6 +179,13 @@ Last updated: November 11, 2026
 ### Other Changes
 
 - Merge pull request #90 from FR4NC31/fix/ci-e2e-db-ca-file (ee3bd5a)
+- fix(e2e): wait for required profile modal in admin/user setup (isVisible race)
+- fix(e2e): serialize booking desk + separate admin day pool to avoid 409 contention
+- security: add baseline security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS)
+- security: add in-memory API rate limiter (60 req/min per IP, loopback exempt)
+- security: add 1 MB request body size limit on auth/booking/admin routes
+- test: add backend tests for security headers, rate limiter, body limit
+- Remaining security work (next): Content-Security-Policy tuning, mass-assignment audit of route bodies, virus/malware scanning for uploads, broader rate-limit tuning for production traffic.
 - Merge pull request #89 from FR4NC31/chore/neon-otp-migration (c0d4282)
 - Merge pull request #88 from FR4NC31/fix/e2e-booking-suspension (eb91ae6)
 - Merge pull request #87 from FR4NC31/fix/admin-e2e-setup (531d7dc)

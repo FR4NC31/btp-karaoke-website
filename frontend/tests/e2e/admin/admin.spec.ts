@@ -18,7 +18,9 @@ import {
 
 function farFutureDay(): string {
   const d = new Date()
-  d.setUTCDate(d.getUTCDate() + 400 + Math.floor(Math.random() * 300))
+  // Keep admin-created bookings out of the booking suite's pool (100-650
+  // days out) so parallel runs don't 409 on a shared day.
+  d.setUTCDate(d.getUTCDate() + 700 + Math.floor(Math.random() * 300))
   return d.toISOString().slice(0, 10)
 }
 

@@ -83,7 +83,14 @@ setup('authenticate as the QA admin', async ({ page, baseURL }) => {
     // the rest of the suite can interact with the studio chrome.
     await page.goto('/studio')
     const modal = page.locator('text=Required Profile Details')
-    if (await modal.isVisible({ timeout: 3000 }).catch(() => false)) {
+    // The modal mounts only after the async session fetch resolves, so a
+    // bare `isVisible()` (which returns immediately) can miss it and leave
+    // the profile incomplete in the saved storage state. Wait for it instead.
+    const modalAppeared = await modal
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false)
+    if (modalAppeared) {
       await page.getByLabel('First Name').fill('QA')
       await page.getByLabel('Last Name').fill('Admin')
       await page.getByLabel('Mobile Number').fill('+639170000001')
