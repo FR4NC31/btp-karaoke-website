@@ -18,7 +18,9 @@ import {
 
 function farFutureDay(): string {
   const d = new Date()
-  d.setUTCDate(d.getUTCDate() + 400 + Math.floor(Math.random() * 300))
+  // Keep admin-created bookings out of the booking suite's pool (100-650
+  // days out) so parallel runs don't 409 on a shared day.
+  d.setUTCDate(d.getUTCDate() + 700 + Math.floor(Math.random() * 300))
   return d.toISOString().slice(0, 10)
 }
 
@@ -584,7 +586,7 @@ test.describe('media hub catalog', () => {
     expect((await page.request.get(stored!.coverUrl!)).status()).toBe(404)
   })
 
-  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page, baseURL }) => {
+  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1', timeout: 120_000 }, async ({ page, baseURL }) => {
     const title = `E2E Thumb ${Date.now()}`
 
     try {

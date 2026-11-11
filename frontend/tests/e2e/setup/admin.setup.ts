@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { request as apiRequest, test as setup } from '@playwright/test'
+import { expect, request as apiRequest, test as setup } from '@playwright/test'
 import { ADMIN_STORAGE_STATE, TEST_ADMIN, signInAsAdmin } from '../helpers/auth'
 
 /**
@@ -76,6 +76,40 @@ setup('authenticate as the QA admin', async ({ page, baseURL }) => {
     }
 
     await signInAsAdmin(page)
+
+    // The admin account may have an incomplete profile (address missing),
+    // which surfaces the non-dismissible Required Profile modal on /studio
+    // and hides the page from the accessibility tree. Complete it once so
+    // the rest of the suite can interact with the studio chrome.
+    await page.goto('/studio')
+    const modal = page.locator('text=Required Profile Details')
+    // The modal mounts only after the async session fetch resolves, so a
+    // bare `isVisible()` (which returns immediately) can miss it and leave
+    // the profile incomplete in the saved storage state. Wait for it instead.
+    const modalAppeared = await modal
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false)
+    if (modalAppeared) {
+      await page.getByLabel('First Name').fill('QA')
+      await page.getByLabel('Last Name').fill('Admin')
+      await page.getByLabel('Mobile Number').fill('+639170000001')
+
+      const provinceSelect = page.locator('#required-province')
+      await provinceSelect.selectOption({ index: 1 })
+
+      const citySelect = page.locator('#required-city')
+      await page.waitForFunction(() => (document.querySelector('#required-city') as HTMLSelectElement)?.options.length > 1)
+      await citySelect.selectOption({ index: 1 })
+
+      const barangaySelect = page.locator('#required-barangay')
+      await page.waitForFunction(() => (document.querySelector('#required-barangay') as HTMLSelectElement)?.options.length > 1)
+      await barangaySelect.selectOption({ index: 1 })
+
+      await page.getByRole('button', { name: 'Save & Continue' }).click()
+      await expect(modal).not.toBeVisible({ timeout: 5000 })
+    }
+
     await page.context().storageState({ path: ADMIN_STORAGE_STATE })
   } finally {
     await api.dispose()

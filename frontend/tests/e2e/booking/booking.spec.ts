@@ -115,6 +115,11 @@ async function cancelViaMenu(page: Page, row: Locator) {
 }
 
 test.describe('booking desk', () => {
+  // Booking tests share one QA account and one booking pool; running them
+  // in parallel lets two workers pick the same `unusedDay` and the second
+  // POST /api/bookings 409s. Serializing keeps the shared account's booking
+  // state consistent within this suite.
+  test.describe.configure({ mode: 'serial' })
   test('BOOKING-001: the top bar opens the desk and the catalog renders', { tag: '@p1' }, async ({ page }) => {
     await page.goto('/studio')
 
