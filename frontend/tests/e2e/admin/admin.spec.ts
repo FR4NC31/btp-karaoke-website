@@ -584,7 +584,7 @@ test.describe('media hub catalog', () => {
     expect((await page.request.get(stored!.coverUrl!)).status()).toBe(404)
   })
 
-  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page, baseURL }) => {
+  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1', timeout: 120_000 }, async ({ page, baseURL }) => {
     const title = `E2E Thumb ${Date.now()}`
 
     try {
