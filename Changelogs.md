@@ -69,6 +69,7 @@ Last updated: November 12, 2026
 
 ### Bug Fixes
 
+- fix(ci): keep admin test days within 730-day cap, exempt media upload from body limit (a653fd0)
 - fix(test): use test.setTimeout for ADMIN-013, remove invalid timeout from TestDetails (ab6a76f)
 - fix(e2e): stabilize profile setup + booking contention; add baseline security hardening (d5bde08)
 - fix(e2e): complete admin profile in setup and stabilize ADMIN-013 timeout (8c345da)
