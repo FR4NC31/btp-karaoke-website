@@ -1,4 +1,5 @@
  import { Hono } from 'hono'
+import type { MiddlewareHandler } from 'hono'
 import { cors } from 'hono/cors'
 import { bodyLimit } from 'hono/body-limit'
 import { auth } from './modules/auth/auth.ts'
@@ -50,13 +51,21 @@ app.use('/api/admin', trustedOrigin)
 app.use('/api/admin/*', trustedOrigin)
 
 // Reject oversized request bodies early (1 MB) on the JSON mutation surfaces.
-// Uploads are exempt: they stream through their own size check in storage.ts.
+// Uploads are exempt: /api/admin/media/upload streams a raw MP4/MP3 body of
+// up to 200 MB and enforces its own ceiling in storage.ts.
 const oneMb = 1024 * 1024
-app.use('/api/auth/*', bodyLimit({ maxSize: oneMb }))
-app.use('/api/bookings', bodyLimit({ maxSize: oneMb }))
-app.use('/api/bookings/*', bodyLimit({ maxSize: oneMb }))
-app.use('/api/admin', bodyLimit({ maxSize: oneMb }))
-app.use('/api/admin/*', bodyLimit({ maxSize: oneMb }))
+const jsonBodyLimit = (exempt: RegExp): MiddlewareHandler => {
+  const limit = bodyLimit({ maxSize: oneMb })
+  return async (c, next) => {
+    if (exempt.test(c.req.path)) return next()
+    return limit(c, next)
+  }
+}
+app.use('/api/auth/*', jsonBodyLimit(/$^/))
+app.use('/api/bookings', jsonBodyLimit(/$^/))
+app.use('/api/bookings/*', jsonBodyLimit(/$^/))
+app.use('/api/admin', jsonBodyLimit(/$^/))
+app.use('/api/admin/*', jsonBodyLimit(/\/media\/upload$/))
 
 // Better Auth handles everything under /api/auth/* (sign-in, sign-up,
 // Google OAuth callback, session, sign-out...). Register before any
