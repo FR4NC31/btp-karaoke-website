@@ -1,7 +1,8 @@
 import { and, eq, gte, inArray, like, or } from 'drizzle-orm'
 import { db, pool } from '../src/db/client.ts'
-import { booking, user } from '../src/db/schema.ts'
+import { booking, mediaItem, user } from '../src/db/schema.ts'
 import { releaseExpiredPaymentHolds } from '../src/modules/bookings/payment-holds.ts'
+import { deleteMediaItem } from '../src/modules/media/admin.ts'
 
 /**
  * Resets the shared E2E account's test residue before every Playwright run.
@@ -9,7 +10,7 @@ import { releaseExpiredPaymentHolds } from '../src/modules/bookings/payment-hold
  *   cd backend
  *   npm run reset:e2e-state
  *
- * Three kinds of leftover accumulate between runs against the live QA database:
+ * Four kinds of leftover accumulate between runs against the live QA database:
  *
  *  1. Expired payment holds. `releaseExpiredPaymentHolds` cancels a pending
  *     no-method/GCash booking past its 5-minute deadline — and calls
@@ -33,6 +34,11 @@ import { releaseExpiredPaymentHolds } from '../src/modules/bookings/payment-hold
  *     every new failure adds one. In-person (`filler`) pending rows never
  *     expire either (there is no hold to sweep), so they pile up in the
  *     admin queue until the dashboard renders dozens of dead rows.
+ *
+ *  4. Stale E2E media rows. A run that dies between "Add to the hub" and the
+ *     test's own delete leaves an `E2E *` catalog row whose uploaded files
+ *     are gone — the hub then serves a 404 cover, and ERROR-003 (no 4xx while
+ *     browsing key pages) fails the next run on it.
  *
  * Playwright's globalSetup (frontend/tests/e2e/setup/global-setup.ts) runs
  * this before every suite. Bookings are cancelled, not deleted: history the
@@ -94,6 +100,24 @@ try {
   console.log(
     `[reset-e2e-state] cancelled ${cancelled.length} stale far-future booking(s) at or after ${cutoff}.`,
   )
+
+  // 4. Stale E2E media rows. A run that dies between "Add to the hub" and the
+  //    test's own delete leaves an `E2E *` row behind. Its uploaded files are
+  //    later swept (or were never committed), so the row points at a URL that
+  //    404s — and ERROR-003 fails the *next* run on that 4xx while browsing
+  //    the hub. Titles are namespaced `E2E `, exactly like the guest bookings
+  //    above, so real catalog rows are never touched.
+  const staleMedia = await db
+    .select({ id: mediaItem.id, title: mediaItem.title })
+    .from(mediaItem)
+    .where(like(mediaItem.title, 'E2E %'))
+
+  for (const item of staleMedia) {
+    await deleteMediaItem(item.id)
+  }
+  if (staleMedia.length > 0) {
+    console.log(`[reset-e2e-state] removed ${staleMedia.length} stale E2E media row(s).`)
+  }
 } catch (err) {
   console.error('\nreset-e2e-state failed:', err instanceof Error ? err.message : err)
   process.exitCode = 1

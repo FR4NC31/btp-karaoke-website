@@ -18,9 +18,10 @@ import {
 
 function farFutureDay(): string {
   const d = new Date()
-  // Keep admin-created bookings out of the booking suite's pool (100-650
-  // days out) so parallel runs don't 409 on a shared day.
-  d.setUTCDate(d.getUTCDate() + 700 + Math.floor(Math.random() * 300))
+  // Outside the booking suite's pool (100-650 days out) so parallel runs
+  // don't 409 on a shared day, but inside MAX_DAYS_AHEAD (730) — the API
+  // rejects anything beyond two years with "too far ahead".
+  d.setUTCDate(d.getUTCDate() + 651 + Math.floor(Math.random() * 74))
   return d.toISOString().slice(0, 10)
 }
 
