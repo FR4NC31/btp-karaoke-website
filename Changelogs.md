@@ -69,6 +69,7 @@ Last updated: November 12, 2026
 
 ### Bug Fixes
 
+- fix(e2e): sweep stale E2E media rows in reset-e2e-state (2d09e77)
 - fix(ci): keep admin test days within 730-day cap, exempt media upload from body limit (a653fd0)
 - fix(test): use test.setTimeout for ADMIN-013, remove invalid timeout from TestDetails (ab6a76f)
 - fix(e2e): stabilize profile setup + booking contention; add baseline security hardening (d5bde08)
