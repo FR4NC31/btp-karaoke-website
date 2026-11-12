@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 11, 2026
+Last updated: November 12, 2026
 
 ### Features
 
@@ -69,6 +69,7 @@ Last updated: November 11, 2026
 
 ### Bug Fixes
 
+- fix(test): use test.setTimeout for ADMIN-013, remove invalid timeout from TestDetails (ab6a76f)
 - fix(e2e): stabilize profile setup + booking contention; add baseline security hardening (d5bde08)
 - fix(e2e): complete admin profile in setup and stabilize ADMIN-013 timeout (8c345da)
 - fix(ci): unpin retired Aiven CA from full-e2e job (ddbd731)

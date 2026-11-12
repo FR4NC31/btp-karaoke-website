@@ -586,7 +586,10 @@ test.describe('media hub catalog', () => {
     expect((await page.request.get(stored!.coverUrl!)).status()).toBe(404)
   })
 
-  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1', timeout: 120_000 }, async ({ page, baseURL }) => {
+  test('ADMIN-013: a video thumbnail is grabbed, overridden, removed, and defaulted', { tag: '@p1' }, async ({ page, baseURL }) => {
+    // Heavier video-processing flow (grab thumbnail, override, remove, default)
+    // can exceed the global 60 s under parallel workers; extend just this test.
+    test.setTimeout(120_000)
     const title = `E2E Thumb ${Date.now()}`
 
     try {
