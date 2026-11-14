@@ -185,6 +185,9 @@ Last updated: November 14, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into docs/spotify-google-legal-reference (69da42b)
+- Merge pull request #95 from itsGenreee/feat/spotify-social-provider (b3e4b06)
+- docs: add Spotify & Google platform terms reference (72b4bcf)
 - Merge pull request #94 from FR4NC31/feat/signin-spotify-button (6567ab2)
 - Merge pull request #93 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (843f47b)
 - Merge pull request #92 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (33c3457)
