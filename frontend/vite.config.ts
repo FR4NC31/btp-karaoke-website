@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: '127.0.0.1',
       proxy: {
         '/api': {
           target: env.AUTH_PROXY_TARGET || 'http://localhost:3000',
