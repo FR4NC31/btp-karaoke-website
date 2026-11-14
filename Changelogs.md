@@ -6,6 +6,7 @@ Last updated: November 14, 2026
 
 ### Features
 
+- feat(auth): register Spotify social provider with account_id keying (2965af0)
 - feat(auth): add Spotify button next to Google on sign-in (c21c5e1)
 - feat(admin): spotify-style sidebar status + identity footer (601dcd4)
 - feat(booking): redesign booking desk UI, toast, skeleton, session states (6c836a9)
@@ -172,6 +173,7 @@ Last updated: November 14, 2026
 
 ### Chores
 
+- chore: update changelog (d862b11)
 - chore(db): add OTP column migration, switch example env to Neon (106f905)
 - chore: add QA admin seed script and fix e2e booking pool (5cc39a5)
 - chore: normalize line endings to LF for admin overview files (559bfd1)
