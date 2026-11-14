@@ -14,7 +14,7 @@ export default function AuthError() {
   const code = searchParams.get('error')
   const description = searchParams.get('error_description')
   const message = code
-    ? oauthError(code, description)
+    ? oauthError(code, description, searchParams.get('provider'))
     : 'Sign-in could not be completed. Please try again.'
 
   return (

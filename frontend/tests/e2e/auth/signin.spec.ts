@@ -106,6 +106,45 @@ test.describe('authentication', () => {
     expect(socialSignInBody?.errorCallbackURL).toBe(`${appOrigin}/signin`)
   })
 
+  test('AUTH-023: Spotify sign-in is offered and hands off to Spotify', { tag: '@p2' }, async ({ page }) => {
+    await page.goto('/signin')
+    const appOrigin = new URL(page.url()).origin
+
+    const spotifyButton = page.getByRole('button', { name: 'Continue with Spotify' })
+    await expect(spotifyButton).toBeEnabled()
+
+    let socialSignInBody: { errorCallbackURL?: string } | undefined
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/auth/sign-in/social')) {
+        socialSignInBody = request.postDataJSON() as { errorCallbackURL?: string }
+      }
+    })
+
+    await page.route('https://accounts.spotify.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><title>Spotify stub</title>',
+      }),
+    )
+
+    await spotifyButton.click()
+    await page.waitForURL(/https:\/\/accounts\.spotify\.com\/authorize/)
+
+    const params = new URL(page.url()).searchParams
+    expect(params.get('client_id')).toBeTruthy()
+    expect(params.get('state')).toBeTruthy()
+    // Authorization Code + PKCE: Spotify requires the challenge on the
+    // authorize request; the verifier is exchanged server-side.
+    expect(params.get('code_challenge_method')).toBe('S256')
+    expect(params.get('code_challenge')).toBeTruthy()
+    expect(params.get('redirect_uri')).toMatch(/\/api\/auth\/callback\/spotify$/)
+    // Minimal scope — login reads only display_name/email/images/id.
+    expect(params.get('scope')).toBe('user-read-email')
+    // Tagged so a failed flow renders "Spotify …" wording, not Google's.
+    expect(socialSignInBody?.errorCallbackURL).toBe(`${appOrigin}/signin?provider=spotify`)
+  })
+
   test('AUTH-018: an OAuth failure arriving as a query param is shown', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/signin?error=access_denied&error_description=The+user+cancelled')
 
