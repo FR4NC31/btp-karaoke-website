@@ -173,6 +173,7 @@ Last updated: November 14, 2026
 
 ### Chores
 
+- chore: update changelog (d862b11)
 - chore(db): add OTP column migration, switch example env to Neon (106f905)
 - chore: add QA admin seed script and fix e2e booking pool (5cc39a5)
 - chore: normalize line endings to LF for admin overview files (559bfd1)
@@ -184,6 +185,7 @@ Last updated: November 14, 2026
 
 ### Other Changes
 
+- Merge pull request #94 from FR4NC31/feat/signin-spotify-button (6567ab2)
 - Merge pull request #93 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (843f47b)
 - Merge pull request #92 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (33c3457)
 - Merge pull request #91 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (2ca5ad6)
