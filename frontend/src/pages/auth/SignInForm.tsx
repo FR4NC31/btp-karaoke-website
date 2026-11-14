@@ -31,10 +31,13 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
 
   const [error, setError] = useState(() => {
     const code = searchParams.get('error')
-    return code ? oauthError(code, searchParams.get('error_description')) : ''
+    return code
+      ? oauthError(code, searchParams.get('error_description'), searchParams.get('provider'))
+      : ''
   })
   const [submitting, setSubmitting] = useState(false)
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
+  const [spotifySubmitting, setSpotifySubmitting] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -91,6 +94,35 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
     }
   }
 
+  async function handleSpotify() {
+    setSpotifySubmitting(true)
+    setError('')
+
+    try {
+      const origin = window.location.origin
+      const next = searchParams.get('next')
+      const callback = next
+        ? `${origin}/signin?next=${encodeURIComponent(next)}`
+        : `${origin}/signin`
+      // provider=spotify rides only on the error return so a failed flow
+      // renders "Spotify …" wording; Better Auth appends ?error= with
+      // appendQueryParams, which keeps the tag intact (lib/auth-errors.ts).
+      const { error: socialError } = await signIn.social({
+        provider: 'spotify',
+        callbackURL: callback,
+        errorCallbackURL: `${callback}${next ? '&' : '?'}provider=spotify`,
+      })
+
+      if (socialError) {
+        setError(readableError(socialError))
+        setSpotifySubmitting(false)
+      }
+    } catch (err) {
+      setError(unexpectedError('Spotify sign-in', err))
+      setSpotifySubmitting(false)
+    }
+  }
+
   return (
     <>
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -136,11 +168,12 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
       </div>
 
       {/*
-        Design-only: Spotify is presentational until the backend registers
-        the spotify social provider (needs SPOTIFY_CLIENT_ID/SECRET) — do not
-        wire signIn.social('spotify') before that exists.
-        Both buttons sit in equal columns; the label shrinks to 11px so
+        Both social buttons sit in equal columns; the label is 11px so
         "Continue with Google" / "Continue with Spotify" fit half a card.
+        Spotify mirrors handleGoogle: the backend registers the spotify
+        provider, and its error return is tagged provider=spotify so a
+        failure reads "Spotify …" instead of the Google default
+        (oauthError in lib/auth-errors.ts).
       */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <button
@@ -156,10 +189,14 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
         </button>
         <button
           type="button"
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2 py-2.5 text-[11px] font-medium text-text-primary transition hover:bg-surface"
+          onClick={handleSpotify}
+          disabled={spotifySubmitting}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2 py-2.5 text-[11px] font-medium text-text-primary transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
         >
           <img src={spotifyIcon} alt="" width={16} height={16} className="shrink-0" />
-          <span className="text-center leading-tight">Continue with Spotify</span>
+          <span className="text-center leading-tight">
+            {spotifySubmitting ? 'Redirecting to Spotify…' : 'Continue with Spotify'}
+          </span>
         </button>
       </div>
 

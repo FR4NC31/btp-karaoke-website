@@ -297,6 +297,25 @@ below. Run a single priority with `npx playwright test -g "@p1"`.
   guard requires province, city/municipality, and barangay together.
 - **Automation:** Playwright — **Status: Automated**
 
+### AUTH-023
+
+- **Title:** Spotify sign-in is offered and hands off to Spotify
+- **Priority:** P2
+- **Steps:** 1. Open `/signin`. 2. Click **Continue with Spotify**.
+- **Expected:** The button is enabled; the browser is sent to Spotify's
+  authorization endpoint carrying our `client_id`, a `state`, PKCE
+  (`code_challenge_method=S256` plus `code_challenge`), the minimal
+  `user-read-email` scope, and a `redirect_uri` ending
+  `/api/auth/callback/spotify` — the exact URI that must be registered as a
+  Redirect URI in the Spotify developer dashboard. The social sign-in request
+  carries an `errorCallbackURL` of `/signin?provider=spotify`.
+- **Notes:** Spotify's real page is stubbed by a Playwright route, so the test
+  proves the hand-off without touching Spotify or needing an account. The
+  `provider=spotify` tag is what makes a failed flow render "Spotify …"
+  wording instead of the Google default in `oauthError()`
+  (`src/lib/auth-errors.ts`).
+- **Automation:** Playwright — **Status: Automated**
+
 ---
 
 ## Navigation — `frontend/tests/e2e/navigation/navigation.spec.ts`
@@ -1489,7 +1508,7 @@ exist yet**. Revisit when the feature ships — do not fake coverage.
 | Song detail / lyrics synchronization   | N/A                   | No song detail page; the admin stores staff-only lyrics on music rows (the public `/api/media` payload omits them), but nothing renders or syncs them yet. |
 | Real playback, progress movement, volume | Covered               | One persistent `<video>` element owns all studio playback (audio-only rows use the same element). Play/pause, seek and volume are pinned by KARAOKE-006…008; playback survives route changes, stays alive in the mini player, and continues while hidden (KARAOKE-010/011/017/018/019/020). The console plays the row's uploaded file when one is attached (ADMIN-009, KARAOKE-012) and the bundled master otherwise. Queue skips and end-of-song auto-advance play each row's exact file, including from the hidden hub player (KARAOKE-014). |
 | Media loading failure / unavailable song | Partial               | Uploads are validated at write time (ADMIN-010) and rows can only reference files this backend stores, so a day-one broken source is rejected; a file deleted outside the app would surface as a stalled media element (no UI error state yet). |
-| OAuth login flow (Google)              | Partial               | The hand-off to Google is automated (AUTH-008), OAuth errors surface in the UI (AUTH-018), and the global Better Auth error redirect has a dedicated fallback page (AUTH-021); the consent step needs a real Google account, so it stays manual. |
+| OAuth login flow (Google / Spotify)  | Partial               | The hand-off to Google is automated (AUTH-008) and to Spotify (AUTH-023), OAuth errors surface in the UI (AUTH-018), and the global Better Auth error redirect has a dedicated fallback page (AUTH-021); the consent step needs a real provider account, so it stays manual. |
 | Online payment for a booking           | N/A                   | The prototype takes no payment. Every booking is created `pending` and the studio confirms it offline. |
 | Booking accept/reject by an admin      | Covered               | Shipped: the `/admin` queue confirms/rejects pending reservations (ADMIN-002/003). Every admin endpoint is gated by `requireAdmin` (SEC-001/002), role self-promotion is closed (SEC-003), and admins can also take reservations for a tagged customer or a guest (ADMIN-004/005). |
 | Media hub catalog management           | Covered               | The hub renders the `media_item` catalog, curated from `/admin/media`: add/edit (ADMIN-007 - reaches `/studio`, multi-line lyrics stored on music rows and kept staff-only: the public `/api/media` payload omits them), hide/show + reorder (ADMIN-008), real MP4/MP3 uploads with delete confirmation (ADMIN-009/010 - stored files serve byte ranges and play from the hub, KARAOKE-012), and tag metadata + cover art / thumbnails (ADMIN-012/013 - tags pre-fill the blank boxes (artist included), the runtime reads off the picked file, embedded art, grabbed frames, picked images, all stored as optimized WebP; without one, default art), and staff previews (ADMIN-014 - **Play** opens `/studio/player-queue` on the row and admins get the **Admin details** panel; KARAOKE-002 pins it away from regular users). KARAOKE-003/005 create their rows via the admin API and delete them. |

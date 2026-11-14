@@ -6,6 +6,7 @@ Last updated: November 14, 2026
 
 ### Features
 
+- feat(auth): wire Spotify sign-in with provider-aware OAuth errors (8bc0c92)
 - feat(auth): register Spotify social provider with account_id keying (2965af0)
 - feat(auth): add Spotify button next to Google on sign-in (c21c5e1)
 - feat(admin): spotify-style sidebar status + identity footer (601dcd4)
@@ -71,6 +72,7 @@ Last updated: November 14, 2026
 
 ### Bug Fixes
 
+- fix(frontend): bind vite dev server host to 127.0.0.1 (5454ff7)
 - fix(e2e): sweep stale E2E media rows in reset-e2e-state (2d09e77)
 - fix(ci): keep admin test days within 730-day cap, exempt media upload from body limit (a653fd0)
 - fix(test): use test.setTimeout for ADMIN-013, remove invalid timeout from TestDetails (ab6a76f)
@@ -185,6 +187,7 @@ Last updated: November 14, 2026
 
 ### Other Changes
 
+- Merge pull request #96 from itsGenreee/docs/spotify-google-legal-reference (bc783c4)
 - Merge branch 'develop' into docs/spotify-google-legal-reference (69da42b)
 - Merge pull request #95 from itsGenreee/feat/spotify-social-provider (b3e4b06)
 - docs: add Spotify & Google platform terms reference (72b4bcf)

@@ -129,11 +129,14 @@ jobs:
             # disposable local container; it is not a repository credential.
             echo "DATABASE_URL=postgresql://postgres:${E2E_DB_PASSWORD}@127.0.0.1:5432/btp_e2e"
             echo "DB_CA_FILE="
-            # Dummy non-empty values: AUTH-008 stubs the Google page itself,
-            # so the backend only needs *some* client id to build the OAuth
-            # redirect URL. Empty values make Better Auth 500 the handoff.
+            # Dummy non-empty values: AUTH-008 (Google) and AUTH-023
+            # (Spotify) stub the provider pages themselves, so the backend
+            # only needs *some* client id to build the OAuth redirect URL.
+            # Empty values make Better Auth 500 the handoff.
             echo "GOOGLE_CLIENT_ID=e2e-dummy-client-id"
             echo "GOOGLE_CLIENT_SECRET=e2e-dummy-client-secret"
+            echo "SPOTIFY_CLIENT_ID=e2e-dummy-spotify-client-id"
+            echo "SPOTIFY_CLIENT_SECRET=e2e-dummy-spotify-client-secret"
           } > .env
 
       - name: Typecheck (backend)
@@ -240,6 +243,8 @@ jobs:
             # Dummy non-empty values — same reason as pr-checks above.
             echo "GOOGLE_CLIENT_ID=e2e-dummy-client-id"
             echo "GOOGLE_CLIENT_SECRET=e2e-dummy-client-secret"
+            echo "SPOTIFY_CLIENT_ID=e2e-dummy-spotify-client-id"
+            echo "SPOTIFY_CLIENT_SECRET=e2e-dummy-spotify-client-secret"
           } > .env
 
       - name: Install Playwright browsers
