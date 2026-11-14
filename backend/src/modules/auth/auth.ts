@@ -3,6 +3,7 @@ import { betterAuth } from 'better-auth'
 import type { User } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import { resolveAuthNetworkSettings } from './settings.ts'
+import { getSpotifyUserInfo } from './spotify.ts'
 import { pool } from '../../db/client.ts'
 import { validateLocationUpdate } from '../users/location.ts'
 
@@ -90,6 +91,17 @@ export const auth = betterAuth({
         contact_num: '',
       }),
     },
+    spotify: {
+      clientId: process.env.SPOTIFY_CLIENT_ID as string,
+      clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
+      // Providing getUserInfo replaces Better Auth's stock /v1/me fetch
+      // entirely — including its mapProfileToUser call — so both the
+      // required-field mapping and the account_id subject fix live in
+      // getSpotifyUserInfo (spotify.ts). The stock default scope
+      // (user-read-email) is kept: the minimum for the fields we read
+      // (display_name, email, images, id/account_id).
+      getUserInfo: getSpotifyUserInfo,
+    },
   },
   // Policy: one identity per sign-in method — no implicit account linking.
   //
@@ -119,6 +131,13 @@ export const auth = betterAuth({
   // The sound route instead is real email verification
   // (emailAndPassword.requireEmailVerification plus a Resend/SMTP sender), so
   // a local email is proven before anything is allowed to merge into it.
+  //
+  // Spotify sharpens the same argument: its OpenAPI spec marks the profile
+  // `email` deprecated and explicitly unverified ("no proof that it actually
+  // belongs to the user"), and Better Auth creates Spotify users at
+  // emailVerified=false. So 'spotify' must never join trustedProviders
+  // without real local email verification either — a Spotify sign-in can
+  // claim any address it likes.
   user: {
     additionalFields: {
       first_name: {
