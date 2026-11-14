@@ -6,6 +6,7 @@ Last updated: November 14, 2026
 
 ### Features
 
+- feat(auth): register Spotify social provider with account_id keying (2965af0)
 - feat(auth): add Spotify button next to Google on sign-in (c21c5e1)
 - feat(admin): spotify-style sidebar status + identity footer (601dcd4)
 - feat(booking): redesign booking desk UI, toast, skeleton, session states (6c836a9)
