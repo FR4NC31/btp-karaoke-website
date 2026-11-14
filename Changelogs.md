@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: November 12, 2026
+Last updated: November 14, 2026
 
 ### Features
 
+- feat(auth): add Spotify button next to Google on sign-in (c21c5e1)
 - feat(admin): spotify-style sidebar status + identity footer (601dcd4)
 - feat(booking): redesign booking desk UI, toast, skeleton, session states (6c836a9)
 - feat(profile): read-only profile with edit modal for personal info and address (c89773f)
@@ -182,6 +183,9 @@ Last updated: November 12, 2026
 
 ### Other Changes
 
+- Merge pull request #93 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (843f47b)
+- Merge pull request #92 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (33c3457)
+- Merge pull request #91 from itsGenreee/fix/e2e-admin-profile-modal-and-timeout (2ca5ad6)
 - Merge pull request #90 from FR4NC31/fix/ci-e2e-db-ca-file (ee3bd5a)
 - Merge pull request #89 from FR4NC31/chore/neon-otp-migration (c0d4282)
 - Merge pull request #88 from FR4NC31/fix/e2e-booking-suspension (eb91ae6)
