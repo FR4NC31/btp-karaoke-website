@@ -13,7 +13,7 @@
     "seed:qa-admin": "node --env-file=.env scripts/seed-qa-admin.ts",
     "promote-admin": "node --env-file=.env scripts/promote-admin.ts",
     "reset:e2e-state": "node --env-file=.env scripts/reset-e2e-state.ts",
-    "test": "node --test src/modules/auth/settings.test.ts src/modules/users/location.test.ts src/modules/bookings/validation.test.ts src/middleware/security-headers.test.ts src/middleware/rate-limit.test.ts src/middleware/body-limit.test.ts",
+    "test": "node --test src/modules/auth/settings.test.ts src/modules/auth/spotify.test.ts src/modules/users/location.test.ts src/modules/bookings/validation.test.ts src/middleware/security-headers.test.ts src/middleware/rate-limit.test.ts src/middleware/body-limit.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
