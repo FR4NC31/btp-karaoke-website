@@ -72,6 +72,7 @@ Last updated: November 14, 2026
 
 ### Bug Fixes
 
+- fix(frontend): bind vite dev server host to 127.0.0.1 (5454ff7)
 - fix(e2e): sweep stale E2E media rows in reset-e2e-state (2d09e77)
 - fix(ci): keep admin test days within 730-day cap, exempt media upload from body limit (a653fd0)
 - fix(test): use test.setTimeout for ADMIN-013, remove invalid timeout from TestDetails (ab6a76f)
