@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import TextInput from '../../components/TextInput'
 import PasswordField from '../../components/PasswordField'
 import googleIcon from '../../assets/icons/googleIcon.svg'
+import spotifyIcon from '../../assets/icons/spotifyIcon.svg'
 import { authClient, signIn } from '../../lib/auth-client'
 import { landingPathFor } from '../../lib/redirects'
 import { oauthError, readableError, unexpectedError } from '../../lib/auth-errors'
@@ -134,15 +135,33 @@ export default function SignInForm({ onSwitch, onSuccess, email: emailProp, onEm
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <button
-        type="button"
-        onClick={handleGoogle}
-        disabled={googleSubmitting}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface-elevated px-4 py-2.5 font-medium text-text-primary transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <img src={googleIcon} alt="" width={18} height={18} />
-        {googleSubmitting ? 'Redirecting to Google…' : 'Continue with Google'}
-      </button>
+      {/*
+        Design-only: Spotify is presentational until the backend registers
+        the spotify social provider (needs SPOTIFY_CLIENT_ID/SECRET) — do not
+        wire signIn.social('spotify') before that exists.
+        Both buttons sit in equal columns; the label shrinks to 11px so
+        "Continue with Google" / "Continue with Spotify" fit half a card.
+      */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={googleSubmitting}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2 py-2.5 text-[11px] font-medium text-text-primary transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <img src={googleIcon} alt="" width={16} height={16} className="shrink-0" />
+          <span className="text-center leading-tight">
+            {googleSubmitting ? 'Redirecting to Google…' : 'Continue with Google'}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2 py-2.5 text-[11px] font-medium text-text-primary transition hover:bg-surface"
+        >
+          <img src={spotifyIcon} alt="" width={16} height={16} className="shrink-0" />
+          <span className="text-center leading-tight">Continue with Spotify</span>
+        </button>
+      </div>
 
       <p className="mt-6 text-center text-sm text-text-secondary">
         Don&apos;t have an account?{' '}
