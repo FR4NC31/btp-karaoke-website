@@ -91,17 +91,21 @@ export const auth = betterAuth({
         contact_num: '',
       }),
     },
-    spotify: {
-      clientId: process.env.SPOTIFY_CLIENT_ID as string,
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
-      // Providing getUserInfo replaces Better Auth's stock /v1/me fetch
-      // entirely — including its mapProfileToUser call — so both the
-      // required-field mapping and the account_id subject fix live in
-      // getSpotifyUserInfo (spotify.ts). The stock default scope
-      // (user-read-email) is kept: the minimum for the fields we read
-      // (display_name, email, images, id/account_id).
-      getUserInfo: getSpotifyUserInfo,
-    },
+    ...(process.env.SPOTIFY_CLIENT_ID
+      ? {
+          spotify: {
+            clientId: process.env.SPOTIFY_CLIENT_ID as string,
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
+            // Providing getUserInfo replaces Better Auth's stock /v1/me fetch
+            // entirely — including its mapProfileToUser call — so both the
+            // required-field mapping and the account_id subject fix live in
+            // getSpotifyUserInfo (spotify.ts). The stock default scope
+            // (user-read-email) is kept: the minimum for the fields we read
+            // (display_name, email, images, id/account_id).
+            getUserInfo: getSpotifyUserInfo,
+          },
+        }
+      : {}),
   },
   // Policy: one identity per sign-in method — no implicit account linking.
   //
