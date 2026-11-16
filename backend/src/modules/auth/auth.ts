@@ -1,4 +1,5 @@
 import { dash } from '@better-auth/infra'
+import { admin } from 'better-auth/plugins'
 import { betterAuth } from 'better-auth'
 import type { User } from 'better-auth'
 import { APIError } from 'better-auth/api'
@@ -214,6 +215,7 @@ export const auth = betterAuth({
     dash({
       apiKey: process.env.BETTER_AUTH_API_KEY,
     }),
+    admin(),
   ],
 })
 
