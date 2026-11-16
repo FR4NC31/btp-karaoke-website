@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 14, 2026
+Last updated: November 15, 2026
 
 ### Features
 
@@ -72,6 +72,7 @@ Last updated: November 14, 2026
 
 ### Bug Fixes
 
+- fix(auth): register Spotify provider only when SPOTIFY_CLIENT_ID is set (4862a98)
 - fix(frontend): bind vite dev server host to 127.0.0.1 (5454ff7)
 - fix(e2e): sweep stale E2E media rows in reset-e2e-state (2d09e77)
 - fix(ci): keep admin test days within 730-day cap, exempt media upload from body limit (a653fd0)
@@ -187,6 +188,7 @@ Last updated: November 14, 2026
 
 ### Other Changes
 
+- Merge pull request #97 from itsGenreee/feat/spotify-signin-wiring (9bc7c36)
 - Merge pull request #96 from itsGenreee/docs/spotify-google-legal-reference (bc783c4)
 - Merge branch 'develop' into docs/spotify-google-legal-reference (69da42b)
 - Merge pull request #95 from itsGenreee/feat/spotify-social-provider (b3e4b06)
