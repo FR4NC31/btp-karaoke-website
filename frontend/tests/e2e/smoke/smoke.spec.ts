@@ -31,18 +31,18 @@ test.describe('smoke', () => {
 
   test('SMOKE-003: user can authenticate', { tag: '@p0' }, async ({ page }) => {
     await signIn(page)
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
   })
 
   test('SMOKE-004: user can discover the video song', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/studio')
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Recently Played')
     await expect(page.getByRole('link', { name: 'Play The Reason' })).toBeVisible()
   })
 
   test('SMOKE-005: critical karaoke flow works', { tag: '@p0' }, async ({ page }) => {
     await signIn(page)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Recently Played')
     await expect(page.getByRole('contentinfo')).toHaveCount(0)
 
     await page.getByRole('link', { name: 'Play The Reason' }).click()

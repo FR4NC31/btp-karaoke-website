@@ -364,6 +364,7 @@ export default function StudioPlayer({
         kind: queuedPlay.source.kind,
         mediaId: queuedPlay.row.mediaId,
         album: queuedItem?.album ?? null,
+        tag: queuedItem?.tag ?? null,
         duration: queuedPlay.row.len || null,
       })
       return
@@ -377,6 +378,7 @@ export default function StudioPlayer({
       kind: item.section === 'music' ? 'music' : 'video',
       mediaId: item.id,
       album: item.album,
+      tag: item.tag,
       duration: item.duration,
     })
   }, [catalog, item, queuedPlay, setOnAir])

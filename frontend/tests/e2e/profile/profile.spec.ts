@@ -1,8 +1,7 @@
 import { test, expect } from '../fixtures'
-import { TEST_USER } from '../helpers/auth'
 
 test.describe('profile', () => {
-  test('PROFILE-001: profile menu opens the account page', { tag: '@p2' }, async ({ page }) => {
+  test('PROFILE-001: profile menu opens the redesigned profile page', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio')
 
     await page.getByRole('button', { name: 'Open profile menu' }).click()
@@ -10,20 +9,26 @@ test.describe('profile', () => {
 
     await expect(page).toHaveURL('/studio/profile')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Personal Details' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Location' })).toBeVisible()
-    await expect(page.getByText(TEST_USER.email)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Share Profile' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Bookings/ })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Favorites' })).toBeVisible()
   })
 
-  test('PROFILE-002: account and user profile tabs switch panels', { tag: '@p2' }, async ({ page }) => {
+  test('PROFILE-002: Favorites / Playlists / History tabs switch panels', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio/profile')
 
-    await expect(page.getByRole('heading', { name: 'Singing & Audio Preferences' })).toBeVisible()
+    const favorites = page.getByRole('tab', { name: 'Favorites' })
+    const playlists = page.getByRole('tab', { name: 'Playlists' })
+    const history = page.getByRole('tab', { name: 'History' })
 
-    await page.getByRole('button', { name: 'User Profile' }).click()
-    await expect(page.getByRole('heading', { name: 'Public Profile' })).toBeVisible()
+    await expect(favorites).toHaveAttribute('aria-selected', 'true')
 
-    await page.getByRole('button', { name: 'My Account' }).click()
-    await expect(page.getByRole('heading', { name: 'Personal Details' })).toBeVisible()
+    await playlists.click()
+    await expect(playlists).toHaveAttribute('aria-selected', 'true')
+    await expect(favorites).toHaveAttribute('aria-selected', 'false')
+
+    await history.click()
+    await expect(history).toHaveAttribute('aria-selected', 'true')
+    await expect(playlists).toHaveAttribute('aria-selected', 'false')
   })
 })

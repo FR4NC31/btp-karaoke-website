@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import StudioTopBar from './components/StudioTopBar'
+import StudioMobileNav from './components/StudioMobileNav'
 import StudioSidebar from './components/StudioSidebar'
 import PlayerBar from './components/PlayerBar'
 import StudioPlayer from './components/StudioPlayer'
@@ -84,30 +85,33 @@ export default function StudioShell() {
 
   return (
     <div className="flex h-dvh flex-col bg-background text-text-primary">
-      <StudioTopBar />
-
       <div className="flex min-h-0 flex-1">
         <StudioSidebar />
 
-        <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-          <LoungeQueueProvider api={queue}>
-            <PlaylistLibraryProvider api={playlistLibrary}>
-              <div className="min-h-0 flex-1 overflow-y-auto p-6">
-                {loading && !skipSkeleton ? (
-                  onProfile ? <ProfileSkeleton /> : <StudioSkeleton />
-                ) : (
-                  <Outlet context={player} />
-                )}
-              </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <StudioTopBar />
+          <StudioMobileNav />
 
-              <StudioPlayer
-                player={player}
-                queueOpen={queueOpen}
-                onToggleQueue={() => setOverlayOpen((open) => !open)}
-              />
-            </PlaylistLibraryProvider>
-          </LoungeQueueProvider>
-        </main>
+          <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <LoungeQueueProvider api={queue}>
+              <PlaylistLibraryProvider api={playlistLibrary}>
+                <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                  {loading && !skipSkeleton ? (
+                    onProfile ? <ProfileSkeleton /> : <StudioSkeleton />
+                  ) : (
+                    <Outlet context={player} />
+                  )}
+                </div>
+
+                <StudioPlayer
+                  player={player}
+                  queueOpen={queueOpen}
+                  onToggleQueue={() => setOverlayOpen((open) => !open)}
+                />
+              </PlaylistLibraryProvider>
+            </LoungeQueueProvider>
+          </main>
+        </div>
       </div>
 
       {showPlayerBar && (

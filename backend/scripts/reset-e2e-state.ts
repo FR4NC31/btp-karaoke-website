@@ -118,6 +118,18 @@ try {
   if (staleMedia.length > 0) {
     console.log(`[reset-e2e-state] removed ${staleMedia.length} stale E2E media row(s).`)
   }
+
+  // 5. The seeded video row must be live: ~25 hub/playlist/player tests pin
+  //    "The Reason" as the first card. A Hide left behind by a died run (or a
+  //    manual admin session) otherwise fails them all with no other symptom.
+  const [seeded] = await db
+    .update(mediaItem)
+    .set({ isActive: true, updatedAt: new Date() })
+    .where(and(eq(mediaItem.id, 'med_reason_01'), eq(mediaItem.isActive, false)))
+    .returning({ title: mediaItem.title })
+  if (seeded) {
+    console.log(`[reset-e2e-state] re-activated seeded media row "${seeded.title}".`)
+  }
 } catch (err) {
   console.error('\nreset-e2e-state failed:', err instanceof Error ? err.message : err)
   process.exitCode = 1

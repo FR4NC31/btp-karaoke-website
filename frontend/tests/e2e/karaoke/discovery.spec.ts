@@ -28,8 +28,8 @@ function loopedSilence(repeats: number): Buffer {
 test.describe('karaoke discovery', () => {
   test('KARAOKE-001: studio hub opens with the published video song', { tag: '@p0' }, async ({ page }) => {
     await page.goto('/studio')
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('The Reason')
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Recently Played')
     await expect(page.getByRole('heading', { name: 'Video Song' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Play The Reason' })).toBeVisible()
     await expect(page.getByText('Active Stem & Track Telemetry')).toHaveCount(0)
@@ -64,8 +64,8 @@ test.describe('karaoke discovery', () => {
 
     try {
       await page.goto('/studio')
-      await expect(page.getByRole('heading', { name: 'Music Player' })).toBeVisible()
-      await expect(page.getByText(/Viewing \d+ of \d+ tracks/)).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Music Tracks' })).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Explore Library' })).toBeVisible()
 
       const card = page.locator('main article').filter({ hasText: title })
       await expect(card).toContainText('E2E session archive')
@@ -76,8 +76,8 @@ test.describe('karaoke discovery', () => {
 
       await card.getByRole('button', { name: `More options for ${title}` }).click()
       const dialog = page.getByRole('dialog')
-      await expect(dialog.getByText('Not available for the queue')).toBeVisible()
-      await expect(dialog.getByRole('button', { name: 'Add to queue' })).toHaveCount(0)
+      await expect(dialog.getByRole('button', { name: 'Add to Playlist' })).toBeDisabled()
+      await expect(dialog.getByRole('button', { name: 'Add to Queue' })).toBeDisabled()
       await page.keyboard.press('Escape')
 
       const adminRow = await getMediaItemAsAdmin(baseURL, id)
@@ -95,17 +95,19 @@ test.describe('karaoke discovery', () => {
     }
   })
 
-  test('KARAOKE-004: sidebar session browsing highlights selection', { tag: '@p2' }, async ({ page }) => {
+  test('KARAOKE-004: sidebar navigation highlights the current destination', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio')
-    await expect(page.getByRole('heading', { name: 'Catalog Stacks' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
 
-    const defaultItem = page.getByRole('button', { name: /Master Collections Vault/ })
-    const otherItem = page.getByRole('button', { name: /Stem Multitracks/ })
+    const nav = page.getByRole('navigation', { name: 'Studio', exact: true })
+    const home = nav.getByRole('link', { name: 'Home' })
+    const playlists = nav.getByRole('link', { name: 'Playlists' })
 
-    await expect(defaultItem).toHaveClass(/bg-primary-soft/)
-    await otherItem.click()
-    await expect(otherItem).toHaveClass(/bg-primary-soft/)
-    await expect(defaultItem).not.toHaveClass(/bg-primary-soft/)
+    await expect(home).toHaveClass(/bg-primary-soft/)
+    await playlists.click()
+    await expect(page).toHaveURL('/studio/playlists')
+    await expect(playlists).toHaveClass(/bg-primary-soft/)
+    await expect(home).not.toHaveClass(/bg-primary-soft/)
   })
 
   test('KARAOKE-005: radio section renders published stations', { tag: '@p2' }, async ({ page, baseURL }) => {
@@ -121,7 +123,7 @@ test.describe('karaoke discovery', () => {
     try {
       await page.goto('/studio')
       await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
-      await expect(page.getByText(/Viewing \d+ of \d+ stations/)).toBeVisible()
+      await expect(page.getByText(/\d+ Stations Live/)).toBeVisible()
 
       const card = page.locator('main article').filter({ hasText: title })
       await expect(card).toContainText('E2E genre')
@@ -201,7 +203,7 @@ test.describe('karaoke discovery', () => {
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
-    await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Recently Played' })).toBeVisible()
   })
 
   test('KARAOKE-010: leaving the console keeps the same song playing on the hub', { tag: '@p2' }, async ({ page }) => {
@@ -327,16 +329,17 @@ test.describe('karaoke discovery', () => {
     await expect(optionsButton).toHaveAttribute('aria-haspopup', 'dialog')
     await optionsButton.click()
 
-    const dialog = page.getByRole('dialog')
-    await expect(dialog.getByRole('heading', { name: 'The Reason' })).toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Add to Your Library' })).toBeDisabled()
-    await expect(dialog.getByRole('button', { name: 'Go to artist radio' })).toBeDisabled()
-    await expect(dialog.getByRole('button', { name: 'Add to playlist' })).toBeEnabled()
-    await expect(dialog.getByRole('button', { name: 'Share' })).toBeDisabled()
-    await dialog.getByRole('button', { name: 'Add to queue' }).click()
-    await expect(dialog.getByRole('button', { name: 'Added to queue' })).toBeVisible()
+    const dialog = page.getByRole('dialog', { name: 'The Reason' })
+    await expect(dialog.getByRole('button', { name: 'Add to Playlist' })).toBeEnabled()
+    await expect(dialog.getByRole('button', { name: 'Add to Queue' })).toBeEnabled()
+    // The design mockup pins the menu to exactly these two rows.
+    await expect(dialog.locator('button')).toHaveCount(2)
+    await dialog.getByRole('button', { name: 'Add to Queue' }).click()
+    await expect(dialog.getByRole('button', { name: 'Added to Queue' })).toBeVisible()
 
-    await dialog.getByRole('link', { name: 'Open lounge queue' }).click()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await page.getByRole('banner').getByRole('link', { name: 'Karaoke Deck' }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
 
     const queue = page
@@ -661,16 +664,16 @@ test.describe('karaoke discovery', () => {
     await page.goto('/studio')
 
     const topBar = page.getByRole('banner')
-    await topBar.getByRole('link', { name: 'Player Queue' }).click()
+    await topBar.getByRole('link', { name: 'Karaoke Deck' }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Karaoke & Studio Audio Console' }),
     ).toBeVisible()
-    await expect(topBar.getByRole('link', { name: /Player Queue/i })).toHaveClass(/bg-primary-soft/)
+    await expect(topBar.getByRole('link', { name: /Karaoke Deck/i })).toHaveClass(/bg-primary-soft/)
 
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL('/studio')
-    await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Recently Played' })).toBeVisible()
 
     await page.getByRole('link', { name: 'Play The Reason' }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
@@ -739,13 +742,13 @@ test.describe('karaoke discovery', () => {
     }
 
     const fromTopBar = await expectQueueResume(() =>
-      topBar.getByRole('link', { name: 'Player Queue' }).click(),
+      topBar.getByRole('link', { name: 'Karaoke Deck' }).click(),
     )
-    await expect(topBar.getByRole('link', { name: /Minimize player queue/i })).toHaveAttribute(
+    await expect(topBar.getByRole('link', { name: 'Karaoke Deck' })).toHaveAttribute(
       'href',
       '/studio',
     )
-    await topBar.getByRole('link', { name: /Minimize player queue/i }).click()
+    await topBar.getByRole('link', { name: 'Karaoke Deck' }).click()
     await expectQueueMinimized(fromTopBar)
 
     const fromPlayerBar = await expectQueueResume(() =>
@@ -767,7 +770,7 @@ test.describe('karaoke discovery', () => {
     const beforeBrowsing = await stageTime()
 
     const topBar = page.getByRole('banner')
-    await topBar.getByRole('link', { name: 'Bookings' }).click()
+    await topBar.getByRole('link', { name: 'Book Studio' }).click()
     await expect(page).toHaveURL('/studio/bookings')
     await expect(page.getByRole('heading', { name: 'Reservation Overview' })).toBeVisible()
 
@@ -778,7 +781,7 @@ test.describe('karaoke discovery', () => {
     await expect.poll(stagePaused).toBe(false)
     await expect.poll(stageTime).toBeGreaterThan(beforeBrowsing + 0.2)
 
-    await topBar.getByRole('link', { name: 'Player Queue' }).click()
+    await topBar.getByRole('link', { name: 'Karaoke Deck' }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(stage).toBeVisible()
     await expect.poll(stagePaused).toBe(false)
@@ -831,7 +834,7 @@ test.describe('karaoke discovery', () => {
     await expect(stage).toBeHidden()
     await expect.poll(stagePaused).toBe(true)
 
-    await page.getByRole('banner').getByRole('link', { name: 'Player Queue' }).click()
+    await page.getByRole('banner').getByRole('link', { name: 'Karaoke Deck' }).click()
     await expect(page.locator('[data-player-mode="expanded"]')).toBeVisible()
     await expect(stage).toBeVisible()
     await expect.poll(stagePaused).toBe(true)
@@ -863,10 +866,10 @@ test.describe('karaoke discovery', () => {
 
   test('KARAOKE-022: the studio logo returns to the hub', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/studio/playlists')
-    const logo = page.getByRole('banner').getByRole('link', { name: 'Studio home' })
+    const logo = page.locator('aside').getByRole('link', { name: 'Studio home' })
     await expect(logo).toBeVisible()
     await logo.click()
     await expect(page).toHaveURL('/studio')
-    await expect(page.getByRole('heading', { level: 1, name: 'The Reason' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Recently Played' })).toBeVisible()
   })
 })

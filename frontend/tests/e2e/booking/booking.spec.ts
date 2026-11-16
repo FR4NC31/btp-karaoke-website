@@ -27,7 +27,7 @@ function myBookings(page: Page) {
 }
 
 function sidebar(page: Page) {
-  return page.locator('aside').filter({ has: page.getByRole('heading', { name: 'Catalog Stacks' }) })
+  return page.locator('aside').filter({ has: page.getByRole('heading', { name: 'BTP MUSIC' }) })
 }
 
 /**
@@ -123,7 +123,7 @@ test.describe('booking desk', () => {
   test('BOOKING-001: the top bar opens the desk and the catalog renders', { tag: '@p1' }, async ({ page }) => {
     await page.goto('/studio')
 
-    await topBar(page).getByRole('link', { name: 'Bookings' }).click()
+    await topBar(page).getByRole('link', { name: 'Book Studio' }).click()
 
     await expect(page).toHaveURL('/studio/bookings')
     await expect(overviewHeading(page)).toBeVisible({ timeout: 30_000 })
@@ -527,7 +527,7 @@ test.describe('booking desk', () => {
       await openDesk(page)
 
       await expect(sidebar(page)).toBeHidden()
-      await expect(topBar(page).getByRole('link', { name: 'Bookings' })).toBeVisible()
+      await expect(topBar(page).getByRole('link', { name: 'Book Studio' })).toBeVisible()
       await showServices(page)
       await expect(page.getByRole('article')).toHaveCount(10)
     })
