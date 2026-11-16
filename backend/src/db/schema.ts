@@ -80,6 +80,15 @@ export const user = pgTable('user', {
    */
   role: text('role').notNull().default('user'),
   /**
+   * Admin plugin (better-auth/plugins/admin): ban state. Mirrored here so the
+   * column rides the Drizzle migration path; Better Auth reads/writes it
+   * through its own schema. `banned` defaults to false.
+   */
+  banned: boolean('banned').notNull().default(false),
+  banReason: text('ban_reason'),
+  banExpires: timestamp('ban_expires', { withTimezone: true }),
+  /**
+  /**
    * Membership tier for perks: 'free' (default), 'subscriber' (ad-free
    * streaming) or 'vip' (20% off services). Granted/revoked by admins only;
    * clients cannot set it (input: false in auth.ts).
