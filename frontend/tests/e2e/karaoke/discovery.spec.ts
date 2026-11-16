@@ -123,7 +123,7 @@ test.describe('karaoke discovery', () => {
     try {
       await page.goto('/studio')
       await expect(page.getByRole('heading', { name: 'Radio' })).toBeVisible()
-      await expect(page.getByText(/\d+ Stations Live/)).toBeVisible()
+      await expect(page.getByText(/\d+ Stations? Live/)).toBeVisible()
 
       const card = page.locator('main article').filter({ hasText: title })
       await expect(card).toContainText('E2E genre')

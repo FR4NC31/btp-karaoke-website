@@ -14,6 +14,7 @@ export default function HistoryPage() {
   const { entries, error, clear, retry } = usePlayHistory()
   const player = useOutletContext<KaraokeVideoApi>()
   const count = entries ? filterHistory(entries, filter).length : 0
+  const totalCount = entries?.length ?? 0
 
   useEffect(() => {
     let alive = true
@@ -26,8 +27,8 @@ export default function HistoryPage() {
         setLoadError('')
       } catch (err) {
         if (!alive) return
-        setLoadError(err instanceof Error ? err.message : 'Could not load the media catalog.')
-      }
+        setItems([])
+       setLoadError(err instanceof Error ? err.message : 'Could not load the media catalog.')      }
     }
 
     void load()
@@ -60,7 +61,7 @@ export default function HistoryPage() {
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <HistoryToolbar count={count} filter={filter} onFilter={setFilter} onClear={clear} />
+          <HistoryToolbar count={count} totalCount={totalCount} filter={filter} onFilter={setFilter} onClear={clear} />
         </div>
       </div>
 

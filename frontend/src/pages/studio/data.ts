@@ -3,6 +3,7 @@ import type { Location } from 'react-router'
 import {
   CalendarCheck01Icon,
   HeadphonesIcon,
+  HistoryIcon,
   Home01Icon,
   Mic01Icon,
   MusicNote02Icon,
@@ -49,6 +50,7 @@ export const studioNavGroups: StudioNavGroup[] = [
       // No listening-room route exists yet; same convention as the landing nav.
       { label: 'Listening Room', icon: HeadphonesIcon },
       { label: 'Playlists', to: '/studio/playlists', icon: Playlist01Icon },
+      { label: 'History', to: '/studio/history', icon: HistoryIcon },
       { label: 'Profile', to: '/studio/profile', icon: UserIcon },
     ],
   },

@@ -1,4 +1,4 @@
-import { Link, useLocation, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowLeft01Icon,
@@ -12,6 +12,7 @@ import ProfileMenu from './ProfileMenu'
 
 export default function StudioTopBar() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const showBack = pathname !== '/studio'
   const onQueue = pathname.startsWith('/studio/player-queue')
@@ -27,7 +28,8 @@ export default function StudioTopBar() {
     const next = new URLSearchParams(searchParams)
     if (value) next.set('q', value)
     else next.delete('q')
-    setSearchParams(next, { replace: true })
+    if (pathname === '/studio') setSearchParams(next, { replace: true })
+    else navigate(`/studio?${next.toString()}`, { replace: true })
   }
 
   return (
@@ -62,7 +64,7 @@ export default function StudioTopBar() {
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Link
           to={onQueue ? '/studio' : '/studio/player-queue'}
-          aria-current={onQueue ? 'page' : undefined}
+
           title={onQueue ? 'Minimize the karaoke deck' : 'Open the karaoke deck'}
           /* bg-primary-soft is pinned by KARAOKE-016 while the deck is open;
              the gradient paints over it so the CTA matches the screenshot. */

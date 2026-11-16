@@ -1,4 +1,4 @@
-import { useState } from 'react'
+
 import { Link } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -8,12 +8,10 @@ import {
   SignalIcon,
 } from '@hugeicons/core-free-icons'
 import MediaCard, { type MediaCardMeta } from './MediaCard'
-import { cn } from '../../../lib/utils'
+
 import { formatCount, type MediaItem } from '../../../lib/media-api'
 
 export default function RadioTab({ items }: { items: MediaItem[] }) {
-  const [notify, setNotify] = useState(false)
-
   return (
     <section aria-labelledby="radio-tab-heading" className="space-y-5">
       <div>
@@ -53,17 +51,12 @@ export default function RadioTab({ items }: { items: MediaItem[] }) {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <button
               type="button"
-              aria-pressed={notify}
-              onClick={() => setNotify((value) => !value)}
-              className={cn(
-                'flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-                notify
-                  ? 'border border-primary/50 bg-primary-soft text-primary'
-                  : 'bg-gradient-to-r from-primary to-primary-hover text-text-primary hover:brightness-110',
-              )}
+              disabled
+              title="Notifications coming soon"
+              className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated px-5 py-3 text-sm font-semibold text-text-muted opacity-60"
             >
               <HugeiconsIcon icon={BellIcon} size={16} />
-              {notify ? 'Alerts On' : 'Notify Me When Live'}
+              Notify Me When Live (Soon)
             </button>
             <Link
               to="/studio?filter=music"

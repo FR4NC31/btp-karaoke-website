@@ -7,7 +7,10 @@ import { formatCount, type MediaItem } from '../../../lib/media-api'
 
 export default function RadioSection({ items }: { items: MediaItem[] }) {
   // Status is derived from what the studio actually published — no fake live flag.
-  const live = items.some((station) => (station.tag ?? 'On Air').toLowerCase().includes('on air'))
+  const liveItems = items.filter((station) =>
+    (station.tag ?? 'On Air').toLowerCase().includes('on air'),
+  )
+  const live = liveItems.length > 0
   const [notify, setNotify] = useState(false)
 
   return (
@@ -25,7 +28,7 @@ export default function RadioSection({ items }: { items: MediaItem[] }) {
           BTP Studio Radio
         </h2>
         <span className="ml-auto text-[11px] text-text-muted">
-          {items.length} {items.length === 1 ? 'Station' : 'Stations'} Live
+          {liveItems.length} {liveItems.length === 1 ? 'Station' : 'Stations'} Live
         </span>
       </div>
 
@@ -36,7 +39,7 @@ export default function RadioSection({ items }: { items: MediaItem[] }) {
       </h3>
       <p className="mt-1.5 text-xs leading-relaxed text-text-muted">
         {live
-          ? `${items.length} published station${items.length === 1 ? '' : 's'} streaming BTP sessions, OPM sets and studio takeovers.`
+          ? `${liveItems.length} published station${liveItems.length === 1 ? '' : 's'} streaming BTP sessions, OPM sets and studio takeovers.`
           : 'BTP Studio Radio streams scheduled live producer showcases and acoustic sessions. Enable alerts when the next booth goes live.'}
       </p>
 
@@ -65,9 +68,9 @@ export default function RadioSection({ items }: { items: MediaItem[] }) {
         </span>
       </div>
 
-      {items.length > 0 && (
+      {liveItems.length > 0 && (
         <div className="mt-4 space-y-2.5">
-          {items.map((station) => {
+          {liveItems.map((station) => {
             const meta: MediaCardMeta[] = []
             if (station.freq) meta.push({ icon: Radio01Icon, text: station.freq })
             if (station.listeners !== null)

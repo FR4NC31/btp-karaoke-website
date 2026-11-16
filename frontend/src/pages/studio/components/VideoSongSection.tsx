@@ -6,7 +6,8 @@ import { cn } from '../../../lib/utils'
 import type { MediaItem } from '../../../lib/media-api'
 
 export default function VideoSongSection({ items }: { items: MediaItem[] }) {
-  const [genre, setGenre] = useState('All')
+  const ALL = '__all__'
+  const [genre, setGenre] = useState(ALL)
 
   if (items.length === 0) return null
 
@@ -15,8 +16,8 @@ export default function VideoSongSection({ items }: { items: MediaItem[] }) {
     ...new Set(items.map((song) => song.album).filter((value): value is string => Boolean(value))),
   ]
   // A chip can outlive the items it came from (?q= narrows the list underneath).
-  const active = genres.includes(genre) ? genre : 'All'
-  const visible = active === 'All' ? items : items.filter((song) => song.album === active)
+  const active = genre !== ALL && genres.includes(genre) ? genre : ALL
+  const visible = active === ALL ? items : items.filter((song) => song.album === active)
 
   return (
     <section aria-labelledby="video-songs-heading" className="space-y-4">
@@ -40,22 +41,25 @@ export default function VideoSongSection({ items }: { items: MediaItem[] }) {
           aria-label="Video songs by genre"
           className="flex flex-wrap justify-end gap-1.5"
         >
-          {['All', ...genres].map((value) => (
+          {['All', ...genres].map((value) => {
+            const chipValue = value === 'All' ? ALL : value
+            return (
             <button
-              key={value}
+              key={chipValue}
               type="button"
-              aria-pressed={active === value}
-              onClick={() => setGenre(value)}
+              aria-pressed={active === chipValue}
+              onClick={() => setGenre(chipValue)}
               className={cn(
                 'rounded-full border px-3 py-1 text-[11px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-                active === value
+                active === chipValue
                   ? 'border-primary bg-primary text-text-primary'
                   : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary',
               )}
             >
               {value}
             </button>
-          ))}
+            )
+          })}
         </div>
       </div>
 

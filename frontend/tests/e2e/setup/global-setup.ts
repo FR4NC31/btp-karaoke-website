@@ -41,6 +41,7 @@ export default async function globalSetup(): Promise<void> {
     const child = spawn('node', ['--env-file=.env', 'scripts/reset-e2e-state.ts'], {
       cwd: backendDir,
       stdio: 'inherit',
+      env: { ...process.env, E2E_RESTORE_SEEDED_MEDIA: '1' },
     })
     child.on('error', (err) => {
       console.error(`[global-setup] could not run reset-e2e-state: ${err.message}`)

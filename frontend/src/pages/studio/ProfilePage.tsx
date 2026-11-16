@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useOutletContext } from 'react-router'
+import { Link, useNavigate, useOutletContext } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
@@ -37,6 +37,7 @@ const primaryAction =
 
 function FavoriteCard({ track }: { track: PlaylistTrack }) {
   const library = usePlaylistLibrary()
+  const navigate = useNavigate()
   const isMusic = track.kind === 'music'
 
   return (
@@ -98,7 +99,35 @@ function FavoriteCard({ track }: { track: PlaylistTrack }) {
       </div>
 
       <div className="px-3.5 pt-2.5 pb-2.5 text-left">
-        <p className="line-clamp-1 text-sm font-semibold text-text-primary">{track.title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="line-clamp-1 text-sm font-semibold text-text-primary">{track.title}</p>
+          <button
+            type="button"
+            aria-label={`Play ${track.title}`}
+            onClick={() =>
+              navigate('/studio/player-queue', {
+                state: {
+                  autoplay: true,
+                  item: {
+                    id: track.mediaId ?? track.id,
+                    section: track.kind === 'music' ? 'music' : 'video',
+                    title: track.title,
+                    subtitle: track.artist,
+                    artist: track.artist,
+                    tag: null,
+                    duration: track.duration,
+                    coverUrl: track.coverUrl,
+                    sourceUrl: track.sourceUrl,
+                    album: track.album,
+                  },
+                },
+              })
+            }
+            className="grid size-7 place-items-center rounded text-text-muted transition hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+          >
+            <HugeiconsIcon icon={PlayIcon} size={15} />
+          </button>
+        </div>
         <p className="mt-0.5 truncate text-[11px] text-text-muted">{track.artist}</p>
       </div>
     </article>
@@ -110,7 +139,7 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false)
   const { data, refetch } = useSession()
   const { likedSongs, userPlaylists } = usePlaylistLibrary()
-  const { entries } = usePlayHistory()
+  const { entries, error: historyError, retry: retryHistory } = usePlayHistory()
   const { items: catalog, byTitle, loaded } = usePlaylistCatalog()
   const player = useOutletContext<KaraokeVideoApi>()
 
@@ -131,7 +160,7 @@ export default function ProfilePage() {
   const stats = [
     { value: favorites.length, label: 'Favorites' },
     { value: userPlaylists.length, label: 'Playlists' },
-    { value: entries?.length ?? 0, label: 'Sessions' },
+    { value: entries?.length ?? 0, label: 'Plays' },
   ]
 
   async function shareProfile() {
@@ -205,8 +234,10 @@ export default function ProfilePage() {
               <button
                 key={entry.id}
                 type="button"
+                id={`profile-tab-${entry.id}`}
                 role="tab"
                 aria-selected={active}
+                aria-controls={`profile-panel-${entry.id}`}
                 onClick={() => setTab(entry.id)}
                 className={cn(
                   '-mb-px flex flex-1 items-center justify-center gap-2 border-b-2 px-4 py-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
@@ -226,7 +257,12 @@ export default function ProfilePage() {
           })}
         </div>
 
-        <div className="p-6">
+        <div
+          role="tabpanel"
+          id={`profile-panel-${tab}`}
+          aria-labelledby={`profile-tab-${tab}`}
+          className="p-6"
+        >
           {tab === 'favorites' ? (
             favorites.length > 0 ? (
               <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))]">
@@ -291,7 +327,14 @@ export default function ProfilePage() {
           ) : null}
 
           {tab === 'history' ? (
-            loaded ? (
+            historyError ? (
+              <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-error/40 bg-error/10 px-4 py-4 text-xs text-error">
+                <p className="flex-1">Your listening history could not be read from this browser.</p>
+                <button type="button" onClick={retryHistory} className="rounded-lg border border-error/40 px-3 py-1.5 font-semibold">
+                  Retry
+                </button>
+              </div>
+            ) : loaded ? (
               <HistoryBody
                 entries={entries}
                 filter="all"

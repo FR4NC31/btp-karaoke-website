@@ -52,9 +52,9 @@ function SectionHeaderSkeleton({
     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
       <div className="flex items-start gap-2.5">
         <Bar className="size-9 shrink-0 rounded-lg" />
-        <div className="space-y-2">
-          <Bar className={`h-6 ${titleWidth}`} />
-          <Bar className={`h-3 ${subtitleWidth}`} />
+        <div className="min-w-0 space-y-2">
+          <Bar className={`h-6 max-w-full ${titleWidth}`} />
+          <Bar className={`h-3 max-w-full ${subtitleWidth}`} />
         </div>
       </div>
       {chips > 0 && (
@@ -79,10 +79,10 @@ export default function StudioSkeleton() {
         <div className="mb-4 flex flex-wrap items-start gap-x-4 gap-y-3">
           <div className="flex items-start gap-3">
             <Bar className="size-9 shrink-0 rounded-lg" />
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <div className="flex items-center gap-2">
-                <Bar className="h-6 w-44" />
-                <Bar className="h-5 w-16 rounded-full" />
+                <Bar className="h-6 w-44 max-w-full" />
+                <Bar className="h-5 w-16 shrink-0 rounded-full" />
               </div>
               <Bar className="h-3 w-72 max-w-full" />
             </div>
@@ -124,8 +124,8 @@ export default function StudioSkeleton() {
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
           <div className="flex items-start gap-2.5">
             <Bar className="size-9 shrink-0 rounded-lg" />
-            <div className="space-y-2">
-              <Bar className="h-6 w-56" />
+            <div className="min-w-0 space-y-2">
+              <Bar className="h-6 w-56 max-w-full" />
               <Bar className="h-3 w-72 max-w-full" />
             </div>
           </div>

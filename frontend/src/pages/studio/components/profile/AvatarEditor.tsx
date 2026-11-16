@@ -43,6 +43,13 @@ export default function AvatarEditor({
   }, [cropSrc])
 
   useEffect(() => {
+    if (!cropOpen && cropSrc) {
+      URL.revokeObjectURL(cropSrc)
+      setCropSrc(null)
+    }
+  }, [cropOpen, cropSrc])
+
+  useEffect(() => {
     if (!naturalSize.w || !naturalSize.h) return
     const minZoom = Math.max(0.1, CROP_SIZE / Math.min(naturalSize.w, naturalSize.h))
     const z = Math.max(zoom, minZoom)
@@ -154,6 +161,18 @@ export default function AvatarEditor({
 
   return (
     <>
+      {image ? (
+        <button
+          type="button"
+          aria-label="Remove profile photo"
+          onClick={handleRemoveAvatar}
+          disabled={saving}
+          className="absolute left-0 bottom-1 grid size-8 place-items-center rounded-full border-[3px] border-surface bg-surface-elevated text-text-secondary transition hover:bg-error hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
+        >
+          ×
+        </button>
+      ) : null}
+
       <button
         type="button"
         aria-label="Change profile photo"

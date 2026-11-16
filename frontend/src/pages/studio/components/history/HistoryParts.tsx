@@ -40,12 +40,14 @@ const FOCUS_RING =
 
 export function HistoryToolbar({
   count,
+  totalCount,
   filter,
   onFilter,
   onClear,
   showViewAll = false,
 }: {
   count: number
+  totalCount?: number
   filter: HistoryFilter
   onFilter: (filter: HistoryFilter) => void
   onClear: () => void
@@ -112,7 +114,7 @@ export function HistoryToolbar({
       ) : (
         <button
           type="button"
-          disabled={count === 0}
+          disabled={(totalCount ?? count) === 0}
           onClick={() => setConfirming(true)}
           className={cn(
             'flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40',

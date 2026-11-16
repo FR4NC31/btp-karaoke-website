@@ -291,7 +291,7 @@ export default function MediaCard({
           )}
         </span>
 
-        <div className="relative z-[1] min-w-0 flex-1">
+        <div className="pointer-events-none relative z-[1] min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="truncate text-sm font-semibold text-text-primary">{title}</p>
             <span
@@ -314,7 +314,7 @@ export default function MediaCard({
           {duration ? (
             <span className="mr-1.5 text-[11px] text-text-muted">{duration}</span>
           ) : null}
-          {likeButton}
+          {queueable ? likeButton : null}
           {queueButton}
           {moreButton(MoreHorizontalIcon)}
         </div>
@@ -378,7 +378,7 @@ export default function MediaCard({
             {title}
           </p>
           <span className="flex shrink-0 items-center gap-0.5">
-            {likeButton}
+            {queueable ? likeButton : null}
             {moreButton(MoreVerticalIcon)}
           </span>
         </div>

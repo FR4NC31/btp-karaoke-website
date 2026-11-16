@@ -9,6 +9,7 @@ test.describe('profile', () => {
 
     await expect(page).toHaveURL('/studio/profile')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByText('@qa')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Share Profile' })).toBeVisible()
     await expect(page.getByRole('link', { name: /Bookings/ })).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Favorites' })).toBeVisible()
@@ -26,9 +27,11 @@ test.describe('profile', () => {
     await playlists.click()
     await expect(playlists).toHaveAttribute('aria-selected', 'true')
     await expect(favorites).toHaveAttribute('aria-selected', 'false')
+    await expect(page.getByRole('tabpanel', { name: 'Playlists' })).toBeVisible()
 
     await history.click()
     await expect(history).toHaveAttribute('aria-selected', 'true')
     await expect(playlists).toHaveAttribute('aria-selected', 'false')
+    await expect(page.getByRole('tabpanel', { name: 'History' })).toBeVisible()
   })
 })

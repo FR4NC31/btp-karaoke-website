@@ -15,6 +15,7 @@ export default function RecentlyPlayed({ items }: { items: MediaItem[] }) {
   const [filter, setFilter] = useState<HistoryFilter>('all')
   const player = useOutletContext<KaraokeVideoApi>()
   const count = entries ? filterHistory(entries, filter).length : 0
+  const totalCount = entries?.length ?? 0
 
   return (
     <section
@@ -49,6 +50,7 @@ export default function RecentlyPlayed({ items }: { items: MediaItem[] }) {
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <HistoryToolbar
             count={count}
+            totalCount={totalCount}
             filter={filter}
             onFilter={setFilter}
             onClear={clear}

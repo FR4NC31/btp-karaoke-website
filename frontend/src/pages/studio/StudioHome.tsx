@@ -49,17 +49,6 @@ export default function StudioHome() {
     return <StudioSkeleton />
   }
 
-  if (items.length === 0) {
-    return (
-      <section className="rounded-xl border border-border bg-surface p-6">
-        <h1 className="font-heading text-2xl font-bold tracking-wide uppercase">Media Hub</h1>
-        <p className="mt-2 text-sm text-text-muted">
-          The studio has not published anything yet — video songs, minus-one tracks and radio
-          stations appear here as they go live.
-        </p>
-      </section>
-    )
-  }
 
   // The top-bar search box owns ?q=; the sidebar's Video Songs / Music
   // Library rows deep-link ?filter= (no visible filter row since the redesign).
@@ -134,6 +123,7 @@ export default function StudioHome() {
     if (filter === 'radio') {
       return (
         <section id="catalog" aria-label="Catalog" className="space-y-8">
+          <h1 className="sr-only">Radio Stations</h1>
           {query && radio.length === 0 ? emptyState : <RadioTab items={radio} />}
         </section>
       )
@@ -141,6 +131,7 @@ export default function StudioHome() {
     const section = filter === 'ktv' ? video : music
     return (
       <section id="catalog" aria-label="Catalog" className="space-y-8">
+        <h1 className="sr-only">{filter === 'ktv' ? 'Video Songs' : 'Music Tracks'}</h1>
         {section.length > 0 ? (
           filter === 'ktv' ? (
             <VideoSongSection items={section} />
@@ -161,7 +152,7 @@ export default function StudioHome() {
       <section id="catalog" aria-label="Catalog" className="space-y-8">
         {video.length > 0 && <VideoSongSection items={video} />}
         {music.length > 0 && <MusicPlayerSection items={music} />}
-        {video.length === 0 && music.length === 0 && emptyState}
+        {video.length === 0 && music.length === 0 && radio.length === 0 && emptyState}
       </section>
 
       <div className="grid items-start gap-4 lg:grid-cols-3">

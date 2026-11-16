@@ -353,9 +353,15 @@ export default function StudioPlayer({
 
   useEffect(() => {
     if (queuedPlay) {
-      const queuedItem = queuedPlay.row.mediaId
-        ? catalog.find((candidate) => candidate.id === queuedPlay.row.mediaId)
-        : undefined
+      const queuedItem =
+        (queuedPlay.row.mediaId
+          ? catalog.find((candidate) => candidate.id === queuedPlay.row.mediaId)
+          : undefined) ??
+        catalog.find(
+          (candidate) =>
+            candidate.section !== 'radio' &&
+            candidate.title.trim().toLowerCase() === queuedPlay.row.title.trim().toLowerCase(),
+        )
       setOnAir({
         title: queuedPlay.row.title,
         subtitle: queuedPlay.row.artist,
