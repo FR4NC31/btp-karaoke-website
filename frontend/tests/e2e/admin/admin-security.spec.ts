@@ -123,7 +123,7 @@ test.describe('admin console route guard (UI)', () => {
     // check would pass against a page that has not rendered yet. A regular
     // user must not even see that the console exists.
     const topBar = page.getByRole('banner')
-    await expect(topBar.getByRole('link', { name: 'Bookings' })).toBeVisible()
+    await expect(topBar.getByRole('link', { name: 'Book Studio' })).toBeVisible()
     await expect(topBar.getByRole('link', { name: 'Admin Console' })).toBeHidden()
     await expect(page.getByRole('heading', { name: 'Admin Dashboard', level: 1 })).toBeHidden()
   })

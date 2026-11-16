@@ -4,6 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, Settings01Icon, Logout01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import UserAvatar from '../../../components/UserAvatar'
 import { signOut, useSession } from '../../../lib/auth-client'
+import { clearHistory } from '../../../lib/play-history'
 import { readableError, unexpectedError } from '../../../lib/auth-errors'
 import { markSessionExit } from '../../../lib/session-exit'
 
@@ -47,6 +48,7 @@ export default function ProfileMenu({ showIdentity = false }: { showIdentity?: b
     } finally {
       setSigningOut(false)
     }
+    clearHistory()
     setProfileOpen(false)
     navigate('/')
   }

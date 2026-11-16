@@ -16,6 +16,7 @@ import PlaylistsPage from "./pages/studio/PlaylistsPage"
 import PlaylistDetailPage from "./pages/studio/PlaylistDetailPage"
 import BookingPage from "./pages/studio/BookingPage"
 import ProfilePage from "./pages/studio/ProfilePage"
+import HistoryPage from "./pages/studio/HistoryPage"
 import AdminShell from "./pages/admin/AdminShell"
 import AdminOverview from "./pages/admin/AdminOverview"
 import AdminBookings from "./pages/admin/AdminBookings"
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
                             { path: "playlists", handle: { title: 'Playlists' }, element: <PlaylistsPage /> },
                             { path: "playlists/:playlistId", handle: { title: 'Playlist' }, element: <PlaylistDetailPage /> },
                             { path: "profile", handle: { title: 'My Account' }, element: <ProfilePage /> },
+                            { path: "history", handle: { title: 'Listening History' }, element: <HistoryPage /> },
                             // The queue is a persistent shell surface, not a page. Keep the route
                             // so direct links and the browser back button still have a URL.
                             { path: "player-queue", element: <></> },

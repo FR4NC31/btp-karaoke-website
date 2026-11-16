@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: November 15, 2026
+Last updated: November 16, 2026
 
 ### Features
 
+- feat(studio): redesign studio, profile, history, radio, and media cards (ab07f9d)
 - feat(auth): wire Spotify sign-in with provider-aware OAuth errors (8bc0c92)
 - feat(auth): register Spotify social provider with account_id keying (2965af0)
 - feat(auth): add Spotify button next to Google on sign-in (c21c5e1)
@@ -72,6 +73,7 @@ Last updated: November 15, 2026
 
 ### Bug Fixes
 
+- fix: address review violations (profile, radio, history, media, reset) (2debc01)
 - fix(auth): register Spotify provider only when SPOTIFY_CLIENT_ID is set (4862a98)
 - fix(frontend): bind vite dev server host to 127.0.0.1 (5454ff7)
 - fix(e2e): sweep stale E2E media rows in reset-e2e-state (2d09e77)
@@ -188,6 +190,7 @@ Last updated: November 15, 2026
 
 ### Other Changes
 
+- Merge pull request #98 from itsGenreee/chore/disable-spotify-on-develop (8043987)
 - Merge pull request #97 from itsGenreee/feat/spotify-signin-wiring (9bc7c36)
 - Merge pull request #96 from itsGenreee/docs/spotify-google-legal-reference (bc783c4)
 - Merge branch 'develop' into docs/spotify-google-legal-reference (69da42b)

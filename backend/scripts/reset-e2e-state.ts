@@ -3,6 +3,7 @@ import { db, pool } from '../src/db/client.ts'
 import { booking, mediaItem, user } from '../src/db/schema.ts'
 import { releaseExpiredPaymentHolds } from '../src/modules/bookings/payment-holds.ts'
 import { deleteMediaItem } from '../src/modules/media/admin.ts'
+import { invalidateMediaCache } from '../src/modules/media/queries.ts'
 
 /**
  * Resets the shared E2E account's test residue before every Playwright run.
@@ -117,6 +118,31 @@ try {
   }
   if (staleMedia.length > 0) {
     console.log(`[reset-e2e-state] removed ${staleMedia.length} stale E2E media row(s).`)
+  }
+
+  // 5. The seeded video row must be live: ~25 hub/playlist/player tests pin
+  //    "The Reason" as the first card. Gated behind an explicit E2E-fixture
+  //    setting so a shared (non-disposable) catalog is never re-curated here.
+  if (process.env.E2E_RESTORE_SEEDED_MEDIA === '1') {
+    const [seeded] = await db
+      .update(mediaItem)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(and(eq(mediaItem.id, 'med_reason_01'), eq(mediaItem.isActive, false)))
+      .returning({ title: mediaItem.title })
+    if (seeded) {
+      await invalidateMediaCache()
+      console.log(`[reset-e2e-state] re-activated seeded media row "${seeded.title}".`)
+    } else {
+      const [existing] = await db
+        .select({ id: mediaItem.id })
+        .from(mediaItem)
+        .where(eq(mediaItem.id, 'med_reason_01'))
+        .limit(1)
+      if (!existing) {
+        console.error('[reset-e2e-state] seeded media row "med_reason_01" is missing.')
+        process.exitCode = 1
+      }
+    }
   }
 } catch (err) {
   console.error('\nreset-e2e-state failed:', err instanceof Error ? err.message : err)

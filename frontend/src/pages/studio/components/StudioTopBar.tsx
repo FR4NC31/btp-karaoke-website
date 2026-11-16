@@ -1,75 +1,51 @@
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowLeft01Icon,
   Search01Icon,
-  ChevronDownIcon,
-  HeadphonesIcon,
-  Mic01Icon,
-  BellIcon,
   CalendarCheck01Icon,
-  Playlist01Icon,
-  Queue01Icon,
+  Mic01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
-import BrandLogo from '../../../components/BrandLogo'
 import { useSession } from '../../../lib/auth-client'
 import ProfileMenu from './ProfileMenu'
 
 export default function StudioTopBar() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const showBack = pathname !== '/studio'
   const onQueue = pathname.startsWith('/studio/player-queue')
-  const onPlaylists = pathname.startsWith('/studio/playlists')
   const onPlaylistDetail = pathname.startsWith('/studio/playlists/')
   const backTo = onPlaylistDetail ? '/studio/playlists' : '/studio'
   const { data } = useSession()
   const isAdmin = data?.user.role === 'admin'
 
+  // The search box owns ?q= so the homepage can filter the catalog from it.
+  // replace keeps typing out of the history stack.
+  const query = searchParams.get('q') ?? ''
+  const setQuery = (value: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (value) next.set('q', value)
+    else next.delete('q')
+    if (pathname === '/studio') setSearchParams(next, { replace: true })
+    else navigate(`/studio?${next.toString()}`, { replace: true })
+  }
+
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-4">
-      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        {showBack && (
-          <Link
-            to={backTo}
-            aria-label="Back"
-            title={onPlaylistDetail ? 'Back to playlists' : 'Back to studio'}
-            className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
-          </Link>
-        )}
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 sm:px-4">
+      {showBack && (
         <Link
-          to="/studio"
-          aria-label="Studio home"
-          title="Studio home"
-          aria-current={pathname === '/studio' ? 'page' : undefined}
-          className="shrink-0 rounded-md outline-primary/60 transition hover:opacity-90 focus-visible:outline-2 focus-visible:-outline-offset-2"
+          to={backTo}
+          aria-label="Back"
+          title={onPlaylistDetail ? 'Back to playlists' : 'Back to studio'}
+          className="grid size-8 shrink-0 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
         >
-          <BrandLogo className="size-9 shrink-0 rounded-md" />
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
         </Link>
-        <div className="hidden leading-tight sm:block">
-          <div className="flex items-center gap-2">
-            <p className="font-heading text-lg font-bold tracking-wide">BTP MUSIC PRODUCTION</p>
-            <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-text-primary uppercase">
-              FILSCAP Archive
-            </span>
-          </div>
-          <p className="text-[10px] uppercase tracking-widest text-text-muted">
-            Sonic Music Engine v4.2 · 320kbps FLAC
-          </p>
-        </div>
-      </div>
+      )}
 
-      <button
-        type="button"
-        className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-text-primary lg:flex"
-      >
-        All Vaults
-        <HugeiconsIcon icon={ChevronDownIcon} size={14} />
-      </button>
-
-      <div className="relative mx-auto hidden w-full min-w-0 max-w-md sm:block">
+      <div className="relative hidden w-full min-w-0 max-w-lg sm:block">
         <HugeiconsIcon
           icon={Search01Icon}
           size={16}
@@ -77,44 +53,29 @@ export default function StudioTopBar() {
         />
         <input
           type="search"
-          placeholder="Search master recordings, multitracks, stems..."
-          className="w-full rounded-lg border border-border bg-background py-2 pr-12 pl-9 text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search songs, artists, KTV videos, or Minus-One tracks..."
+          aria-label="Search the catalog"
+          className="w-full rounded-lg border border-border bg-background py-2 pr-3 pl-9 text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
         />
-        <kbd className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 rounded border border-border bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-          ⌘K
-        </kbd>
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Link
-          to="/studio/playlists"
-          aria-label="Playlists"
-          title="Playlists"
-          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
-            onPlaylists
-              ? 'border-primary/50 bg-primary-soft text-primary'
-              : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          <HugeiconsIcon icon={Playlist01Icon} size={15} />
-          <span className="hidden lg:inline">Playlists</span>
-        </Link>
-        <Link
           to={onQueue ? '/studio' : '/studio/player-queue'}
-          aria-label={onQueue ? 'Minimize player queue' : 'Player Queue'}
-          title={onQueue ? 'Minimize player queue' : 'Open player queue'}
-          className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
-            onQueue
-              ? 'border-primary/50 bg-primary-soft text-primary'
-              : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary'
-          }`}
+
+          title={onQueue ? 'Minimize the karaoke deck' : 'Open the karaoke deck'}
+          /* bg-primary-soft is pinned by KARAOKE-016 while the deck is open;
+             the gradient paints over it so the CTA matches the screenshot. */
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary-soft bg-gradient-to-r from-primary to-primary-hover px-2.5 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:px-3"
         >
-          <HugeiconsIcon icon={Queue01Icon} size={15} />
-          <span className="hidden lg:inline">Queue</span>
+          <HugeiconsIcon icon={Mic01Icon} size={15} />
+          <span className="hidden sm:inline">Karaoke Deck</span>
         </Link>
         <Link
           to="/studio/bookings"
-          aria-label="Bookings"
+          aria-label="Book Studio"
           className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition lg:px-3 ${
             pathname.startsWith('/studio/bookings')
               ? 'border-primary/50 bg-primary-soft text-primary'
@@ -122,7 +83,7 @@ export default function StudioTopBar() {
           }`}
         >
           <HugeiconsIcon icon={CalendarCheck01Icon} size={15} />
-          <span className="hidden lg:inline">Bookings</span>
+          <span className="hidden lg:inline">Book Studio</span>
         </Link>
         {isAdmin && (
           <Link
@@ -134,21 +95,6 @@ export default function StudioTopBar() {
             <span className="hidden lg:inline">Admin</span>
           </Link>
         )}
-        <span className="hidden items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary xl:flex">
-          <HugeiconsIcon icon={HeadphonesIcon} size={15} />
-          Listening Room
-        </span>
-        <span className="hidden items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary xl:flex">
-          <HugeiconsIcon icon={Mic01Icon} size={15} />
-          Karaoke Rehearsal
-        </span>
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="grid size-8 place-items-center rounded-lg text-text-muted transition hover:bg-surface-elevated hover:text-text-primary"
-        >
-          <HugeiconsIcon icon={BellIcon} size={17} />
-        </button>
         <ProfileMenu />
       </div>
     </header>

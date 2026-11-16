@@ -7,7 +7,7 @@ test.describe('authentication', () => {
 
   test('AUTH-001: valid login reaches the studio', { tag: '@p0' }, async ({ page }) => {
     await signIn(page)
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Open profile menu' })).toBeVisible()
   })
 
@@ -204,7 +204,7 @@ test.describe('authentication', () => {
     await signIn(page)
     await page.reload()
     await expect(page).toHaveURL('/studio')
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
   })
 
   test('AUTH-015: unreachable server shows an error instead of hanging', { tag: '@p1' }, async ({ page }) => {
@@ -240,7 +240,7 @@ test.describe('authentication', () => {
       }
 
       await expect(page).toHaveURL('/studio')
-      await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
 
       await page.getByRole('button', { name: 'Open profile menu' }).click()
       await page.getByRole('button', { name: 'Log out' }).click()
@@ -253,10 +253,10 @@ test.describe('guest-only routes', () => {
   test('AUTH-017: signed-in users are sent from the auth pages to the studio', { tag: '@p1' }, async ({ page }) => {
     await page.goto('/signin')
     await expect(page).toHaveURL('/studio')
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
 
     await page.goto('/signup')
     await expect(page).toHaveURL('/studio')
-    await expect(page.getByText('BTP MUSIC PRODUCTION')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BTP MUSIC' })).toBeVisible()
   })
 })

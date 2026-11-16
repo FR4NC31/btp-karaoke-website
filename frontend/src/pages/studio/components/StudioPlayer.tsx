@@ -353,9 +353,15 @@ export default function StudioPlayer({
 
   useEffect(() => {
     if (queuedPlay) {
-      const queuedItem = queuedPlay.row.mediaId
-        ? catalog.find((candidate) => candidate.id === queuedPlay.row.mediaId)
-        : undefined
+      const queuedItem =
+        (queuedPlay.row.mediaId
+          ? catalog.find((candidate) => candidate.id === queuedPlay.row.mediaId)
+          : undefined) ??
+        catalog.find(
+          (candidate) =>
+            candidate.section !== 'radio' &&
+            candidate.title.trim().toLowerCase() === queuedPlay.row.title.trim().toLowerCase(),
+        )
       setOnAir({
         title: queuedPlay.row.title,
         subtitle: queuedPlay.row.artist,
@@ -364,6 +370,7 @@ export default function StudioPlayer({
         kind: queuedPlay.source.kind,
         mediaId: queuedPlay.row.mediaId,
         album: queuedItem?.album ?? null,
+        tag: queuedItem?.tag ?? null,
         duration: queuedPlay.row.len || null,
       })
       return
@@ -377,6 +384,7 @@ export default function StudioPlayer({
       kind: item.section === 'music' ? 'music' : 'video',
       mediaId: item.id,
       album: item.album,
+      tag: item.tag,
       duration: item.duration,
     })
   }, [catalog, item, queuedPlay, setOnAir])

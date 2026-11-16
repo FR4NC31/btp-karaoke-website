@@ -9,36 +9,58 @@ function Bar({ className = '' }: { className?: string }) {
 }
 
 /**
- * The signed-in app shell as placeholders — top bar, sidebar, content
- * grid. It doubles as the background for both session states, so the
- * guards never show a bare text page: the skeleton is what the real shell
+ * The signed-in studio shell as placeholders — sidebar, top bar with search,
+ * video-card grid. It doubles as the background for both session states, so
+ * the guards never show a bare text page: the skeleton is what the real shell
  * (studio / admin layout) will replace a beat later.
  */
 function ShellSkeleton() {
   return (
-    <div aria-hidden="true" className="min-h-dvh bg-background">
-      <div className="flex h-16 items-center gap-3 border-b border-border px-4">
-        <Bar className="h-9 w-40" />
-        <div className="ml-auto hidden gap-2 sm:flex">
-          <Bar className="h-9 w-28" />
-          <Bar className="h-9 w-28" />
-          <Bar className="h-9 w-32" />
+    <div aria-hidden="true" className="flex h-dvh bg-background">
+      <div className="hidden w-64 shrink-0 flex-col gap-5 border-r border-border px-4 py-4 md:flex">
+        <Bar className="h-9 w-40 rounded-lg" />
+        <div className="space-y-2">
+          {Array.from({ length: 6 }, (_, index) => (
+            <Bar key={index} className="h-9 w-full" />
+          ))}
         </div>
       </div>
-      <div className="flex">
-        <div className="hidden w-60 shrink-0 space-y-4 border-r border-border p-4 md:block">
-          <Bar className="h-4 w-32" />
-          <Bar className="h-4 w-40" />
-          <Bar className="h-4 w-36" />
-          <Bar className="h-4 w-44" />
-          <Bar className="h-4 w-32" />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
+          <Bar className="h-9 w-full max-w-lg rounded-lg" />
+          <div className="ml-auto flex items-center gap-2">
+            <Bar className="h-9 w-28 rounded-lg" />
+            <Bar className="h-9 w-24 rounded-lg" />
+            <Bar className="size-9 rounded-full" />
+          </div>
         </div>
-        <div className="flex-1 space-y-4 p-6">
-          <Bar className="h-8 w-64 max-w-full" />
-          <Bar className="h-4 w-96 max-w-full" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="min-h-0 flex-1 overflow-hidden p-6">
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+            <div className="flex items-start gap-2.5">
+              <Bar className="size-9 shrink-0 rounded-lg" />
+              <div className="space-y-2">
+                <Bar className="h-6 w-44" />
+                <Bar className="h-3 w-80 max-w-full" />
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {Array.from({ length: 5 }, (_, index) => (
+                <Bar key={index} className="h-7 w-16 rounded-full" />
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(16rem,27rem))]">
             {Array.from({ length: 6 }, (_, index) => (
-              <Bar key={index} className="h-32 w-full rounded-xl" />
+              <div
+                key={index}
+                className="overflow-hidden rounded-xl border border-border bg-surface"
+              >
+                <Bar className="aspect-[16/10] w-full rounded-none" />
+                <div className="space-y-2 px-3.5 pt-2.5 pb-3">
+                  <Bar className="h-4 w-3/4" />
+                  <Bar className="h-2.5 w-1/2" />
+                </div>
+              </div>
             ))}
           </div>
         </div>

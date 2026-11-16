@@ -154,7 +154,7 @@ test.describe('playlists', () => {
       await savedPicker.getByRole('button', { name: 'Done' }).click()
       await expect(savedPicker).toBeHidden()
 
-      await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
+      await page.locator('aside').getByRole('link', { name: 'Playlists' }).click()
       await expect(page).toHaveURL('/studio/playlists')
 
       const playlistCard = page.locator('main article').filter({ hasText: 'Late Night OPM' })
@@ -332,20 +332,20 @@ test.describe('playlists', () => {
     await like.click()
     await expect(like).toHaveAttribute('aria-pressed', 'false')
 
-    await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
+    await page.locator('aside').getByRole('link', { name: 'Playlists' }).click()
     await expect(page).toHaveURL('/studio/playlists')
     const liked = page.locator('section[aria-labelledby="liked-songs-heading"]')
     await expect(liked).toContainText(/0 songs/i)
     await expect(liked.getByRole('button', { name: 'Play Liked Songs' })).toBeDisabled()
 
-    await page.locator('header').getByRole('link', { name: 'Player Queue' }).click()
+    await page.locator('header').getByRole('link', { name: 'Karaoke Deck' }).click()
     await expect(page).toHaveURL('/studio/player-queue')
     const likeAgain = page.getByRole('contentinfo').getByRole('button', { name: 'Like' })
     await expect(likeAgain).toHaveAttribute('aria-pressed', 'false')
     await likeAgain.click()
     await expect(likeAgain).toHaveAttribute('aria-pressed', 'true')
 
-    await page.locator('header').getByRole('link', { name: 'Playlists' }).click()
+    await page.locator('aside').getByRole('link', { name: 'Playlists' }).click()
     await expect(liked).toContainText(/1 song/i)
     await expect(liked.getByRole('button', { name: 'Play Liked Songs' })).toBeEnabled()
   })

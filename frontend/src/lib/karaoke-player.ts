@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { recordPlay } from './play-history'
 
 export type KaraokeVideoApi = {
   pip: boolean
@@ -33,6 +34,7 @@ export interface OnAirTrack {
   kind: 'video' | 'music'
   mediaId?: string | null
   album?: string | null
+  tag?: string | null
   duration?: string | null
 }
 
@@ -68,11 +70,15 @@ export function useKaraokeVideo(): KaraokeVideoApi {
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
   const [onAir, setOnAirState] = useState<OnAirTrack | null>(null)
+  // Mirror of `onAir` for the media element's play listener, which must read
+  // the current track without re-registering its closures.
+  const onAirRef = useRef<OnAirTrack | null>(null)
   const [repeatMode, setRepeatModeState] = useState<RepeatMode>('off')
   const [shuffle, setShuffleState] = useState(false)
   const [shuffleSeed, setShuffleSeed] = useState(0)
 
   const setOnAir = useCallback((track: OnAirTrack | null) => {
+    onAirRef.current = track
     setOnAirState(track)
   }, [])
 
@@ -101,6 +107,9 @@ export function useKaraokeVideo(): KaraokeVideoApi {
       const syncPlay = () => {
         setStarted(true)
         if (isActive()) setPlaying(true)
+        // The single playback surface: every real listen (card, queue, console)
+        // passes through here, so history is recorded at one choke point.
+        if (onAirRef.current) recordPlay(onAirRef.current)
       }
       const syncPause = () => {
         if (isActive()) setPlaying(false)

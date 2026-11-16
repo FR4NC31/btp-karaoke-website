@@ -1,50 +1,87 @@
-import { Clock01Icon, PlayIcon, ViewIcon } from '@hugeicons/core-free-icons'
-import MediaCard, { type MediaCardMeta } from './MediaCard'
-import MediaCarousel from '../../../components/MediaCarousel'
-import { formatCount, type MediaItem } from '../../../lib/media-api'
+import { useState } from 'react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { PlayIcon, Video01Icon } from '@hugeicons/core-free-icons'
+import MediaCard from './MediaCard'
+import { cn } from '../../../lib/utils'
+import type { MediaItem } from '../../../lib/media-api'
 
 export default function VideoSongSection({ items }: { items: MediaItem[] }) {
+  const ALL = '__all__'
+  const [genre, setGenre] = useState(ALL)
+
   if (items.length === 0) return null
 
-  return (
-    <section>
-      <MediaCarousel
-        label="Video Song"
-        header={
-          <>
-            <span className="text-primary">◆</span>
-            <h2 className="font-heading text-xl font-bold tracking-wide uppercase">Video Song</h2>
-            <span className="text-[10px] tracking-widest text-text-muted uppercase">Karaoke Video Mode</span>
-          </>
-        }
-        aside={
-          <span className="text-xs text-primary">
-            Viewing {items.length} of {items.length} videos
-          </span>
-        }
-      >
-        {items.map((song, index) => {
-          const meta: MediaCardMeta[] = []
-          if (song.duration) meta.push({ icon: Clock01Icon, text: song.duration })
-          if (song.plays !== null) meta.push({ icon: ViewIcon, text: formatCount(song.plays) })
+  // Genre chips read the real per-song Album field — the schema has no genre column.
+  const genres = [
+    ...new Set(items.map((song) => song.album).filter((value): value is string => Boolean(value))),
+  ]
+  // A chip can outlive the items it came from (?q= narrows the list underneath).
+  const active = genre !== ALL && genres.includes(genre) ? genre : ALL
+  const visible = active === ALL ? items : items.filter((song) => song.album === active)
 
-          return (
-            <MediaCard
-              key={song.id}
-              tag={song.tag ?? 'KTV'}
-              icon={PlayIcon}
-              title={song.title}
-              subtitle={song.artist ?? song.subtitle ?? ''}
-              coverUrl={song.coverUrl}
-              to="/studio/player-queue"
-              toState={{ autoplay: true, item: song }}
-              titleAs={index === 0 ? 'h1' : undefined}
-              meta={meta}
-              queue={{ mediaId: song.id, len: song.duration, src: song.sourceUrl, kind: 'video' }}
-            />
-          )
-        })}
-      </MediaCarousel>
+  return (
+    <section aria-labelledby="video-songs-heading" className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="flex items-start gap-2.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
+            <HugeiconsIcon icon={Video01Icon} size={18} />
+          </span>
+          <div className="min-w-0">
+            <h2 id="video-songs-heading" className="text-xl leading-tight font-bold font-sans">
+              Video Songs
+            </h2>
+            <p className="mt-0.5 text-xs text-text-muted">
+              High-definition KTV video masters with synchronized vocal lyrics.
+            </p>
+          </div>
+        </div>
+
+        <div
+          role="group"
+          aria-label="Video songs by genre"
+          className="flex flex-wrap justify-end gap-1.5"
+        >
+          {['All', ...genres].map((value) => {
+            const chipValue = value === 'All' ? ALL : value
+            return (
+            <button
+              key={chipValue}
+              type="button"
+              aria-pressed={active === chipValue}
+              onClick={() => setGenre(chipValue)}
+              className={cn(
+                'rounded-full border px-3 py-1 text-[11px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                active === chipValue
+                  ? 'border-primary bg-primary text-text-primary'
+                  : 'border-border bg-surface-elevated text-text-secondary hover:text-text-primary',
+              )}
+            >
+              {value}
+            </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Auto-fill with a 27rem cap: wide screens get more, smaller items
+          instead of three oversized columns. */}
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(16rem,27rem))]">
+        {visible.map((song) => (
+          <MediaCard
+            key={song.id}
+            tag={song.tag ?? 'KTV'}
+            icon={PlayIcon}
+            title={song.title}
+            subtitle={song.artist ?? song.subtitle ?? ''}
+            genre={song.album}
+            coverUrl={song.coverUrl}
+            duration={song.duration}
+            to="/studio/player-queue"
+            toState={{ autoplay: true, item: song }}
+            queue={{ mediaId: song.id, len: song.duration, src: song.sourceUrl, kind: 'video' }}
+          />
+        ))}
+      </div>
     </section>
   )
 }
