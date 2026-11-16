@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: November 15, 2026
+Last updated: November 16, 2026
 
 ### Features
 
+- feat(studio): redesign studio, profile, history, radio, and media cards (ab07f9d)
 - feat(auth): wire Spotify sign-in with provider-aware OAuth errors (8bc0c92)
 - feat(auth): register Spotify social provider with account_id keying (2965af0)
 - feat(auth): add Spotify button next to Google on sign-in (c21c5e1)
@@ -188,6 +189,7 @@ Last updated: November 15, 2026
 
 ### Other Changes
 
+- Merge pull request #98 from itsGenreee/chore/disable-spotify-on-develop (8043987)
 - Merge pull request #97 from itsGenreee/feat/spotify-signin-wiring (9bc7c36)
 - Merge pull request #96 from itsGenreee/docs/spotify-google-legal-reference (bc783c4)
 - Merge branch 'develop' into docs/spotify-google-legal-reference (69da42b)
