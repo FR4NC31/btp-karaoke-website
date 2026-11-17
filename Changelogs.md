@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 16, 2026
+Last updated: November 17, 2026
 
 ### Features
 
@@ -191,6 +191,8 @@ Last updated: November 16, 2026
 
 ### Other Changes
 
+- New V2 branch (cb38b76)
+- Merge pull request #100 from itsGenreee/feat/better-auth-admin-plugin (ef83af8)
 - Merge pull request #99 from FR4NC31/feat/studio-redesign-2026-11 (e7a7d67)
 - Merge pull request #98 from itsGenreee/chore/disable-spotify-on-develop (8043987)
 - Merge pull request #97 from itsGenreee/feat/spotify-signin-wiring (9bc7c36)
