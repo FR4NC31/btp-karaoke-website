@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, bookingBlockout, service, type BookingStatus } from '../../db/schema.ts'
 import { BookingError, type Booking } from './types.ts'
@@ -125,6 +125,39 @@ export async function insertBookingRow(
         attempt < REFERENCE_CODE_ATTEMPTS - 1
       if (!retryable) throw err
     }
+  }
+}
+
+/** Rejects a booking on a slot that is already held or confirmed by any user.
+ *  This is the cross-user lock: while a payment hold is active (pending with a
+ *  paymentDeadline) or a booking is confirmed, no other customer can claim the
+ *  same service + date + time. Once the hold expires or is cancelled the slot
+ *  is released (see releaseExpiredPaymentHolds). */
+export async function assertSlotAvailable(
+  serviceId: string,
+  bookingDate: string,
+  bookingTime: string | null,
+): Promise<void> {
+  const rows = await db
+    .select({ id: booking.id })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.serviceId, serviceId),
+        eq(booking.bookingDate, bookingDate),
+        bookingTime === null
+          ? isNull(booking.bookingTime)
+          : eq(booking.bookingTime, bookingTime),
+        inArray(booking.status, ['pending', 'confirmed']),
+      ),
+    )
+    .limit(1)
+
+  if (rows.length > 0) {
+    throw new BookingError(
+      'That time slot is already reserved or held by another customer. Pick another slot.',
+      409,
+    )
   }
 }
 

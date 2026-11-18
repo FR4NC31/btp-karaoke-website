@@ -4,6 +4,7 @@ import { booking, service } from '../../db/schema.ts'
 import {
   assertDayNotBlocked,
   assertServiceAvailable,
+  assertSlotAvailable,
   bookingColumns,
   insertBookingRow,
   toBooking,
@@ -13,7 +14,7 @@ import {
 import { validateBookingDay, validateBookingTime, validateNotes } from './validation.ts'
 import { BookingError, type Booking, type CreateBookingInput } from './types.ts'
 import { membershipDiscountPercent } from '../membership/index.ts'
-import { getUserSuspension, releaseExpiredPaymentHolds } from './payment-holds.ts'
+import { getUserSuspension, recordPaymentFailure, releaseExpiredPaymentHolds } from './payment-holds.ts'
 
 /**
  * The signed-in user's own bookings, newest day first.
@@ -73,6 +74,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   const notes = validateNotes(input.notes)
 
   await assertDayNotBlocked(bookingDate)
+  await assertSlotAvailable(input.serviceId, bookingDate, bookingTime)
 
   const discountPercent = await membershipDiscountPercent(input.userId)
   const amountDuePhp = pricePhp * (1 - discountPercent / 100)
@@ -171,6 +173,26 @@ export async function setBookingPaymentMethod(
   return updated
 }
 export async function cancelBooking(bookingId: string, userId: string): Promise<Booking> {
+  // Read the booking first so we can check the 3-minute abuse threshold.
+  const existing = await findBookingForUser(bookingId, userId)
+  if (!existing) {
+    throw new BookingError('That booking does not exist.', 404)
+  }
+  if (existing.status !== 'pending') {
+    throw new BookingError(`A ${existing.status} booking can no longer be cancelled.`, 409)
+  }
+
+  // 3-minute abuse guard: a cancellation after 3 minutes counts as a payment
+  // failure (escalating suspension) to prevent lockout abuse — someone booking,
+  // holding a slot for 3+ minutes, then cancelling to free it for another
+  // person or to reserve it for someone else.
+  const createdAt = new Date(existing.createdAt)
+  const elapsedMs = Date.now() - createdAt.getTime()
+  const THREE_MINUTES_MS = 3 * 60 * 1000
+  if (elapsedMs > THREE_MINUTES_MS) {
+    await recordPaymentFailure(userId)
+  }
+
   const updated = await db
     .update(booking)
     .set({ status: 'cancelled', updatedAt: new Date() })
@@ -180,11 +202,11 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
     .returning({ id: booking.id })
 
   if (updated.length === 0) {
-    const existing = await findBookingForUser(bookingId, userId)
-    if (!existing) {
+    const gone = await findBookingForUser(bookingId, userId)
+    if (!gone) {
       throw new BookingError('That booking does not exist.', 404)
     }
-    throw new BookingError(`A ${existing.status} booking can no longer be cancelled.`, 409)
+    throw new BookingError(`A ${gone.status} booking can no longer be cancelled.`, 409)
   }
 
   const cancelled = await findBookingForUser(bookingId, userId)

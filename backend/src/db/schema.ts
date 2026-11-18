@@ -88,7 +88,6 @@ export const user = pgTable('user', {
   banReason: text('ban_reason'),
   banExpires: timestamp('ban_expires', { withTimezone: true }),
   /**
-  /**
    * Membership tier for perks: 'free' (default), 'subscriber' (ad-free
    * streaming) or 'vip' (20% off services). Granted/revoked by admins only;
    * clients cannot set it (input: false in auth.ts).

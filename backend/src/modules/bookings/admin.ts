@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, service, user, type BookingStatus } from '../../db/schema.ts'
 import {
   assertDayNotBlocked,
   assertServiceAvailable,
+  assertSlotAvailable,
   bookingColumns,
   insertBookingRow,
   toBooking,
@@ -199,6 +200,7 @@ export async function createBookingForOthers(
   }
 
   await assertDayNotBlocked(bookingDate)
+  await assertSlotAvailable(input.serviceId, bookingDate, bookingTime)
 
   const discountPercent = await membershipDiscountPercent(userId)
   const amountDuePhp = pricePhp * (1 - discountPercent / 100)
@@ -291,6 +293,41 @@ export async function adminSetBookingStatus(
 
 export async function approvePayment(bookingId: string): Promise<AdminBooking> {
   return db.transaction(async (tx) => {
+    // First, read the booking to get its slot details.
+    const existing = await findBookingByIdForAdmin(bookingId, tx)
+    if (!existing) {
+      throw new BookingError('That reservation does not exist.', 404)
+    }
+    if (existing.status !== 'pending') {
+      throw new BookingError(`A ${existing.status} reservation cannot be approved.`, 409)
+    }
+
+    // Safeguard: if another confirmed booking already exists for the same
+    // service + date + time slot, reject the confirmation to prevent double
+    // booking. The slot is already taken.
+    const slotConflict = await tx
+      .select({ id: booking.id })
+      .from(booking)
+      .where(
+        and(
+          eq(booking.serviceId, existing.serviceId),
+          eq(booking.bookingDate, existing.bookingDate),
+          existing.bookingTime === null
+            ? isNull(booking.bookingTime)
+            : eq(booking.bookingTime, existing.bookingTime),
+          eq(booking.status, 'confirmed'),
+          sql`${booking.id} <> ${bookingId}`,
+        ),
+      )
+      .limit(1)
+
+    if (slotConflict.length > 0) {
+      throw new BookingError(
+        'That time slot is already confirmed by another booking. Cannot approve.',
+        409,
+      )
+    }
+
     const updated = await tx
       .update(booking)
       .set({ status: 'confirmed', updatedAt: new Date() })
