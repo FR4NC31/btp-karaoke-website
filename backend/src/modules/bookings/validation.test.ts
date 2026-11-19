@@ -110,6 +110,8 @@ test('cancelling within 3 minutes is free; later cancellations count as a failur
 
   assert.equal(cancellationCountsAsFailure(iso, at(0)), false)
   assert.equal(cancellationCountsAsFailure(iso, at(179)), false)
+  // Exactly 3 minutes is still inside the free window; the penalty starts after it.
+  assert.equal(cancellationCountsAsFailure(iso, at(180)), false)
   assert.equal(cancellationCountsAsFailure(iso, at(181)), true)
   assert.equal(cancellationCountsAsFailure('not-a-date', at(600)), false)
 })
@@ -121,7 +123,9 @@ test('the cross-customer slot lock is a database unique index', () => {
     .map((file) => readFileSync(new URL(file, dir), 'utf8'))
     .join('\n')
 
-  const index = sql.split('\n').find((line) => line.includes('booking_slot_unique_idx'))
+  const index = sql
+    .split('\n')
+    .find((line) => line.includes('CREATE UNIQUE INDEX') && line.includes('booking_slot_unique_idx'))
   assert.ok(index, 'booking_slot_unique_idx is missing from the migrations')
   assert.match(index, /UNIQUE INDEX/)
   assert.match(index, /"serviceId","bookingDate","bookingTime"/)
