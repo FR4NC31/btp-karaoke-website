@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 18, 2026
+Last updated: November 19, 2026
 
 ### Features
 
@@ -75,6 +75,7 @@ Last updated: November 18, 2026
 
 ### Bug Fixes
 
+- fix(bookings): enforce slot lock in the database, not just a read (0fc21da)
 - fix: address review violations (profile, radio, history, media, reset) (2debc01)
 - fix(auth): register Spotify provider only when SPOTIFY_CLIENT_ID is set (4862a98)
 - fix(frontend): bind vite dev server host to 127.0.0.1 (5454ff7)
