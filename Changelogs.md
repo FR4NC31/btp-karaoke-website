@@ -75,6 +75,7 @@ Last updated: November 19, 2026
 
 ### Bug Fixes
 
+- fix(bookings): guard the slot index migration and pin the 3-minute boundary (6b29442)
 - fix(bookings): enforce slot lock in the database, not just a read (0fc21da)
 - fix: address review violations (profile, radio, history, media, reset) (2debc01)
 - fix(auth): register Spotify provider only when SPOTIFY_CLIENT_ID is set (4862a98)
