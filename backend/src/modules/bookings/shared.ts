@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, bookingBlockout, service, type BookingStatus } from '../../db/schema.ts'
 import { BookingError, type Booking } from './types.ts'
@@ -125,6 +125,48 @@ export async function insertBookingRow(
         attempt < REFERENCE_CODE_ATTEMPTS - 1
       if (!retryable) throw err
     }
+  }
+}
+
+const SLOT_TAKEN_MESSAGE =
+  'That time slot is already reserved or held by another customer. Pick another slot.'
+
+/** The 409 for a slot another customer already holds, or null for other errors. */
+export function slotConflictFrom(err: unknown): BookingError | null {
+  return uniqueViolationConstraint(err) === 'booking_slot_unique_idx'
+    ? new BookingError(SLOT_TAKEN_MESSAGE, 409)
+    : null
+}
+
+/**
+ * Friendly pre-check for a slot that is already held or confirmed by another
+ * customer. The real lock is the `booking_slot_unique_idx` partial unique
+ * index — this read is not atomic with the insert and only exists to return a
+ * clear 409 instead of a raw constraint error. Day-only bookings (no time)
+ * keep the existing per-customer rule.
+ */
+export async function assertSlotAvailable(
+  serviceId: string,
+  bookingDate: string,
+  bookingTime: string | null,
+): Promise<void> {
+  if (bookingTime === null) return
+
+  const rows = await db
+    .select({ id: booking.id })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.serviceId, serviceId),
+        eq(booking.bookingDate, bookingDate),
+        eq(booking.bookingTime, bookingTime),
+        inArray(booking.status, ['pending', 'confirmed']),
+      ),
+    )
+    .limit(1)
+
+  if (rows.length > 0) {
+    throw new BookingError(SLOT_TAKEN_MESSAGE, 409)
   }
 }
 

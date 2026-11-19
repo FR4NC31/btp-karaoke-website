@@ -1,9 +1,7 @@
-import { and, eq, isNull, lt, or } from 'drizzle-orm'
+import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, user } from '../../db/schema.ts'
 import { BookingError } from './types.ts'
-
-const PENALTY_MINUTES = [10, 30, 60, 120, 240] as const
 
 /** Returns the time until which booking is suspended, or null. */
 export async function getUserSuspension(userId: string): Promise<Date | null> {
@@ -24,21 +22,32 @@ export async function clearUserSuspension(userId: string): Promise<void> {
     .where(eq(user.id, userId))
 }
 
-/** Apply an escalating suspension after a failed/expired payment hold. */
+/** Apply an escalating suspension after a failed/expired payment hold.
+ *  One statement on purpose: a read-then-write lets two concurrent failures
+ *  overwrite each other and lose an increment. */
 export async function recordPaymentFailure(userId: string): Promise<Date> {
-  const rows = await db
-    .select({ count: user.bookingFailureCount })
-    .from(user)
-    .where(eq(user.id, userId))
-    .limit(1)
-  const count = (rows[0]?.count ?? 0) + 1
-  const minutes = PENALTY_MINUTES[Math.min(count - 1, PENALTY_MINUTES.length - 1)] ?? 240
-  const until = new Date(Date.now() + minutes * 60 * 1000)
-  await db
-    .update(user)
-    .set({ bookingFailureCount: count, bookingSuspendedUntil: until, updatedAt: new Date() })
-    .where(eq(user.id, userId))
-  return until
+  const result = await db.execute<{ until: Date | string }>(sql`
+    update "user"
+    set "booking_failure_count" = "booking_failure_count" + 1,
+        "booking_suspended_until" = now() + (
+          case least("booking_failure_count" + 1, 5)
+            when 1 then interval '10 minutes'
+            when 2 then interval '30 minutes'
+            when 3 then interval '60 minutes'
+            when 4 then interval '120 minutes'
+            else interval '240 minutes'
+          end
+        ),
+        "updatedAt" = now()
+    where "id" = ${userId}
+    returning "booking_suspended_until" as until
+  `)
+
+  const until = result.rows[0]?.until
+  if (!until) {
+    throw new Error('The user could not be read back after recording a payment failure.')
+  }
+  return new Date(until)
 }
 
 /**

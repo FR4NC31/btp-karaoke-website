@@ -4,8 +4,10 @@ import { booking, service, user, type BookingStatus } from '../../db/schema.ts'
 import {
   assertDayNotBlocked,
   assertServiceAvailable,
+  assertSlotAvailable,
   bookingColumns,
   insertBookingRow,
+  slotConflictFrom,
   toBooking,
   uniqueViolationConstraint,
   type BookingRow,
@@ -25,7 +27,7 @@ import {
   type TagUser,
 } from './types.ts'
 import { membershipDiscountPercent } from '../membership/index.ts'
-import { recordPaymentFailure, recordPaymentSuccess } from './payment-holds.ts'
+import { recordPaymentFailure, recordPaymentSuccess, releaseExpiredPaymentHolds } from './payment-holds.ts'
 
 /**
  * The only status moves an admin can make, and the states they are legal
@@ -198,7 +200,12 @@ export async function createBookingForOthers(
     }
   }
 
+  // Sweep expired holds first: a stale pending hold would otherwise keep the
+  // slot looking taken and block the admin from reusing it.
+  await releaseExpiredPaymentHolds()
+
   await assertDayNotBlocked(bookingDate)
+  await assertSlotAvailable(input.serviceId, bookingDate, bookingTime)
 
   const discountPercent = await membershipDiscountPercent(userId)
   const amountDuePhp = pricePhp * (1 - discountPercent / 100)
@@ -225,6 +232,8 @@ export async function createBookingForOthers(
     }
     return created
   } catch (err) {
+    const slotConflict = slotConflictFrom(err)
+    if (slotConflict) throw slotConflict
     const constraint = uniqueViolationConstraint(err)
     if (constraint === 'booking_active_day_unique_idx') {
       // Applies to a tagged user; guest rows never enter these indexes, so
@@ -291,6 +300,19 @@ export async function adminSetBookingStatus(
 
 export async function approvePayment(bookingId: string): Promise<AdminBooking> {
   return db.transaction(async (tx) => {
+    // First, read the booking to get its slot details.
+    const existing = await findBookingByIdForAdmin(bookingId, tx)
+    if (!existing) {
+      throw new BookingError('That reservation does not exist.', 404)
+    }
+    if (existing.status !== 'pending') {
+      throw new BookingError(`A ${existing.status} reservation cannot be approved.`, 409)
+    }
+
+    // No cross-slot check here: `booking_slot_unique_idx` already makes a
+    // second live booking for the same service + day + time impossible, so the
+    // confirm transition is atomic on its own.
+
     const updated = await tx
       .update(booking)
       .set({ status: 'confirmed', updatedAt: new Date() })
