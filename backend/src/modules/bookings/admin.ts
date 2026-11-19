@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { db } from '../../db/client.ts'
 import { booking, service, user, type BookingStatus } from '../../db/schema.ts'
 import {
@@ -7,6 +7,7 @@ import {
   assertSlotAvailable,
   bookingColumns,
   insertBookingRow,
+  slotConflictFrom,
   toBooking,
   uniqueViolationConstraint,
   type BookingRow,
@@ -26,7 +27,7 @@ import {
   type TagUser,
 } from './types.ts'
 import { membershipDiscountPercent } from '../membership/index.ts'
-import { recordPaymentFailure, recordPaymentSuccess } from './payment-holds.ts'
+import { recordPaymentFailure, recordPaymentSuccess, releaseExpiredPaymentHolds } from './payment-holds.ts'
 
 /**
  * The only status moves an admin can make, and the states they are legal
@@ -199,6 +200,10 @@ export async function createBookingForOthers(
     }
   }
 
+  // Sweep expired holds first: a stale pending hold would otherwise keep the
+  // slot looking taken and block the admin from reusing it.
+  await releaseExpiredPaymentHolds()
+
   await assertDayNotBlocked(bookingDate)
   await assertSlotAvailable(input.serviceId, bookingDate, bookingTime)
 
@@ -227,6 +232,8 @@ export async function createBookingForOthers(
     }
     return created
   } catch (err) {
+    const slotConflict = slotConflictFrom(err)
+    if (slotConflict) throw slotConflict
     const constraint = uniqueViolationConstraint(err)
     if (constraint === 'booking_active_day_unique_idx') {
       // Applies to a tagged user; guest rows never enter these indexes, so
@@ -302,31 +309,9 @@ export async function approvePayment(bookingId: string): Promise<AdminBooking> {
       throw new BookingError(`A ${existing.status} reservation cannot be approved.`, 409)
     }
 
-    // Safeguard: if another confirmed booking already exists for the same
-    // service + date + time slot, reject the confirmation to prevent double
-    // booking. The slot is already taken.
-    const slotConflict = await tx
-      .select({ id: booking.id })
-      .from(booking)
-      .where(
-        and(
-          eq(booking.serviceId, existing.serviceId),
-          eq(booking.bookingDate, existing.bookingDate),
-          existing.bookingTime === null
-            ? isNull(booking.bookingTime)
-            : eq(booking.bookingTime, existing.bookingTime),
-          eq(booking.status, 'confirmed'),
-          sql`${booking.id} <> ${bookingId}`,
-        ),
-      )
-      .limit(1)
-
-    if (slotConflict.length > 0) {
-      throw new BookingError(
-        'That time slot is already confirmed by another booking. Cannot approve.',
-        409,
-      )
-    }
+    // No cross-slot check here: `booking_slot_unique_idx` already makes a
+    // second live booking for the same service + day + time impossible, so the
+    // confirm transition is atomic on its own.
 
     const updated = await tx
       .update(booking)

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
+import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   blockoutMessage,
+  cancellationCountsAsFailure,
   isHourlyUnit,
   isTimeBasedUnit,
   studioToday,
@@ -99,5 +101,30 @@ test('the customer-facing closure message carries the reason label', () => {
   assert.match(blockoutMessage('2026-12-24', 'maintenance'), /\(Maintenance\)/)
   assert.match(blockoutMessage('2026-12-24', 'unavailable'), /\(Unavailable\)/)
   assert.doesNotMatch(blockoutMessage('2026-12-24', null), /\(/)
+})
+
+test('cancelling within 3 minutes is free; later cancellations count as a failure', () => {
+  const created = new Date('2026-01-01T00:00:00.000Z')
+  const at = (seconds: number) => new Date(created.getTime() + seconds * 1000)
+  const iso = created.toISOString()
+
+  assert.equal(cancellationCountsAsFailure(iso, at(0)), false)
+  assert.equal(cancellationCountsAsFailure(iso, at(179)), false)
+  assert.equal(cancellationCountsAsFailure(iso, at(181)), true)
+  assert.equal(cancellationCountsAsFailure('not-a-date', at(600)), false)
+})
+
+test('the cross-customer slot lock is a database unique index', () => {
+  const dir = new URL('../../../drizzle/', import.meta.url)
+  const sql = readdirSync(dir)
+    .filter((file) => file.endsWith('.sql'))
+    .map((file) => readFileSync(new URL(file, dir), 'utf8'))
+    .join('\n')
+
+  const index = sql.split('\n').find((line) => line.includes('booking_slot_unique_idx'))
+  assert.ok(index, 'booking_slot_unique_idx is missing from the migrations')
+  assert.match(index, /UNIQUE INDEX/)
+  assert.match(index, /"serviceId","bookingDate","bookingTime"/)
+  assert.match(index, /"status" in \('pending', 'confirmed'\)/)
 })
 

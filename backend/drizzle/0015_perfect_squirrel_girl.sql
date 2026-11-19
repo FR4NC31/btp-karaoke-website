@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "booking_slot_unique_idx" ON "booking" USING btree ("serviceId","bookingDate","bookingTime") WHERE "bookingTime" IS NOT NULL AND "status" in ('pending', 'confirmed');

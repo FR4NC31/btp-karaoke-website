@@ -271,6 +271,15 @@ export const booking = pgTable(
     uniqueIndex('booking_active_time_unique_idx')
       .on(t.userId, t.serviceId, t.bookingDate, t.bookingTime)
       .where(sql`"bookingTime" IS NOT NULL AND "status" in ('pending', 'confirmed')`),
+    // One live booking per service + day + time slot across ALL customers.
+    // The user-keyed indexes only stop one customer double-booking; this is
+    // the atomic cross-customer lock: while a hold is pending or a booking is
+    // confirmed, no other customer can claim that slot. Day-only bookings
+    // (bookingTime IS NULL) are deliberately excluded — the studio can host
+    // several customers in one day.
+    uniqueIndex('booking_slot_unique_idx')
+      .on(t.serviceId, t.bookingDate, t.bookingTime)
+      .where(sql`"bookingTime" IS NOT NULL AND "status" in ('pending', 'confirmed')`),
   ],
 )
 

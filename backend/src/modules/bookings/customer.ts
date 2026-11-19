@@ -7,11 +7,17 @@ import {
   assertSlotAvailable,
   bookingColumns,
   insertBookingRow,
+  slotConflictFrom,
   toBooking,
   uniqueViolationConstraint,
   type BookingRow,
 } from './shared.ts'
-import { validateBookingDay, validateBookingTime, validateNotes } from './validation.ts'
+import {
+  cancellationCountsAsFailure,
+  validateBookingDay,
+  validateBookingTime,
+  validateNotes,
+} from './validation.ts'
 import { BookingError, type Booking, type CreateBookingInput } from './types.ts'
 import { membershipDiscountPercent } from '../membership/index.ts'
 import { getUserSuspension, recordPaymentFailure, releaseExpiredPaymentHolds } from './payment-holds.ts'
@@ -107,6 +113,8 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     }
     return created
   } catch (err) {
+    const slotConflict = slotConflictFrom(err)
+    if (slotConflict) throw slotConflict
     // Handle both day-wide and time-slot unique constraint violations
     const constraint = uniqueViolationConstraint(err)
     if (constraint === 'booking_active_day_unique_idx') {
@@ -185,13 +193,9 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
   // 3-minute abuse guard: a cancellation after 3 minutes counts as a payment
   // failure (escalating suspension) to prevent lockout abuse — someone booking,
   // holding a slot for 3+ minutes, then cancelling to free it for another
-  // person or to reserve it for someone else.
-  const createdAt = new Date(existing.createdAt)
-  const elapsedMs = Date.now() - createdAt.getTime()
-  const THREE_MINUTES_MS = 3 * 60 * 1000
-  if (elapsedMs > THREE_MINUTES_MS) {
-    await recordPaymentFailure(userId)
-  }
+  // person or to reserve it for someone else. Applied only after the cancel
+  // commits, so a lost race cannot suspend the caller.
+  const countsAsFailure = cancellationCountsAsFailure(existing.createdAt)
 
   const updated = await db
     .update(booking)
@@ -207,6 +211,10 @@ export async function cancelBooking(bookingId: string, userId: string): Promise<
       throw new BookingError('That booking does not exist.', 404)
     }
     throw new BookingError(`A ${gone.status} booking can no longer be cancelled.`, 409)
+  }
+
+  if (countsAsFailure) {
+    await recordPaymentFailure(userId)
   }
 
   const cancelled = await findBookingForUser(bookingId, userId)
@@ -264,6 +272,8 @@ export async function rescheduleBooking(
       throw new BookingError(`A ${gone.status} booking can no longer be rescheduled.`, 409)
     }
   } catch (err) {
+    const slotConflict = slotConflictFrom(err)
+    if (slotConflict) throw slotConflict
     const constraint = uniqueViolationConstraint(err)
     if (constraint === 'booking_active_day_unique_idx') {
       throw new BookingError('You already have a booking for that service on that day.', 409)
