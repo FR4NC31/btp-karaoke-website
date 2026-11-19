@@ -195,7 +195,9 @@ Last updated: November 19, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into feat/payment-method-race-guard (3769941)
 - docs: add branch policy note (develop-v2 one-way sync only) (26883cd)
+- Merge pull request #100 from itsGenreee/feat/better-auth-admin-plugin (ef83af8)
 - Merge pull request #99 from FR4NC31/feat/studio-redesign-2026-11 (e7a7d67)
 - Merge pull request #98 from itsGenreee/chore/disable-spotify-on-develop (8043987)
 - Merge pull request #97 from itsGenreee/feat/spotify-signin-wiring (9bc7c36)
