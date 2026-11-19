@@ -132,3 +132,9 @@ test('the cross-customer slot lock is a database unique index', () => {
   assert.match(index, /"status" in \('pending', 'confirmed'\)/)
 })
 
+test('the failure counter increments in one atomic statement', () => {
+  const source = readFileSync(new URL('./payment-holds.ts', import.meta.url), 'utf8')
+  assert.match(source, /"booking_failure_count" = "booking_failure_count" \+ 1/)
+  assert.match(source, /returning "booking_suspended_until"/)
+})
+
