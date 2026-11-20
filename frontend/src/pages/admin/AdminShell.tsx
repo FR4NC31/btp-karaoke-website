@@ -4,6 +4,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
   ArrowLeft01Icon,
+  Briefcase01Icon,
   CalendarBlock01Icon,
   CalendarCheck01Icon,
   DashboardSquare01Icon,
@@ -66,6 +67,14 @@ function pageMeta(pathname: string): PageMeta {
       title: 'Blocked Days',
       subtitle: 'Studio closures and maintenance',
       actions: ['memberships', 'newReservation'],
+    }
+  }
+
+  if (pathname.startsWith('/admin/services')) {
+    return {
+      title: 'Services',
+      subtitle: 'Catalog descriptions and prices',
+      actions: ['newReservation'],
     }
   }
 
@@ -132,6 +141,11 @@ const NAV_SECTIONS: Array<{
   {
     label: 'Management',
     links: [
+      {
+        to: '/admin/services',
+        label: 'Services',
+        icon: Briefcase01Icon,
+      },
       {
         to: '/admin/blocked-days',
         label: 'Blocked Days',

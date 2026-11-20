@@ -187,3 +187,62 @@ export function validateBlockoutReason(raw: unknown): BookingBlockoutReason | nu
   return value as BookingBlockoutReason
 }
 
+/** The wings the catalog is grouped into; mirrors WING_LABELS in the UI. */
+export const SERVICE_WINGS = ['create', 'learn', 'promote', 'protect'] as const
+export type ServiceWing = (typeof SERVICE_WINGS)[number]
+
+const SERVICE_NAME_MAX = 120
+const SERVICE_UNIT_MAX = 60
+const SERVICE_DESCRIPTION_MAX = 1000
+/** A typo guard, not a business rule — no service costs ten million pesos. */
+const SERVICE_PRICE_MAX = 10_000_000
+
+export function validateServiceName(raw: unknown): string {
+  const name = typeof raw === 'string' ? raw.trim() : ''
+  if (!name) throw new BookingError('Service name is required.', 400)
+  if (name.length > SERVICE_NAME_MAX) {
+    throw new BookingError(`Service name must be ${SERVICE_NAME_MAX} characters or fewer.`, 400)
+  }
+  return name
+}
+
+export function validateServiceWing(raw: unknown): ServiceWing {
+  const wing = typeof raw === 'string' ? raw.trim() : ''
+  if (!(SERVICE_WINGS as readonly string[]).includes(wing)) {
+    throw new BookingError('Pick a valid wing for the service.', 400)
+  }
+  return wing as ServiceWing
+}
+
+export function validateServiceUnit(raw: unknown): string {
+  const unit = typeof raw === 'string' ? raw.trim() : ''
+  if (!unit) throw new BookingError('Billing unit is required (e.g. "Per Hour").', 400)
+  if (unit.length > SERVICE_UNIT_MAX) {
+    throw new BookingError(`Billing unit must be ${SERVICE_UNIT_MAX} characters or fewer.`, 400)
+  }
+  return unit
+}
+
+export function validateServicePrice(raw: unknown): number {
+  const price = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(price) || price < 0) {
+    throw new BookingError('Enter a valid price (0 or more).', 400)
+  }
+  if (price > SERVICE_PRICE_MAX) {
+    throw new BookingError('That price looks too high. Check the amount in pesos.', 400)
+  }
+  return Math.round(price * 100) / 100
+}
+
+export function validateServiceDescription(raw: unknown): string {
+  const description = typeof raw === 'string' ? raw.trim() : ''
+  if (!description) throw new BookingError('Service description is required.', 400)
+  if (description.length > SERVICE_DESCRIPTION_MAX) {
+    throw new BookingError(
+      `Service description must be ${SERVICE_DESCRIPTION_MAX} characters or fewer.`,
+      400,
+    )
+  }
+  return description
+}
+

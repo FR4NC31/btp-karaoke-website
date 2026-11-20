@@ -4,6 +4,7 @@ import {
   type BlockoutReason,
   type Booking,
   type BookingStatus,
+  type Service,
 } from './booking-api'
 import type { AdminMediaItem, MediaSection } from './media-api'
 import { invalidate } from './cache'
@@ -81,14 +82,40 @@ export function adminPaymentAction(
   })
 }
 
-export function fetchGcashQr(): Promise<{ url: string | null }> {
-  return request('/api/settings/gcash-qr')
+/** A catalog row in the admin editor: the public fields plus `isActive`. */
+export interface AdminService extends Service {
+  isActive: boolean
 }
 
-export function setGcashQrUrl(url: string): Promise<{ url: string }> {
-  return request('/api/admin/settings/gcash-qr', {
+export interface CreateAdminServiceInput {
+  name: string
+  wing: string
+  unit: string
+  pricePhp: number
+  description: string
+}
+
+export function fetchAdminServices(): Promise<{ services: AdminService[] }> {
+  return request('/api/admin/services')
+}
+
+export function createAdminService(
+  input: CreateAdminServiceInput,
+): Promise<{ service: AdminService }> {
+  return request('/api/admin/services', {
     method: 'POST',
-    body: JSON.stringify({ url }),
+    body: JSON.stringify(input),
+  })
+}
+
+/** The admin editor owns exactly these two fields. */
+export function updateAdminService(
+  id: string,
+  input: { description: string; pricePhp: number },
+): Promise<{ service: AdminService }> {
+  return request(`/api/admin/services/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
   })
 }
 
