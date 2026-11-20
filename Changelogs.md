@@ -1,19 +1,14 @@
 # Development Changelog
 
-## ⚠️ Branch Policy (read before merging)
-
-- **`develop`** is the deployment branch. It must stay Spotify-free and deployable at all times.
-- **`develop-v2`** carries all Spotify features (auth provider, sign-in wiring, badge, legal ref).
-- **Sync direction is one-way only:** `develop` → `develop-v2` (pull updates). **Never merge `develop-v2` → `develop`** until Spotify production integration is fully validated.
-- `develop-v2` may pull commits from `develop` (admin plugin, bug fixes, UI work) to stay current.
-- Spotify activation on `develop` is gated by `SPOTIFY_CLIENT_ID` being set (see PR #98). Do not set it in production until the Spotify integration is validated on `develop-v2`.
-
 ## Unreleased
 
-Last updated: November 16, 2026
+Last updated: November 20, 2026
 
 ### Features
 
+- feat(admin): let the admin set the GCash QR customers pay at checkout (610c770)
+- feat(bookings): add slot race-guard, confirm handler, and 3-min cancel penalty (8a59a52)
+- feat(auth): add Better Auth admin plugin (c29aead)
 - feat(studio): redesign studio, profile, history, radio, and media cards (ab07f9d)
 - feat(auth): wire Spotify sign-in with provider-aware OAuth errors (8bc0c92)
 - feat(auth): register Spotify social provider with account_id keying (2965af0)
@@ -81,6 +76,9 @@ Last updated: November 16, 2026
 
 ### Bug Fixes
 
+- fix(bookings): make the failure-counter increment atomic (0d3ba30)
+- fix(bookings): guard the slot index migration and pin the 3-minute boundary (6b29442)
+- fix(bookings): enforce slot lock in the database, not just a read (0fc21da)
 - fix: address review violations (profile, radio, history, media, reset) (2debc01)
 - fix(auth): register Spotify provider only when SPOTIFY_CLIENT_ID is set (4862a98)
 - fix(frontend): bind vite dev server host to 127.0.0.1 (5454ff7)
@@ -198,6 +196,12 @@ Last updated: November 16, 2026
 
 ### Other Changes
 
+- Merge branch 'develop' into feat/admin-payment-qr (fa06fd0)
+- Merge pull request #102 from itsGenreee/feat/payment-method-race-guard (0649e05)
+- Merge branch 'develop' into feat/payment-method-race-guard (3769941)
+- docs: add branch policy note (develop-v2 one-way sync only) (26883cd)
+- Merge pull request #100 from itsGenreee/feat/better-auth-admin-plugin (ef83af8)
+- Merge pull request #99 from FR4NC31/feat/studio-redesign-2026-11 (e7a7d67)
 - Merge pull request #98 from itsGenreee/chore/disable-spotify-on-develop (8043987)
 - Merge pull request #97 from itsGenreee/feat/spotify-signin-wiring (9bc7c36)
 - Merge pull request #96 from itsGenreee/docs/spotify-google-legal-reference (bc783c4)

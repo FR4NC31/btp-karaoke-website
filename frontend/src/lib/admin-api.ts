@@ -82,6 +82,17 @@ export function adminPaymentAction(
   })
 }
 
+export function fetchGcashQr(): Promise<{ url: string | null }> {
+  return request('/api/settings/gcash-qr')
+}
+
+export function setGcashQrUrl(url: string): Promise<{ url: string }> {
+  return request('/api/admin/settings/gcash-qr', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  })
+}
+
 /** A catalog row in the admin editor: the public fields plus `isActive`. */
 export interface AdminService extends Service {
   isActive: boolean

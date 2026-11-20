@@ -7,6 +7,7 @@ import {
   Briefcase01Icon,
   CalendarBlock01Icon,
   CalendarCheck01Icon,
+  CreditCardIcon,
   DashboardSquare01Icon,
   GridViewIcon,
   ListViewIcon,
@@ -74,6 +75,14 @@ function pageMeta(pathname: string): PageMeta {
     return {
       title: 'Services',
       subtitle: 'Catalog descriptions and prices',
+      actions: ['newReservation'],
+    }
+  }
+
+  if (pathname.startsWith('/admin/payments')) {
+    return {
+      title: 'Payment',
+      subtitle: 'GCash QR shown at checkout',
       actions: ['newReservation'],
     }
   }
@@ -158,6 +167,11 @@ const NAV_SECTIONS: Array<{
         label: 'Membership',
         icon: UserGroupIcon,
         modal: 'membership',
+      },
+      {
+        to: '/admin/payments',
+        label: 'Payment',
+        icon: CreditCardIcon,
       },
     ],
   },

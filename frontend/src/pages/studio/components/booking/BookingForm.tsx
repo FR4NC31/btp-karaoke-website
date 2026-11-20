@@ -4,6 +4,7 @@ import { Cancel01Icon, Calendar01Icon, CloudUploadIcon } from '@hugeicons/core-f
 import type { PublicBlockout, Service } from '../../../../lib/booking-api'
 import {
   BLOCKOUT_REASON_LABELS,
+  fetchGcashQr,
   isHourlyService,
   isTimeBasedService,
 } from '../../../../lib/booking-api'
@@ -114,6 +115,30 @@ export default function BookingForm({
   const [dragging, setDragging] = useState(false)
   const [receiptError, setReceiptError] = useState('')
   const [dateOpen, setDateOpen] = useState(false)
+
+  // The admin's GCash QR code, shown in the payment section before the
+  // customer pays. Fetched once when the form opens in create mode.
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [qrLoading, setQrLoading] = useState(mode === 'create')
+  const [qrError, setQrError] = useState('')
+
+  useEffect(() => {
+    if (mode !== 'create') return
+    let alive = true
+    fetchGcashQr()
+      .then((result) => {
+        if (alive) setQrUrl(result.url)
+      })
+      .catch(() => {
+        if (alive) setQrError('Could not load the payment QR code.')
+      })
+      .finally(() => {
+        if (alive) setQrLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [mode])
 
   // The calendar's bounds: today (studio timezone) through three years out —
   // far enough for every bookable session, short enough to keep the year
@@ -360,7 +385,33 @@ export default function BookingForm({
 
               {paymentMethod === 'gcash' && (
                 <div>
-                  <p className={LABEL_CLASSES}>
+                  <div className="rounded-xl border border-border bg-background p-3 text-center">
+                    {qrLoading ? (
+                      <p className="text-xs text-text-muted">Loading payment QR…</p>
+                    ) : qrUrl ? (
+                      <>
+                        <p className="text-sm font-semibold text-text-primary">
+                          Scan to pay with GCash
+                        </p>
+                        <img
+                          src={qrUrl}
+                          alt="GCash payment QR code"
+                          className="mx-auto mt-2 size-40 rounded-lg border border-border bg-white object-contain"
+                        />
+                        <p className="mt-2 text-[11px] text-text-muted">
+                          Open GCash, scan this code, then upload your receipt below.
+                        </p>
+                      </>
+                    ) : qrError ? (
+                      <p className="text-xs text-text-muted">{qrError}</p>
+                    ) : (
+                      <p className="text-xs text-text-muted">
+                        No payment QR is set up yet. Upload your receipt if you already paid.
+                      </p>
+                    )}
+                  </div>
+
+                  <p className={`${LABEL_CLASSES} mt-4`}>
                     Upload GCash Payment Receipt <span className="text-primary">*</span>{' '}
                     <span className="text-xs font-normal text-text-muted">
                       (JPG, PNG - Max 10MB)

@@ -246,3 +246,16 @@ export function validateServiceDescription(raw: unknown): string {
   return description
 }
 
+/** How long a slot hold may be released for free before it counts as abuse. */
+export const CANCEL_PENALTY_MS = 3 * 60 * 1000
+
+/**
+ * A cancellation is only penalised after the free window: releasing a slot
+ * sooner than this is a change of mind, holding it longer then dropping it
+ * past this is the lockout abuse we want to count.
+ */
+export function cancellationCountsAsFailure(createdAt: string, now: Date = new Date()): boolean {
+  const created = new Date(createdAt).getTime()
+  return Number.isFinite(created) && now.getTime() - created > CANCEL_PENALTY_MS
+}
+

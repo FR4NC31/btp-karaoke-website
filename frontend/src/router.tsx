@@ -21,6 +21,7 @@ import AdminShell from "./pages/admin/AdminShell"
 import AdminOverview from "./pages/admin/AdminOverview"
 import AdminBookings from "./pages/admin/AdminBookings"
 import AdminServices from "./pages/admin/AdminServices"
+import AdminPayment from "./pages/admin/AdminPayment"
 import AdminMedia from "./pages/admin/AdminMedia"
 import AdminMediaForm from "./pages/admin/AdminMediaForm"
 
@@ -92,6 +93,7 @@ export const router = createBrowserRouter([
                             { index: true, element: <AdminOverview /> },
                             { path: "bookings", handle: { title: 'Reservations' }, element: <AdminBookings /> },
                             { path: "services", handle: { title: 'Services' }, element: <AdminServices /> },
+                            { path: "payments", handle: { title: 'Payment' }, element: <AdminPayment /> },
                             { path: "media", handle: { title: 'Media Hub' }, element: <AdminMedia /> },
                             { path: "media/new", handle: { title: 'New Media' }, element: <AdminMediaForm /> },
                             { path: "media/:id", handle: { title: 'Edit Media' }, element: <AdminMediaForm /> },

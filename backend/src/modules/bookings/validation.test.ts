@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
+import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   blockoutMessage,
+  cancellationCountsAsFailure,
   isHourlyUnit,
   isTimeBasedUnit,
   SERVICE_WINGS,
@@ -124,5 +126,40 @@ test('a blank or unknown service field is rejected with a 400', () => {
   assert.throws(() => validateServicePrice('-1'), /valid price/)
   assert.throws(() => validateServicePrice('not a number'), /valid price/)
   assert.throws(() => validateServicePrice(10_000_001), /too high/)
+})
+
+test('cancelling within 3 minutes is free; later cancellations count as a failure', () => {
+  const created = new Date('2026-01-01T00:00:00.000Z')
+  const at = (seconds: number) => new Date(created.getTime() + seconds * 1000)
+  const iso = created.toISOString()
+
+  assert.equal(cancellationCountsAsFailure(iso, at(0)), false)
+  assert.equal(cancellationCountsAsFailure(iso, at(179)), false)
+  // Exactly 3 minutes is still inside the free window; the penalty starts after it.
+  assert.equal(cancellationCountsAsFailure(iso, at(180)), false)
+  assert.equal(cancellationCountsAsFailure(iso, at(181)), true)
+  assert.equal(cancellationCountsAsFailure('not-a-date', at(600)), false)
+})
+
+test('the cross-customer slot lock is a database unique index', () => {
+  const dir = new URL('../../../drizzle/', import.meta.url)
+  const sql = readdirSync(dir)
+    .filter((file) => file.endsWith('.sql'))
+    .map((file) => readFileSync(new URL(file, dir), 'utf8'))
+    .join('\n')
+
+  const index = sql
+    .split('\n')
+    .find((line) => line.includes('CREATE UNIQUE INDEX') && line.includes('booking_slot_unique_idx'))
+  assert.ok(index, 'booking_slot_unique_idx is missing from the migrations')
+  assert.match(index, /UNIQUE INDEX/)
+  assert.match(index, /"serviceId","bookingDate","bookingTime"/)
+  assert.match(index, /"status" in \('pending', 'confirmed'\)/)
+})
+
+test('the failure counter increments in one atomic statement', () => {
+  const source = readFileSync(new URL('./payment-holds.ts', import.meta.url), 'utf8')
+  assert.match(source, /"booking_failure_count" = "booking_failure_count" \+ 1/)
+  assert.match(source, /returning "booking_suspended_until"/)
 })
 
