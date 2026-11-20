@@ -6,6 +6,7 @@ import {
   ArrowLeft01Icon,
   CalendarBlock01Icon,
   CalendarCheck01Icon,
+  CreditCardIcon,
   DashboardSquare01Icon,
   GridViewIcon,
   ListViewIcon,
@@ -66,6 +67,14 @@ function pageMeta(pathname: string): PageMeta {
       title: 'Blocked Days',
       subtitle: 'Studio closures and maintenance',
       actions: ['memberships', 'newReservation'],
+    }
+  }
+
+  if (pathname.startsWith('/admin/payments')) {
+    return {
+      title: 'Payment',
+      subtitle: 'GCash QR shown at checkout',
+      actions: ['newReservation'],
     }
   }
 
@@ -144,6 +153,11 @@ const NAV_SECTIONS: Array<{
         label: 'Membership',
         icon: UserGroupIcon,
         modal: 'membership',
+      },
+      {
+        to: '/admin/payments',
+        label: 'Payment',
+        icon: CreditCardIcon,
       },
     ],
   },
