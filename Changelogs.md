@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Last updated: November 20, 2026
+
+### Features
+
 - feat(admin): let the admin set the GCash QR customers pay at checkout (610c770)
 - feat(bookings): add slot race-guard, confirm handler, and 3-min cancel penalty (8a59a52)
 - feat(auth): add Better Auth admin plugin (c29aead)
@@ -192,7 +196,8 @@
 
 ### Other Changes
 
-- docs: add branch policy note (develop-v2 one-way sync only) (26883cd)
+- Merge branch 'develop' into feat/admin-payment-qr (fa06fd0)
+- Merge pull request #102 from itsGenreee/feat/payment-method-race-guard (0649e05)
 - Merge branch 'develop' into feat/payment-method-race-guard (3769941)
 - docs: add branch policy note (develop-v2 one-way sync only) (26883cd)
 - Merge pull request #100 from itsGenreee/feat/better-auth-admin-plugin (ef83af8)
