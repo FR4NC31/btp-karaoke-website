@@ -30,8 +30,19 @@ export {
   type TagUser,
 } from './types.ts'
 
-export { blockoutReasonLabel, studioToday } from './validation.ts'
-export { listServices } from './services.ts'
+export {
+  blockoutReasonLabel,
+  SERVICE_WINGS,
+  studioToday,
+  type ServiceWing,
+} from './validation.ts'
+export {
+  createService,
+  listAllServicesForAdmin,
+  listServices,
+  updateService,
+  type AdminService,
+} from './services.ts'
 export {
   createBlockout,
   deleteBlockout,

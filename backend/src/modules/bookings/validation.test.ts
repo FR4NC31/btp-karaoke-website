@@ -6,9 +6,15 @@ import {
   cancellationCountsAsFailure,
   isHourlyUnit,
   isTimeBasedUnit,
+  SERVICE_WINGS,
   studioToday,
   validateBlockoutReason,
   validateBookingTime,
+  validateServiceDescription,
+  validateServiceName,
+  validateServicePrice,
+  validateServiceUnit,
+  validateServiceWing,
 } from './validation.ts'
 
 /** A day far enough ahead that "already passed today" never applies. */
@@ -101,6 +107,25 @@ test('the customer-facing closure message carries the reason label', () => {
   assert.match(blockoutMessage('2026-12-24', 'maintenance'), /\(Maintenance\)/)
   assert.match(blockoutMessage('2026-12-24', 'unavailable'), /\(Unavailable\)/)
   assert.doesNotMatch(blockoutMessage('2026-12-24', null), /\(/)
+})
+
+test('service fields are trimmed and the price accepts form strings', () => {
+  assert.equal(validateServiceName('  Vocal Coaching  '), 'Vocal Coaching')
+  assert.equal(validateServiceUnit('  Per Hour '), 'Per Hour')
+  assert.equal(validateServiceDescription('  One-on-one session.  '), 'One-on-one session.')
+  assert.equal(validateServicePrice('1500.555'), 1500.56)
+  assert.equal(validateServicePrice(0), 0)
+  for (const wing of SERVICE_WINGS) assert.equal(validateServiceWing(wing), wing)
+})
+
+test('a blank or unknown service field is rejected with a 400', () => {
+  assert.throws(() => validateServiceName('   '), /name is required/)
+  assert.throws(() => validateServiceUnit(''), /Billing unit is required/)
+  assert.throws(() => validateServiceDescription('  '), /description is required/)
+  assert.throws(() => validateServiceWing('party'), /valid wing/)
+  assert.throws(() => validateServicePrice('-1'), /valid price/)
+  assert.throws(() => validateServicePrice('not a number'), /valid price/)
+  assert.throws(() => validateServicePrice(10_000_001), /too high/)
 })
 
 test('cancelling within 3 minutes is free; later cancellations count as a failure', () => {
