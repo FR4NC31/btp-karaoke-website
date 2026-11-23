@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -17,44 +17,71 @@ import WhatWeDo from './about/components/WhatWeDo'
 import StoryVision from './about/components/StoryVision'
 import Commitments from './about/components/Commitments'
 import AboutCta from './about/components/AboutCta'
+import { fetchContactDetails, type ContactDetails } from '../lib/booking-api'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const channels = [
-  {
-    icon: Facebook01Icon,
-    title: 'Social Media',
-    label: 'Facebook Page',
-    value: 'BTP Music Production',
-    desc: 'Official updates, new song announcements, minus-one catalog previews, and direct messenger inquiries.',
-    action: 'Visit Our Page',
-    href: 'https://www.facebook.com/profile.php?id=61560004453465',
-    external: true,
-  },
-  {
-    icon: Mail01Icon,
-    title: 'Official Inbox',
-    label: 'Email Address',
-    value: 'btpproduction2024@gmail.com',
-    desc: 'For songwriter demos, sync licensing, karaoke minus-one requests, and business collaborations.',
-    action: 'Send Email',
-    href: 'mailto:btpproduction2024@gmail.com',
-    external: false,
-  },
-  {
-    icon: PhoneIcon,
-    title: 'Direct Phone & Mobile',
-    label: 'Direct Number',
-    value: '0932 973 6975',
-    desc: 'Studio front desk and booking hotline.',
-    action: 'Call Direct',
-    href: 'tel:+639329736975',
-    external: false,
-  },
-]
+const DEFAULT_CONTACT: ContactDetails = {
+  facebookUrl: 'https://www.facebook.com/profile.php?id=61560004453465',
+  facebookLabel: 'BTP Music Production',
+  email: 'btpproduction2024@gmail.com',
+  phone: '0932 973 6975',
+  phoneHref: 'tel:+639329736975',
+  address: '',
+}
+
+function buildChannels(details: ContactDetails) {
+  return [
+    {
+      icon: Facebook01Icon,
+      title: 'Social Media',
+      label: 'Facebook Page',
+      value: details.facebookLabel,
+      desc: 'Official updates, new song announcements, minus-one catalog previews, and direct messenger inquiries.',
+      action: 'Visit Our Page',
+      href: details.facebookUrl,
+      external: true,
+    },
+    {
+      icon: Mail01Icon,
+      title: 'Official Inbox',
+      label: 'Email Address',
+      value: details.email,
+      desc: 'For songwriter demos, sync licensing, karaoke minus-one requests, and business collaborations.',
+      action: 'Send Email',
+      href: `mailto:${details.email}`,
+      external: false,
+    },
+    {
+      icon: PhoneIcon,
+      title: 'Direct Phone & Mobile',
+      label: 'Direct Number',
+      value: details.phone,
+      desc: 'Studio front desk and booking hotline.',
+      action: 'Call Direct',
+      href: details.phoneHref,
+      external: false,
+    },
+  ]
+}
 
 export default function LandingPage() {
   const { openAuth } = useAuthDialog()
+  const [contact, setContact] = useState<ContactDetails>(DEFAULT_CONTACT)
+  useEffect(() => {
+    let alive = true
+    fetchContactDetails()
+      .then((result) => {
+        if (alive && result.details) setContact({ ...DEFAULT_CONTACT, ...result.details })
+      })
+      .catch(() => {
+        /* keep defaults */
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const channels = buildChannels(contact)
   const pageRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {

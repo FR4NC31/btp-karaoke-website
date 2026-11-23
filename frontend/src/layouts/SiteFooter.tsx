@@ -1,16 +1,43 @@
+import { useEffect, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Facebook01Icon, Mail01Icon, PhoneIcon } from '@hugeicons/core-free-icons'
 import BrandLogo from '../components/BrandLogo'
+import { fetchContactDetails, type ContactDetails } from '../lib/booking-api'
 
 const year = new Date().getFullYear()
 
-const channels = [
-  { icon: Facebook01Icon, label: 'Facebook', value: 'BTP Music Production', href: 'https://www.facebook.com/profile.php?id=61560004453465', external: true },
-  { icon: Mail01Icon, label: 'Email', value: 'btpproduction2024@gmail.com', href: 'mailto:btpproduction2024@gmail.com', external: false },
-  { icon: PhoneIcon, label: 'Phone', value: '0932 973 6975', href: 'tel:+639329736975', external: false },
-]
+const DEFAULTS: ContactDetails = {
+  facebookUrl: 'https://www.facebook.com/profile.php?id=61560004453465',
+  facebookLabel: 'BTP Music Production',
+  email: 'btpproduction2024@gmail.com',
+  phone: '0932 973 6975',
+  phoneHref: 'tel:+639329736975',
+  address: '',
+}
 
 export default function SiteFooter() {
+  const [details, setDetails] = useState<ContactDetails>(DEFAULTS)
+
+  useEffect(() => {
+    let alive = true
+    fetchContactDetails()
+      .then((result) => {
+        if (alive && result.details) setDetails({ ...DEFAULTS, ...result.details })
+      })
+      .catch(() => {
+        /* keep defaults */
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const channels = [
+    { icon: Facebook01Icon, label: 'Facebook', value: details.facebookLabel, href: details.facebookUrl, external: true },
+    { icon: Mail01Icon, label: 'Email', value: details.email, href: `mailto:${details.email}`, external: false },
+    { icon: PhoneIcon, label: 'Phone', value: details.phone, href: details.phoneHref, external: false },
+  ]
+
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto max-w-6xl px-6 py-8">

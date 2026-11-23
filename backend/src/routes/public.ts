@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { listServices, studioToday } from '../modules/bookings/index.ts'
 import { listPublicMedia } from '../modules/media/index.ts'
 import { getUserMembership } from '../modules/membership/index.ts'
-import { getGcashQrUrl } from '../modules/settings/index.ts'
+import { getContactDetails, getGcashQrUrl } from '../modules/settings/index.ts'
 import { sendPhoneVerificationOtp, verifyPhoneOtp, sendEmailVerificationOtp, verifyEmailOtp } from '../modules/users/verification.ts'
 import { requireSession } from '../middleware/session.ts'
 
@@ -87,6 +87,12 @@ publicApi.get('/me/membership', requireSession, async (c) => {
 publicApi.get('/settings/gcash-qr', async (c) => {
   const url = await getGcashQrUrl()
   return c.json({ url })
+})
+
+// Public: the studio's contact details (falls back to defaults on the client).
+publicApi.get('/settings/contact', async (c) => {
+  const details = await getContactDetails()
+  return c.json({ details })
 })
 
 publicApi.post('/me/email/send-otp', requireSession, async (c) => {

@@ -4,6 +4,7 @@ import {
   type BlockoutReason,
   type Booking,
   type BookingStatus,
+  type ContactDetails,
   type Service,
 } from './booking-api'
 import type { AdminMediaItem, MediaSection } from './media-api'
@@ -90,6 +91,21 @@ export function setGcashQrUrl(url: string): Promise<{ url: string }> {
   return request('/api/admin/settings/gcash-qr', {
     method: 'POST',
     body: JSON.stringify({ url }),
+  })
+}
+
+export type { ContactDetails } from './booking-api'
+
+export function fetchContactDetails(): Promise<{ details: ContactDetails | null }> {
+  return request('/api/admin/settings/contact')
+}
+
+export function setContactDetails(
+  details: ContactDetails,
+): Promise<{ details: ContactDetails }> {
+  return request('/api/admin/settings/contact', {
+    method: 'POST',
+    body: JSON.stringify(details),
   })
 }
 
