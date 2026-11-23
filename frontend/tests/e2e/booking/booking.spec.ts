@@ -299,7 +299,7 @@ test.describe('booking desk', () => {
     await page.getByLabel('Select Time Slot').selectOption('09:00')
     await page.getByText('In Person', { exact: true }).click()
     await page.getByRole('button', { name: 'Confirm Booking' }).click()
-    await expect(page.getByRole('dialog').getByText('booking for this service at this time slot')).toBeVisible()
+    await expect(page.getByRole('dialog').getByText('time slot is already reserved')).toBeVisible()
   })
 
   test('BOOKING-010: an off-hour slot is rejected by the API', { tag: '@p1' }, async ({ page }) => {

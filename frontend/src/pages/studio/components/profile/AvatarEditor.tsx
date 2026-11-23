@@ -42,12 +42,14 @@ export default function AvatarEditor({
     }
   }, [cropSrc])
 
-  useEffect(() => {
-    if (!cropOpen && cropSrc) {
-      URL.revokeObjectURL(cropSrc)
-      setCropSrc(null)
-    }
-  }, [cropOpen, cropSrc])
+  // Revoke on any close path (Esc/overlay go through onOpenChange, not Cancel/Save).
+  function closeCrop() {
+    setCropOpen(false)
+    setCropSrc((previous) => {
+      if (previous) URL.revokeObjectURL(previous)
+      return null
+    })
+  }
 
   useEffect(() => {
     if (!naturalSize.w || !naturalSize.h) return
@@ -128,11 +130,7 @@ export default function AvatarEditor({
         setError(readableError(updateError))
         return
       }
-      setCropOpen(false)
-      setCropSrc((previous) => {
-        if (previous) URL.revokeObjectURL(previous)
-        return null
-      })
+      closeCrop()
       await onSaved?.()
     } catch (err) {
       setError(unexpectedError('profile image update', err))
@@ -150,7 +148,7 @@ export default function AvatarEditor({
         setError(readableError(updateError))
         return
       }
-      setCropOpen(false)
+      closeCrop()
       await onSaved?.()
     } catch (err) {
       setError(unexpectedError('profile image removal', err))
@@ -190,7 +188,12 @@ export default function AvatarEditor({
         onChange={handleFileChange}
       />
 
-      <Dialog open={cropOpen} onOpenChange={setCropOpen}>
+      <Dialog
+        open={cropOpen}
+        onOpenChange={(open) => {
+          if (!open) closeCrop()
+        }}
+      >
         <DialogContent className="border border-border bg-surface text-text-primary">
           <DialogHeader>
             <DialogTitle>Crop profile photo</DialogTitle>
@@ -291,13 +294,7 @@ export default function AvatarEditor({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setCropOpen(false)
-                  setCropSrc((previous) => {
-                    if (previous) URL.revokeObjectURL(previous)
-                    return null
-                  })
-                }}
+                onClick={closeCrop}
                 disabled={saving}
                 className="rounded-lg border border-border bg-surface-elevated px-4 py-2 text-sm font-semibold text-text-secondary transition hover:text-text-primary disabled:opacity-60"
               >

@@ -11,7 +11,7 @@ test.describe('profile', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page.getByText('@qa')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Share Profile' })).toBeVisible()
-    await expect(page.getByRole('link', { name: /Bookings/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Bookings', exact: true })).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Favorites' })).toBeVisible()
   })
 
