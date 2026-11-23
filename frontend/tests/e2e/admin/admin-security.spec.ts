@@ -74,24 +74,37 @@ test.describe('privilege escalation attempts', () => {
 
   test('SEC-003: role cannot be set at sign-up or through update-user', { tag: '@p1' }, async ({ request, baseURL }) => {
     const email = `qa-role-probe-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`
+    const signUpData = {
+      email,
+      password: 'Probe123!',
+      name: 'Role Probe',
+      first_name: 'Role',
+      last_name: 'Probe',
+      contact_num: '+639170000002',
+    }
 
-    // Attempt 1 — smuggle the role into sign-up. Better Auth's `input: false`
-    // field handling replaces whatever the client sends with the default.
+    // Attempt 1 — smuggle the role into sign-up. Depending on the Better Auth
+    // version the `input: false` field is either replaced with the default
+    // (sign-up succeeds, role stays 'user') or refused outright with
+    // FIELD_NOT_ALLOWED. Both mean the payload never landed.
     const signUp = await request.post('/api/auth/sign-up/email', {
       headers: { Origin: baseURL ?? '' },
-      data: {
-        email,
-        password: 'Probe123!',
-        name: 'Role Probe',
-        first_name: 'Role',
-        last_name: 'Probe',
-        contact_num: '+639170000002',
-        role: 'admin',
-      },
+      data: { ...signUpData, role: 'admin' },
     })
-    expect(signUp.ok()).toBeTruthy()
     const created = await signUp.json()
-    expect(created.user.role).toBe('user')
+    if (signUp.ok()) {
+      expect(created.user.role).toBe('user')
+    } else {
+      expect(signUp.status()).toBe(400)
+      expect(created.code).toBe('FIELD_NOT_ALLOWED')
+      // The refused sign-up created no account and no session, so sign the
+      // probe account in cleanly — attempts 2 and 3 need the live session.
+      const clean = await request.post('/api/auth/sign-up/email', {
+        headers: { Origin: baseURL ?? '' },
+        data: signUpData,
+      })
+      expect(clean.ok(), `clean sign-up ${clean.status()}: ${await clean.text()}`).toBeTruthy()
+    }
 
     // Attempt 2 — promote the now-live session via update-user. The Origin
     // header is required for authenticated POSTs (Better Auth's CSRF origin
@@ -196,6 +209,9 @@ test.describe('post-sign-in redirect target', () => {
   ]
 
   test('SEC-006: a crafted ?next= lands safely instead of breaking the page', { tag: '@p1' }, async ({ page }) => {
+    // Seven full sign-in round trips against a loaded machine blow the 60 s
+    // default; tripling the budget keeps the redirect assertions the point.
+    test.slow()
     // Pre-fix, every payload below threw "External navigation is not allowed"
     // into the route error boundary, so both assertions here failed.
     const pageErrors: string[] = []

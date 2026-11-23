@@ -78,6 +78,7 @@ Last updated: November 23, 2026
 
 ### Bug Fixes
 
+- fix: new error fix (23ccd39)
 - fix(bookings): make the failure-counter increment atomic (0d3ba30)
 - fix(bookings): guard the slot index migration and pin the 3-minute boundary (6b29442)
 - fix(bookings): enforce slot lock in the database, not just a read (0fc21da)
@@ -198,6 +199,7 @@ Last updated: November 23, 2026
 
 ### Other Changes
 
+- Merge pull request #105 from itsGenreee/feat/admin-contact-details (b2bfbf0)
 - Merge pull request #104 from itsGenreee/feat/admin-services (e0ec7a8)
 - Merge branch 'develop' into feat/admin-services (c0a4ca4)
 - Merge branch 'develop' into feat/admin-services (82ab452)

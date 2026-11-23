@@ -37,8 +37,8 @@ export const ANONYMOUS = { cookies: [], origins: [] }
  *   first_name/last_name/contact_num (all required by the user table).
  */
 export const TEST_USER = {
-  email: 'qa@example.com',
-  password: 'Secret123!',
+  email: 'franc.coc3@gmail.com',
+  password: 'password123',
 }
 
 /**
