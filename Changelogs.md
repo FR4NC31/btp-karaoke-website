@@ -2,10 +2,11 @@
 
 ## Unreleased
 
-Last updated: November 20, 2026
+Last updated: November 23, 2026
 
 ### Features
 
+- feat(admin): make studio contact details editable (2df3723)
 - feat(admin): edit service descriptions/prices and add new services (4471154)
 - feat(admin): let the admin set the GCash QR customers pay at checkout (610c770)
 - feat(bookings): add slot race-guard, confirm handler, and 3-min cancel penalty (8a59a52)
@@ -197,6 +198,7 @@ Last updated: November 20, 2026
 
 ### Other Changes
 
+- Merge pull request #104 from itsGenreee/feat/admin-services (e0ec7a8)
 - Merge branch 'develop' into feat/admin-services (c0a4ca4)
 - Merge branch 'develop' into feat/admin-services (82ab452)
 - Merge pull request #103 from itsGenreee/feat/admin-payment-qr (f92878b)
