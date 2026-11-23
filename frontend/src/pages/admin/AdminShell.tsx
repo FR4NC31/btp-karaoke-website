@@ -13,6 +13,7 @@ import {
   ListViewIcon,
   Logout01Icon,
   MusicNote01Icon,
+  PhoneIcon,
   PlusSignIcon,
   UserGroupIcon,
   UserIcon,
@@ -75,6 +76,14 @@ function pageMeta(pathname: string): PageMeta {
     return {
       title: 'Services',
       subtitle: 'Catalog descriptions and prices',
+      actions: ['newReservation'],
+    }
+  }
+
+  if (pathname.startsWith('/admin/contact')) {
+    return {
+      title: 'Contact',
+      subtitle: 'Phone, email and address',
       actions: ['newReservation'],
     }
   }
@@ -172,6 +181,11 @@ const NAV_SECTIONS: Array<{
         to: '/admin/payments',
         label: 'Payment',
         icon: CreditCardIcon,
+      },
+      {
+        to: '/admin/contact',
+        label: 'Contact',
+        icon: PhoneIcon,
       },
     ],
   },

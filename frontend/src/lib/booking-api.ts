@@ -248,3 +248,16 @@ export async function uploadReceipt(
     },
   })
 }
+
+export interface ContactDetails {
+  facebookUrl: string
+  facebookLabel: string
+  email: string
+  phone: string
+  phoneHref: string
+  address: string
+}
+
+export function fetchContactDetails(): Promise<{ details: ContactDetails | null }> {
+  return request('/api/settings/contact')
+}
