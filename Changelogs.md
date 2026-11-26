@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Last updated: November 23, 2026
+Last updated: November 26, 2026
 
 ### Features
 
@@ -78,6 +78,7 @@ Last updated: November 23, 2026
 
 ### Bug Fixes
 
+- fix(e2e): restore shared QA user to the seeded qa@example.com account (a66f9a4)
 - fix: new error fix (23ccd39)
 - fix(bookings): make the failure-counter increment atomic (0d3ba30)
 - fix(bookings): guard the slot index migration and pin the 3-minute boundary (6b29442)
@@ -199,6 +200,7 @@ Last updated: November 23, 2026
 
 ### Other Changes
 
+- Merge pull request #106 from FR4NC31/fix/e2e-error (47816e1)
 - Merge pull request #105 from itsGenreee/feat/admin-contact-details (b2bfbf0)
 - Merge pull request #104 from itsGenreee/feat/admin-services (e0ec7a8)
 - Merge branch 'develop' into feat/admin-services (c0a4ca4)
