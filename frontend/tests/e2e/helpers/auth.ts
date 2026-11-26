@@ -37,8 +37,8 @@ export const ANONYMOUS = { cookies: [], origins: [] }
  *   first_name/last_name/contact_num (all required by the user table).
  */
 export const TEST_USER = {
-  email: 'franc.coc3@gmail.com',
-  password: 'password123',
+  email: 'qa@example.com',
+  password: 'Secret123!',
 }
 
 /**
@@ -127,3 +127,4 @@ export async function signInAsAdmin(page: Page, credentials = TEST_ADMIN) {
   await page.getByRole('button', { name: 'Sign In' }).click()
   await expect(page).toHaveURL('/admin')
 }
+
